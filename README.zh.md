@@ -172,4 +172,4 @@ scripts/prepare.mjs   git 安装用的自包含构建
 
 ## 许可证
 
-MIT
+[Apache License 2.0](LICENSE)

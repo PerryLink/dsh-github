@@ -175,4 +175,4 @@ scripts/prepare.mjs   self-contained git-install build
 
 ## License
 
-MIT
+[Apache License 2.0](LICENSE)
