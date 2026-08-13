@@ -1,0 +1,6 @@
+# Nearest-workspace root for this standalone plugin package. This file makes
+# pnpm treat dsh-github as an independent workspace when the repository is
+# checked out next to (or inside) other pnpm workspaces, such as a
+# deepseek-harness checkout.
+packages:
+  - .

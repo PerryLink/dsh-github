@@ -1,0 +1,9 @@
+# dsh-github bundle patch: installs the GitHub integration plugin row.
+# All configuration keys carry schema defaults; override any of them here
+# by replacing this row's config (the whole row is replaced, never deep-merged).
+- insert:
+    - id: dsh-github
+      name: dsh-github
+      config:
+        tokenSource: auto
+        autoCommit: false
