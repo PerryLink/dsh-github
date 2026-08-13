@@ -40,7 +40,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/example/dsh-github"
+    "url": "https://github.com/PerryLink/dsh-github"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
