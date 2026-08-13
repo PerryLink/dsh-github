@@ -24,7 +24,7 @@ describe('review job lifecycle', () => {
     const id = startReviewJob(jobs, state, { repo: 'o/r', pr: 7, label: 'review PR #7', owner: new MockAgent() })
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('completed')
-    expect(done.output).toContain('1 条发现')
+    expect(done.output).toContain('1 finding(s)')
     expect(state.records.get(id)?.status).toBe('completed')
     expect(state.records.get(id)?.report?.findings).toHaveLength(1)
     expect(state.records.get(id)?.report?.postBody).toContain('todo-marker')
