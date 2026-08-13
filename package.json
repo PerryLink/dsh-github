@@ -15,7 +15,10 @@
     "lib",
     "cordis.patch.yml",
     "README.md",
-    "README.zh.md",
+    "README.zh-CN.md",
+    "README.es.md",
+    "README.pt.md",
+    "README.hi.md",
     "LICENSE"
   ],
   "scripts": {
@@ -26,12 +29,13 @@
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
+    "dsh",
     "dsh-plugin",
     "deepseek-harness",
     "github",
     "pull-request",
     "code-review",
-    "issue"
+    "issue-tracker"
   ],
   "license": "Apache-2.0",
   "repository": {
