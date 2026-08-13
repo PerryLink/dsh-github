@@ -91,7 +91,7 @@ dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz
 | 通道 | 命令 | 说明 |
 |---|---|---|
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz` | 自带构建好的 `lib/`——无需构建许可 |
-| **git 源** | `dsh plugin --profile <name> add "github:owner/dsh-github#<sha>"` | 需 `prepare` + `allowBuilds`（见下）；请钉住 commit |
+| **git 源** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | 需 `prepare` + `allowBuilds`（见下）；请钉住 commit |
 | **本地 link** | `pnpm link --dir .` 后 `dsh plugin add dsh-github` | 开发用 |
 
 git 安装：pnpm ≥10 默认拒绝运行 git 依赖的 `prepare`，直到放行——`dsh` 会打印确切包键，复制进 profile 的 `pnpm-workspace.yaml`：

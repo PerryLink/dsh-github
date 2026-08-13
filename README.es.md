@@ -92,7 +92,7 @@ Tres canales documentados — elige uno.
 | Canal | Comando | Notas |
 |---|---|---|
 | **Tarball npm** | `dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz` | Se distribuye con `lib/` compilado — sin permiso de compilación |
-| **Fuente git** | `dsh plugin --profile <name> add "github:owner/dsh-github#<sha>"` | Requiere `prepare` + `allowBuilds` (ver abajo); fija el commit |
+| **Fuente git** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Requiere `prepare` + `allowBuilds` (ver abajo); fija el commit |
 | **Enlace local** | `pnpm link --dir .` y luego `dsh plugin add dsh-github` | Desarrollo |
 
 Instalaciones git: pnpm ≥10 rechaza el `prepare` de una dependencia git hasta que esté en la lista permitida — `dsh` imprime la clave exacta; cópiala en el `pnpm-workspace.yaml` del perfil:

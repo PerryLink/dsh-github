@@ -92,7 +92,7 @@ dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz
 | चैनल | कमांड | नोट्स |
 |---|---|---|
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz` | built `lib/` के साथ आता है — कोई build permission आवश्यक नहीं |
-| **git source** | `dsh plugin --profile <name> add "github:owner/dsh-github#<sha>"` | `prepare` + `allowBuilds` चाहिए (नीचे देखें); commit को pin करें |
+| **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | `prepare` + `allowBuilds` चाहिए (नीचे देखें); commit को pin करें |
 | **local link** | `pnpm link --dir .` then `dsh plugin add dsh-github` | विकास |
 
 Git इंस्टॉल: pnpm ≥10 किसी git dependency के `prepare` को तब तक अस्वीकार करता है जब तक allowlisted न हो — `dsh` सटीक key प्रिंट करता है; उसे profile के `pnpm-workspace.yaml` में कॉपी करें:

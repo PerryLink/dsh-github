@@ -91,7 +91,7 @@ Three documented channels — pick one.
 | Channel | Command | Notes |
 |---|---|---|
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.1.0.tgz` | Ships with `lib/` built — no build permission |
-| **git source** | `dsh plugin --profile <name> add "github:owner/dsh-github#<sha>"` | Needs `prepare` + `allowBuilds` (see below); pin the commit |
+| **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Needs `prepare` + `allowBuilds` (see below); pin the commit |
 | **local link** | `pnpm link --dir .` then `dsh plugin add dsh-github` | Development |
 
 Git installs: pnpm ≥10 refuses a git dependency's `prepare` until allowlisted — `dsh` prints the exact key; copy it into the profile's `pnpm-workspace.yaml`:
