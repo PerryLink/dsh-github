@@ -223,7 +223,7 @@ pnpm pack          # installable tarball
 pnpm run check:readmes   # cross-checks TOC anchors in all 5 READMEs
 ```
 
-Os testes simulam a API do GitHub, a CLI `gh` e o git por meio de runners injetados — sem rede, sem credenciais reais. `test/security.test.ts` garante que a string do token nunca aparece em nenhuma saída visível ao modelo ou ao humano. `test/e2e.test.ts` contém testes de fumaça optativos da API real que se pulam automaticamente a menos que `GITHUB_TOKEN` esteja definido (apenas endpoints somente leitura).
+Os testes simulam a API do GitHub, a CLI `gh` e o git por meio de runners injetados — sem rede, sem credenciais reais. `test/security.test.ts` garante que a string do token nunca aparece em nenhuma saída visível ao modelo ou ao humano. `test/e2e.test.ts` contém testes de fumaça optativos da API real que se pulam automaticamente a menos que `DSH_GITHUB_E2E_TOKEN` esteja definido (apenas endpoints somente leitura).
 
 ## 🗂 Estrutura do repositório
 

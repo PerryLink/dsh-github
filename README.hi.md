@@ -223,7 +223,7 @@ pnpm pack          # installable tarball
 pnpm run check:readmes   # cross-checks TOC anchors in all 5 READMEs
 ```
 
-Tests injected runners के ज़रिए GitHub API, `gh` CLI, और git को mock करते हैं — कोई network नहीं, कोई real credentials नहीं। `test/security.test.ts` पुष्टि करता है कि token string किसी भी model- या human-visible output में कभी नहीं आता। `test/e2e.test.ts` में opt-in real-API smoke tests हैं जो `GITHUB_TOKEN` सेट न होने पर खुद को skip कर लेते हैं (केवल read-only endpoints)।
+Tests injected runners के ज़रिए GitHub API, `gh` CLI, और git को mock करते हैं — कोई network नहीं, कोई real credentials नहीं। `test/security.test.ts` पुष्टि करता है कि token string किसी भी model- या human-visible output में कभी नहीं आता। `test/e2e.test.ts` में opt-in real-API smoke tests हैं जो `DSH_GITHUB_E2E_TOKEN` सेट न होने पर खुद को skip कर लेते हैं (केवल read-only endpoints)।
 
 ## 🗂 रिपॉज़िटरी संरचना
 

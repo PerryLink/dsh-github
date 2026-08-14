@@ -224,7 +224,7 @@ pnpm pack          # installable tarball
 pnpm run check:readmes   # cross-checks TOC anchors in all 5 READMEs
 ```
 
-Tests mock the GitHub API, the `gh` CLI, and git through injected runners — no network, no real credentials. `test/security.test.ts` asserts the token string never appears in any model- or human-visible output. `test/e2e.test.ts` contains opt-in real-API smoke tests that self-skip unless `GITHUB_TOKEN` is set (read-only endpoints only).
+Tests mock the GitHub API, the `gh` CLI, and git through injected runners — no network, no real credentials. `test/security.test.ts` asserts the token string never appears in any model- or human-visible output. `test/e2e.test.ts` contains opt-in real-API smoke tests that self-skip unless `DSH_GITHUB_E2E_TOKEN` is set (read-only endpoints only; the dedicated variable keeps the unit suite hermetic).
 
 ## 🗂 Repository layout
 

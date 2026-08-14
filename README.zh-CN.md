@@ -221,7 +221,7 @@ pnpm pack          # 可安装 tarball
 pnpm run check:readmes   # 交叉检查 5 个 README 的目录锚点
 ```
 
-测试通过注入的 runner mock 掉 GitHub API、`gh` CLI 与 git——不联网、不用真实凭证。`test/security.test.ts` 断言 token 字符串不出现在任何模型或人类可见输出中。`test/e2e.test.ts` 是可选真实 API 冒烟测试：未设置 `GITHUB_TOKEN` 时自动跳过（只打只读端点）。
+测试通过注入的 runner mock 掉 GitHub API、`gh` CLI 与 git——不联网、不用真实凭证。`test/security.test.ts` 断言 token 字符串不出现在任何模型或人类可见输出中。`test/e2e.test.ts` 是可选真实 API 冒烟测试：未设置 `DSH_GITHUB_E2E_TOKEN` 时自动跳过（只打只读端点；独立变量保证单测套件与环境隔离）。
 
 ## 🗂 目录结构
 

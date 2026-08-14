@@ -1,22 +1,25 @@
 /**
  * Opt-in real-API smoke tests (P2-7).
  *
- * These tests self-skip unless GITHUB_TOKEN is set in the environment, mirroring
- * the harness e2e policy (real-API tests never run in CI without a key). They
- * hit only read endpoints: the authenticated rate-limit window and one pinned
- * public repository's metadata. No test here performs a write or mutates any
- * account state.
+ * These tests self-skip unless DSH_GITHUB_E2E_TOKEN is set in the environment,
+ * mirroring the harness e2e policy (real-API tests never run in CI without a
+ * key). The dedicated variable keeps the unit suite hermetic: the setup file
+ * removes GITHUB_TOKEN for unit tests, so the e2e gate must not read it. The
+ * tests hit only read endpoints: the authenticated rate-limit window and one
+ * pinned public repository's metadata. No test here performs a write or
+ * mutates any account state.
  * @module dsh-github/test/e2e
  */
 import { describe, expect, it } from 'vitest'
 import { Config } from '../src/index.ts'
 import { clientOptionsFromConfig, GithubClient } from '../src/github.ts'
 
-const HAS_TOKEN = typeof process.env.GITHUB_TOKEN === 'string' && process.env.GITHUB_TOKEN.length > 0
+const TOKEN = process.env.DSH_GITHUB_E2E_TOKEN
+const HAS_TOKEN = typeof TOKEN === 'string' && TOKEN.length > 0
 
 const client = () => {
   const config = Config({ maxRetries: 0 }) as never
-  return new GithubClient(process.env.GITHUB_TOKEN as string, clientOptionsFromConfig(config))
+  return new GithubClient(TOKEN as string, clientOptionsFromConfig(config))
 }
 
 describe.skipIf(!HAS_TOKEN)('real GitHub API smoke', () => {
