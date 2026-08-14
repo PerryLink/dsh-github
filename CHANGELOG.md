@@ -4,9 +4,11 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-08-14
 
 ### Added
+
+- Published to npm as `@perrylink/dsh-github` (the unscoped `dsh-github` name is owned by an unrelated project on the registry; the plugin's module name stays `dsh-github`).
 
 - `issue_comment` tool: comment on an issue or pull request (approval-gated, action `issue.comment`).
 - `issue_close` tool: close an issue with an optional `state_reason` (`completed` / `not_planned`; approval-gated, action `issue.close`).

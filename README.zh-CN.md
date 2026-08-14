@@ -56,9 +56,11 @@
 ## 🚀 快速上手
 
 ```sh
-# 1. 安装（tarball 通道 —— 无需构建许可）
-pnpm pack                              # 在本仓库内 → dsh-github-0.4.0.tgz
-dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
+# 1. 安装（npm registry —— 最简单；也可用下方 tarball 通道）
+dsh plugin --profile <name> add @perrylink/dsh-github
+#    tarball 通道（不需要 registry）：
+#    pnpm pack → dsh-github-0.4.0.tgz
+#    dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
 # 2. 配置 GitHub token（推荐：credentials seam）
 #    $DSH_HOME/.credentials.yaml
@@ -91,24 +93,27 @@ dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
 ## 📦 安装
 
-三条通道，全部有文档——任选其一。
+四条通道，全部有文档——任选其一。
 
 | 通道 | 命令 | 说明 |
 |---|---|---|
+| **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | 已发布到 npm —— 最简单的通道 |
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | 自带构建好的 `lib/`——无需构建许可 |
 | **git 源** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | 需 `prepare` + `allowBuilds`（见下）；请钉住 commit |
-| **本地 link** | `pnpm link --dir .` 后 `dsh plugin add dsh-github` | 开发用 |
+| **本地 link** | `pnpm link --dir .` 后 `dsh plugin add @perrylink/dsh-github` | 开发用 |
+
+> npm 包发布在 `@perrylink` 作用域下，因为裸名 `dsh-github` 已被 registry 上另一个无关项目占用。插件模块名仍是 `dsh-github`。
 
 git 安装：pnpm ≥10 默认拒绝运行 git 依赖的 `prepare`，直到放行——`dsh` 会打印确切包键，复制进 profile 的 `pnpm-workspace.yaml`：
 
 ```yaml
 allowBuilds:
-  dsh-github: true
+  '@perrylink/dsh-github': true
 ```
 
 `prepare` 脚本（`scripts/prepare.mjs`）自包含：能找到 TypeScript 编译器就构建，否则回退到**仓库内已提交的 `lib/` 产物**，两者都没有才响亮失败。
 
-**卸载：** `dsh plugin --profile <name> remove dsh-github`。
+**卸载：** `dsh plugin --profile <name> remove @perrylink/dsh-github`。
 
 ## ⚙️ 配置
 

@@ -57,7 +57,9 @@
 ## 🚀 Início rápido
 
 ```sh
-# 1. install (tarball channel — no build permission needed)
+# 1. instalar (registro npm — o mais simples; ou use o canal tarball abaixo)
+dsh plugin --profile <name> add @perrylink/dsh-github
+#    canal tarball (sem necessidade de registro):
 pnpm pack                              # inside this repo → dsh-github-0.4.0.tgz
 dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
@@ -92,24 +94,27 @@ Verifique: `dsh --profile <name> --dump-config` deve mostrar a seção `# == dsh
 
 ## 📦 Instalação
 
-Três canais documentados — escolha um.
+Quatro canais documentados — escolha um.
 
 | Canal | Comando | Observações |
 |---|---|---|
+| **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | Publicado no npm — o canal mais simples |
 | **tarball npm** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | Envia com `lib/` compilado — sem permissão de build |
 | **fonte git** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Requer `prepare` + `allowBuilds` (veja abaixo); fixe o commit |
-| **link local** | `pnpm link --dir .` e depois `dsh plugin add dsh-github` | Desenvolvimento |
+| **link local** | `pnpm link --dir .` e depois `dsh plugin add @perrylink/dsh-github` | Desenvolvimento |
+
+> O pacote npm é publicado sob o escopo `@perrylink` porque o nome sem escopo `dsh-github` pertence a um projeto alheio no registro. O nome de módulo do plugin permanece `dsh-github`.
 
 Instalações via git: o pnpm ≥10 recusa o `prepare` de uma dependência git até que ela seja incluída na allowlist — o `dsh` imprime a chave exata; copie-a para o `pnpm-workspace.yaml` do perfil:
 
 ```yaml
 allowBuilds:
-  dsh-github: true
+  '@perrylink/dsh-github': true
 ```
 
 O script `prepare` (`scripts/prepare.mjs`) é autocontido: ele compila com TypeScript quando um compilador é resolvível, caso contrário recorre aos **artefatos `lib/` commitados** e falha em alto e bom som se não houver nenhum dos dois.
 
-**Desinstalar:** `dsh plugin --profile <name> remove dsh-github`.
+**Desinstalar:** `dsh plugin --profile <name> remove @perrylink/dsh-github`.
 
 ## ⚙️ Configuração
 

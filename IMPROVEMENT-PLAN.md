@@ -90,7 +90,7 @@
 - ✅ **模型化评审（已实施）**：`reviewMode: 'model'` + `modelReviewProvider` 配置；job 把截断 diff 交给宿主 `subagents` 接缝的一次性 subagent（parent = 发起 job 的 agent），子 agent 的 Markdown 输出成为可发布报告；接缝/provider 缺失响亮失败（start 期即检查）。
 - ✅ **`gh_search` 工具（已实施）**：GitHub 搜索语法查询 issue/PR，独立搜索配额透传。
 - ⏳ **`dsh-github-action` 配套仓库**：需你的 GitHub 账户，另行创建仓库。
-- ⏳ **发布 npm**（`pnpm publish`）：需 npm 凭据；tarball 通道已可用。
+- ✅ **发布 npm（已实施）**：裸名 `dsh-github` 已被 registry 上无关项目（`kaziii/dsh-github-connector`）占用，故以 `@perrylink/dsh-github` 作用域名发布（插件模块名不变）。
 - ❌ **record 持久化（session 级）**：宿主 job 注册表本身进程级，单独持久化记录会误导；保留进程级 + `maxReviewRecords` 上限约束。
 
 ---

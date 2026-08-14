@@ -1,5 +1,5 @@
 {
-  "name": "dsh-github",
+  "name": "@perrylink/dsh-github",
   "version": "0.4.0",
   "description": "GitHub integration for DeepSeek Harness: create pull requests, review PRs with background jobs, and read issues — every write gated by human approval",
   "type": "module",
@@ -39,6 +39,9 @@
     "issue-tracker"
   ],
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/PerryLink/dsh-github"

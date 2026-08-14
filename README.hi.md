@@ -57,7 +57,9 @@
 ## 🚀 त्वरित शुरुआत
 
 ```sh
-# 1. install (tarball channel — no build permission needed)
+# 1. install (npm registry — सबसे सरल; या नीचे दिया गया tarball channel इस्तेमाल करें)
+dsh plugin --profile <name> add @perrylink/dsh-github
+#    tarball channel (registry की ज़रूरत नहीं):
 pnpm pack                              # inside this repo → dsh-github-0.4.0.tgz
 dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
@@ -92,24 +94,27 @@ dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
 ## 📦 स्थापना
 
-तीन दस्तावेज़ित channels — कोई एक चुनें।
+चार दस्तावेज़ित channels — कोई एक चुनें।
 
 | चैनल | कमांड | नोट्स |
 |---|---|---|
+| **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | npm पर प्रकाशित — सबसे सरल channel |
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | built `lib/` के साथ आता है — कोई build permission आवश्यक नहीं |
 | **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | `prepare` + `allowBuilds` चाहिए (नीचे देखें); commit को pin करें |
-| **local link** | `pnpm link --dir .` then `dsh plugin add dsh-github` | विकास |
+| **local link** | `pnpm link --dir .` then `dsh plugin add @perrylink/dsh-github` | विकास |
+
+> npm package `@perrylink` scope के अंतर्गत प्रकाशित है क्योंकि unscoped `dsh-github` नाम registry पर किसी असंबंधित project के पास है। Plugin का module नाम `dsh-github` ही रहता है।
 
 Git इंस्टॉल: pnpm ≥10 किसी git dependency के `prepare` को तब तक अस्वीकार करता है जब तक allowlisted न हो — `dsh` सटीक key प्रिंट करता है; उसे profile के `pnpm-workspace.yaml` में कॉपी करें:
 
 ```yaml
 allowBuilds:
-  dsh-github: true
+  '@perrylink/dsh-github': true
 ```
 
 `prepare` script (`scripts/prepare.mjs`) स्व-निहित (self-contained) है: जब कोई compiler उपलब्ध हो तो यह TypeScript से build करता है, अन्यथा **committed `lib/` artifacts** पर fallback करता है, और दोनों के अभाव में loud रूप से fail होता है।
 
-**अनइंस्टॉल:** `dsh plugin --profile <name> remove dsh-github`।
+**अनइंस्टॉल:** `dsh plugin --profile <name> remove @perrylink/dsh-github`।
 
 ## ⚙️ कॉन्फ़िगरेशन
 

@@ -56,9 +56,11 @@
 ## 🚀 Quick start
 
 ```sh
-# 1. install (tarball channel — no build permission needed)
-pnpm pack                              # inside this repo → dsh-github-0.4.0.tgz
-dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
+# 1. install (npm registry — simplest; or use the tarball channel below)
+dsh plugin --profile <name> add @perrylink/dsh-github
+#    tarball channel (no registry needed):
+#    pnpm pack → dsh-github-0.4.0.tgz
+#    dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 
 # 2. configure a GitHub token (recommended: the credentials seam)
 #    $DSH_HOME/.credentials.yaml
@@ -91,24 +93,29 @@ Verify: `dsh --profile <name> --dump-config` must show the `# == dsh-github` sec
 
 ## 📦 Installation
 
-Three documented channels — pick one.
+Four documented channels — pick one.
 
 | Channel | Command | Notes |
 |---|---|---|
+| **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | Published package — the simplest channel |
 | **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | Ships with `lib/` built — no build permission |
 | **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Needs `prepare` + `allowBuilds` (see below); pin the commit |
-| **local link** | `pnpm link --dir .` then `dsh plugin add dsh-github` | Development |
+| **local link** | `pnpm link --dir .` then `dsh plugin add @perrylink/dsh-github` | Development |
+
+> The npm package is published under the `@perrylink` scope because the
+> unscoped `dsh-github` name is owned by an unrelated project on the registry.
+> The plugin's module name stays `dsh-github`.
 
 Git installs: pnpm ≥10 refuses a git dependency's `prepare` until allowlisted — `dsh` prints the exact key; copy it into the profile's `pnpm-workspace.yaml`:
 
 ```yaml
 allowBuilds:
-  dsh-github: true
+  '@perrylink/dsh-github': true
 ```
 
 The `prepare` script (`scripts/prepare.mjs`) is self-contained: it builds with TypeScript when a compiler is resolvable, otherwise falls back to the **committed `lib/` artifacts**, and fails loud with neither.
 
-**Uninstall:** `dsh plugin --profile <name> remove dsh-github`.
+**Uninstall:** `dsh plugin --profile <name> remove @perrylink/dsh-github`.
 
 ## ⚙️ Configuration
 
