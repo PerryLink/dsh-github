@@ -116,10 +116,34 @@ export interface ApprovalService {
   request(req: ApprovalRequest): Promise<ApprovalOutcome>
 }
 
+/** Terminal result of one one-shot subagent run (model review). */
+export interface SubagentResultView {
+  readonly output: Array<{ type: string; text?: string }>
+  readonly stopReason: string
+}
+
+/** One-shot subagent run handle (model review). */
+export interface SubagentRunView {
+  readonly result: Promise<SubagentResultView>
+  dispose(): Promise<void>
+}
+
+/** Host subagent seam subset used by dsh-github's model review. */
+export interface SubagentsService {
+  list(): string[]
+  start(name: string, request: {
+    label?: string
+    prompt: Array<{ type: 'text'; text: string }>
+    parent: GithubAgent
+    signal: AbortSignal
+  }): Promise<SubagentRunView>
+}
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     commands: CommandsService
     jobs: JobRegistry
     approval: ApprovalService
+    subagents?: SubagentsService
   }
 }

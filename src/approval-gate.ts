@@ -1,12 +1,15 @@
 /**
  * The write-action approval gate: a `tools/pre-execute` waterfall listener.
  *
- * Every dsh-github write tool (`pr_create`, `review_post`, `issue_open`) asks
- * the human through the registry-owned approval path (`ask` → ctx.approval),
- * which appends the approval/asked + approval/decided audit pair and fails
- * closed without an answerer. Actions missing from the `allowedActions`
- * whitelist are denied before any prompt. Every other tool passes through via
- * `next()` — the waterfall contract requires it.
+ * Every dsh-github write tool (`pr_create`, `review_post`, `issue_open`,
+ * `issue_comment`, `issue_close`) asks the human through the registry-owned
+ * approval path (`ask` → ctx.approval), which appends the approval/asked +
+ * approval/decided audit pair and fails closed without an answerer. Actions
+ * missing from the `allowedActions` whitelist are denied before any prompt.
+ * Every other tool passes through via `next()` — the waterfall contract
+ * requires it. Approval reasons preview what would be published (titles,
+ * body lengths, and the first line of an overridden review body) without ever
+ * containing the token.
  * @module dsh-github/approval-gate
  */
 import type { Context } from '@deepseek-ai/cordis'
@@ -18,6 +21,8 @@ const ACTION_BY_TOOL: Record<string, GithubAction> = {
   pr_create: 'pr.create',
   review_post: 'review.post',
   issue_open: 'issue.create',
+  issue_comment: 'issue.comment',
+  issue_close: 'issue.close',
 }
 
 /** Tools the gate intercepts; everything else delegates via next(). */
@@ -28,21 +33,47 @@ function argumentsAsRecord(exec: ToolExecution): Record<string, unknown> {
   return typeof exec.arguments === 'object' && exec.arguments !== null ? exec.arguments as Record<string, unknown> : {}
 }
 
+/** `"title" (body N chars)`-style preview of a titled write. */
+function titledPreview(args: Record<string, unknown>): string {
+  const title = typeof args.title === 'string' ? args.title : '(untitled)'
+  const body = typeof args.body === 'string' ? args.body.trim() : ''
+  return body.length === 0 ? `"${title}"` : `"${title}" (body ${body.length} chars)`
+}
+
+/** First line of a string, elided to `max` characters. */
+function firstLine(value: string, max: number): string {
+  const line = value.split('\n')[0] ?? ''
+  return line.length > max ? `${line.slice(0, max)}…` : line
+}
+
 /** Human-readable reason for the approval prompt of one write call. */
 function askReason(toolName: string, args: Record<string, unknown>, state: GithubState): string {
   if (toolName === 'pr_create') {
-    const title = typeof args.title === 'string' ? args.title : '(untitled)'
-    return `create GitHub pull request "${title}"`
+    return `create GitHub pull request ${titledPreview(args)}`
   }
   if (toolName === 'review_post') {
     if (typeof args.jobId !== 'string') return 'post GitHub review comments'
     const record = state.records.get(args.jobId)
-    if (record === undefined || record.report === null) return `post GitHub review comments for job ${args.jobId}`
-    return `post GitHub review comments for PR #${record.pr} (${record.report.findings.length} finding(s))`
+    const target = record === undefined || record.report === null
+      ? `job ${args.jobId}`
+      : `PR #${record.pr} (${record.report.findings.length} finding(s))`
+    const mode = args.mode === 'inline' ? 'inline' : 'summary'
+    const override = typeof args.body === 'string' && args.body.trim().length > 0
+      ? `; body override: ${firstLine(args.body.trim(), 80)}`
+      : ''
+    return `post GitHub review comments for ${target} (${mode})${override}`
   }
   if (toolName === 'issue_open') {
-    const title = typeof args.title === 'string' ? args.title : '(untitled)'
-    return `create GitHub issue "${title}"`
+    return `create GitHub issue ${titledPreview(args)}`
+  }
+  if (toolName === 'issue_comment') {
+    const number = typeof args.issueNumber === 'number' ? ` #${args.issueNumber}` : ''
+    const body = typeof args.body === 'string' ? args.body.trim() : ''
+    return `comment on GitHub issue${number}${body.length === 0 ? '' : ` (body ${body.length} chars)`}`
+  }
+  if (toolName === 'issue_close') {
+    const number = typeof args.issueNumber === 'number' ? ` #${args.issueNumber}` : ''
+    return `close GitHub issue${number}`
   }
   return 'perform a GitHub write action'
 }

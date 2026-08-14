@@ -16,11 +16,13 @@ const PULL_PAYLOAD = {
 
 const DIFF = 'diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1,2 @@\n x\n+// TODO: later\n'
 
+const accept = (init?: RequestInit): string => String((init?.headers as Record<string, string> | undefined)?.Accept ?? '')
+
 const FULL_ROUTES = [
   { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r', respond: () => jsonResponse(200, { default_branch: 'main' }) },
   { match: (m: string, u: URL) => m === 'POST' && u.pathname === '/repos/o/r/pulls', respond: () => jsonResponse(201, PULL_PAYLOAD) },
-  { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && u.searchParams.size === 0, respond: () => jsonResponse(200, PULL_PAYLOAD) },
-  { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
+  { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) !== 'application/vnd.github.diff', respond: () => jsonResponse(200, PULL_PAYLOAD) },
+  { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) === 'application/vnd.github.diff', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
   { match: () => true, respond: () => jsonResponse(404, { message: 'not stubbed' }) },
 ]
 
@@ -48,6 +50,9 @@ describe('token non-leakage (S2)', () => {
       ['gh_review', { pr: 'o/r#7' }],
       ['gh_issue', { action: 'list' }],
       ['issue_open', { title: 'x' }],
+      ['issue_comment', { issueNumber: 1, body: 'x' }],
+      ['issue_close', { issueNumber: 1 }],
+      ['gh_search', { q: 'repo:o/r bug' }],
     ] as Array<[string, Record<string, unknown>]>) {
       const value = await services.tools.run(name, args, agent).catch(error => ({ thrown: String(error) }))
       collect(name, value)
@@ -57,7 +62,7 @@ describe('token non-leakage (S2)', () => {
       collect(`${name} presentResult`, def.presentResult?.(args, { content: [], isError: false, meta: value }) ?? null)
     }
 
-    for (const [name, input] of [['pr', 'create t'], ['review', 'o/r#7'], ['issue', 'open t']] as Array<[string, string]>) {
+    for (const [name, input] of [['pr', 'create t'], ['review', 'o/r#7 --no-ci --no-comments'], ['issue', 'open t']] as Array<[string, string]>) {
       collect(`${name} result`, await services.commands.run(name, input, agent))
     }
     for (const item of [...agent.followed, ...agent.injected]) collect('model instruction', item.text)
@@ -101,6 +106,9 @@ describe('token non-leakage (S2)', () => {
       ['gh_review', { pr: '7' }],
       ['gh_issue', { action: 'list' }],
       ['issue_open', { title: 'x' }],
+      ['issue_comment', { issueNumber: 1, body: 'x' }],
+      ['issue_close', { issueNumber: 1 }],
+      ['gh_search', { q: 'x' }],
       ['review_post', { jobId: 'nope' }],
     ] as Array<[string, Record<string, unknown>]>) {
       const value = await services.tools.run(name, args, agent).catch(error => ({ thrown: String(error) }))
@@ -112,37 +120,23 @@ describe('token non-leakage (S2)', () => {
     for (const text of outputs) expect(text).not.toContain(TOKEN)
   })
 
-  it('keeps the token out of the posted comment body', async () => {
+  it('keeps the token out of the posted summary comment body', async () => {
     let postedBody: string | undefined
     const services = makeServices()
     services.credentials.values.set('GITHUB_TOKEN', TOKEN)
     await loadPlugin(services, {
       config: { defaultOwnerRepo: 'o/r' },
       runGit: async () => { throw new Error('unused') },
-      fetchImpl: stubFetch([
-        {
-          match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7',
-          respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }),
-        },
-        {
-          match: (m: string, u: URL) => m === 'POST' && u.pathname === '/repos/o/r/issues/7/comments',
-          respond: () => jsonResponse(201, { id: 1, html_url: 'https://github.com/o/r/pull/7#issuecomment-1' }),
-        },
-      ]),
-    })
-    // Capture the posted body through a second, recording fetch.
-    services.ctx.get('tools') // touch only; replacement below re-loads with recording fetch
-    const capturing = makeServices()
-    capturing.credentials.values.set('GITHUB_TOKEN', TOKEN)
-    await loadPlugin(capturing, {
-      config: { defaultOwnerRepo: 'o/r' },
-      runGit: async () => { throw new Error('unused') },
       fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
         const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
-        if (url.pathname === '/repos/o/r/pulls/7' && (init?.method ?? 'GET') === 'GET') {
+        const method = init?.method ?? 'GET'
+        if (url.pathname === '/repos/o/r/pulls/7' && method === 'GET' && accept(init) !== 'application/vnd.github.diff') {
+          return jsonResponse(200, PULL_PAYLOAD)
+        }
+        if (url.pathname === '/repos/o/r/pulls/7' && method === 'GET') {
           return new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } })
         }
-        if (url.pathname === '/repos/o/r/issues/7/comments') {
+        if (url.pathname === '/repos/o/r/issues/7/comments' && method === 'POST') {
           postedBody = String(init?.body ?? '')
           return jsonResponse(201, { id: 1, html_url: 'https://github.com/o/r/pull/7#issuecomment-1' })
         }
@@ -150,10 +144,43 @@ describe('token non-leakage (S2)', () => {
       }) as typeof fetch,
     })
     const agent = new MockAgent()
-    await capturing.commands.run('review', 'o/r#7', agent)
-    const jobId = [...capturing.jobs.records.keys()][0] as string
-    await capturing.jobs.hooks(jobId).done
-    await capturing.tools.run('review_post', { jobId }, agent)
+    await services.commands.run('review', 'o/r#7 --no-ci --no-comments', agent)
+    const jobId = [...services.jobs.records.keys()][0] as string
+    await services.jobs.hooks(jobId).done
+    await services.tools.run('review_post', { jobId }, agent)
+    expect(postedBody).toBeDefined()
+    expect(postedBody).not.toContain(TOKEN)
+    expect(postedBody).toContain('todo-marker')
+  })
+
+  it('keeps the token out of inline review comments', async () => {
+    let postedBody: string | undefined
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        const method = init?.method ?? 'GET'
+        if (url.pathname === '/repos/o/r/pulls/7' && method === 'GET' && accept(init) !== 'application/vnd.github.diff') {
+          return jsonResponse(200, PULL_PAYLOAD)
+        }
+        if (url.pathname === '/repos/o/r/pulls/7' && method === 'GET') {
+          return new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } })
+        }
+        if (url.pathname === '/repos/o/r/pulls/7/reviews' && method === 'POST') {
+          postedBody = String(init?.body ?? '')
+          return jsonResponse(200, { id: 9, html_url: 'https://github.com/o/r/pull/7#pullrequestreview-9' })
+        }
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const agent = new MockAgent()
+    await services.commands.run('review', 'o/r#7 --no-ci --no-comments', agent)
+    const jobId = [...services.jobs.records.keys()][0] as string
+    await services.jobs.hooks(jobId).done
+    await services.tools.run('review_post', { jobId, mode: 'inline' }, agent)
     expect(postedBody).toBeDefined()
     expect(postedBody).not.toContain(TOKEN)
     expect(postedBody).toContain('todo-marker')

@@ -2,18 +2,21 @@
  * dsh-github: GitHub integration for DeepSeek Harness.
  *
  * Tools: pr_create (write), gh_review (read), review_post (write), gh_issue
- * (read), issue_open (write). Commands: /pr create, /review
- * (start|stop|post), /issue open. Every GitHub write is gated by the
- * tools/pre-execute approval listener (default ask) and the allowedActions
- * whitelist; the token travels only through the credentials seam / environment
- * / gh CLI and never reaches model-visible text, session events, or logs.
+ * (read), issue_open / issue_comment / issue_close (writes), gh_search (read).
+ * Commands: /pr create, /review (start|stop|post), /issue open. Background
+ * review jobs run the deterministic analyzer by default; `reviewMode: "model"`
+ * delegates the capped diff to a one-shot subagent through the host's
+ * `subagents` seam. Every GitHub write is gated by the tools/pre-execute
+ * approval listener (default ask) and the allowedActions whitelist; the token
+ * travels only through the credentials seam / environment / gh CLI and never
+ * reaches model-visible text, session events, or logs.
  *
  * Model-visible ⇔ logged: the plugin appends NO custom session event types —
  * the host refuses logs with unknown out-of-repo event types, so all content
  * the model sees flows through the host's own logged surfaces: tool/result
  * canonical values, agent-injected user/message notices, command/run +
  * command/done lifecycle pairs, and the approval/asked + approval/decided
- * audit pair. See README.md "Session events and audit".
+ * audit pair. See README.md "Architecture".
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis';

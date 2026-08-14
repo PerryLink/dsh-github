@@ -16,6 +16,8 @@ const PULL_PAYLOAD = {
 
 const DIFF = 'diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1,2 @@\n x\n+// TODO: later\n'
 
+const accept = (init?: RequestInit): string => String((init?.headers as Record<string, string> | undefined)?.Accept ?? '')
+
 async function loaded(config: Record<string, unknown> = {}, git: Record<string, string> | 'error' = {}) {
   const services = makeServices()
   services.credentials.values.set('GITHUB_TOKEN', 'ghp_test')
@@ -32,7 +34,8 @@ async function loaded(config: Record<string, unknown> = {}, git: Record<string, 
       throw new Error(`unexpected git args: ${key}`)
     },
     fetchImpl: stubFetch([
-      { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
+      { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) !== 'application/vnd.github.diff', respond: () => jsonResponse(200, PULL_PAYLOAD) },
+      { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) === 'application/vnd.github.diff', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
       { match: () => true, respond: () => jsonResponse(404, { message: 'not stubbed' }) },
     ]),
   })
@@ -123,6 +126,24 @@ describe('/review command', () => {
     expect(services.jobs.startCalls[0]?.label).toContain('PR #7')
   })
 
+  it('accepts --max-diff, --no-ci, and --no-comments options', async () => {
+    const services = await loaded()
+    const result = await services.commands.run('review', 'o/r#7 --max-diff 4000 --no-ci --no-comments', new MockAgent())
+    expect(result.kind).toBe('success')
+    const jobId = [...services.jobs.records.keys()][0] as string
+    const done = await services.jobs.hooks(jobId).done
+    expect(done.status).toBe('completed')
+    expect(done.output).not.toContain('CI:')
+    expect(done.output).not.toContain('existing review comments')
+  })
+
+  it('rejects a bad --max-diff value', async () => {
+    const services = await loaded()
+    const result = await services.commands.run('review', 'o/r#7 --max-diff nope', new MockAgent())
+    expect(result.kind).toBe('error')
+    expect(result.text).toContain('--max-diff')
+  })
+
   it('rejects malformed PR references', async () => {
     const services = await loaded()
     const result = await services.commands.run('review', 'not-a-pr', new MockAgent())
@@ -136,7 +157,7 @@ describe('/review command', () => {
     await loadPlugin(services, {
       config: { defaultOwnerRepo: 'o/r' },
       runGit: async () => { throw new Error('unused') },
-      // The diff fetch hangs until the job is cancelled, keeping it running.
+      // The metadata fetch hangs until the job is cancelled, keeping it running.
       fetchImpl: ((_input: string | URL | Request, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
         const sig = init?.signal
         if (sig?.aborted === true) {
@@ -154,6 +175,21 @@ describe('/review command', () => {
     expect(result.text).toContain('requested stop')
     const done = await services.jobs.hooks(jobId).done
     expect(done.status).toBe('killed')
+  })
+
+  it('rejects stopping an unknown job with a clean error', async () => {
+    const services = await loaded()
+    const result = await services.commands.run('review', 'stop github-review-99', new MockAgent())
+    expect(result.kind).toBe('error')
+    expect(result.text).toContain('no review job "github-review-99"')
+  })
+
+  it('surfaces a missing job controller as a clean error with guidance', async () => {
+    const services = await loaded()
+    services.jobs.refuseStart = true
+    const result = await services.commands.run('review', 'o/r#7', new MockAgent())
+    expect(result.kind).toBe('error')
+    expect(result.text).toContain('dsh-tool-jobs')
   })
 
   it('posts only after completion', async () => {

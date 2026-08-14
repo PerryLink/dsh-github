@@ -10,6 +10,12 @@
 import type { ToolCallView, ToolResult, ToolResultView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-session'
 
+/** Rate-limit facts shared by every canonical value. */
+export interface RateLimitValueView {
+  remaining?: number | null
+  resetAt?: number | null
+}
+
 /** Narrow structural view of pr_create arguments. */
 export interface PrCreateArgs {
   title: string
@@ -29,6 +35,7 @@ export interface CreatedPrValue {
   draft: boolean
   base: string
   head: string
+  rateLimit: RateLimitValueView
 }
 
 /** Narrow structural view of the shared error canonical value. */
@@ -37,6 +44,7 @@ export interface GithubErrorValue {
   code: string
   message: string
   guidance?: string
+  rateLimit?: RateLimitValueView
 }
 
 /** Pending card for pr_create. */
@@ -71,19 +79,24 @@ export function prCreateResult(_args: PrCreateArgs, result: ToolResult): ToolRes
 /** Narrow structural view of review_post arguments. */
 export interface ReviewPostArgs {
   jobId: string
+  mode?: 'summary' | 'inline'
+  body?: string
 }
 
 /** Narrow structural view of a posted-review canonical value. */
 export interface PostedReviewValue {
   status: 'posted'
+  mode: 'summary' | 'inline'
   url: string
-  commentId: number
+  commentId?: number
+  reviewId?: number
   findings: number
+  rateLimit: RateLimitValueView
 }
 
 /** Pending card for review_post. */
 export function reviewPostCall(args: ReviewPostArgs): ToolCallView {
-  return { card: 'generic', title: `Post review comments (job ${args.jobId})`, rawInput: args.jobId }
+  return { card: 'generic', title: `Post review comments (job ${args.jobId})`, rawInput: { jobId: args.jobId, ...args.mode !== undefined ? { mode: args.mode } : {} } }
 }
 
 /** Completed card for review_post. */
@@ -93,7 +106,8 @@ export function reviewPostResult(_args: ReviewPostArgs, result: ToolResult): Too
   if (value.status === 'error') {
     return { card: 'generic', title: 'Review comments not posted', content: [{ type: 'text', text: value.message }] }
   }
-  return { card: 'generic', title: 'Review comments posted', content: [{ type: 'text', text: `${value.url}\n${value.findings} finding(s) reported` }] }
+  const kind = value.mode === 'inline' ? 'Inline review' : 'Review comments'
+  return { card: 'generic', title: `${kind} posted`, content: [{ type: 'text', text: `${value.url}\n${value.findings} finding(s) reported` }] }
 }
 
 /** Narrow structural view of issue_open arguments. */
@@ -110,6 +124,7 @@ export interface CreatedIssueValue {
   url: string
   number: number
   title: string
+  rateLimit: RateLimitValueView
 }
 
 /** Pending card for issue_open. */
@@ -125,6 +140,68 @@ export function issueOpenResult(_args: IssueOpenArgs, result: ToolResult): ToolR
     return { card: 'generic', title: 'Issue not created', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
   }
   return { card: 'generic', title: `Created issue #${value.number}`, content: [{ type: 'text', text: value.url }] }
+}
+
+/** Narrow structural view of issue_comment arguments. */
+export interface IssueCommentArgs {
+  ownerRepo?: string
+  issueNumber: number
+  body: string
+}
+
+/** Narrow structural view of an issue-comment canonical value. */
+export interface IssueCommentValue {
+  status: 'commented'
+  url: string
+  commentId: number
+  issueNumber: number
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for issue_comment. */
+export function issueCommentCall(args: IssueCommentArgs): ToolCallView {
+  return { card: 'generic', title: `Comment on #${args.issueNumber}`, rawInput: { issueNumber: args.issueNumber, ...args.ownerRepo !== undefined ? { ownerRepo: args.ownerRepo } : {} } }
+}
+
+/** Completed card for issue_comment. */
+export function issueCommentResult(_args: IssueCommentArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as IssueCommentValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if (value.status === 'error') {
+    return { card: 'generic', title: 'Comment not posted', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return { card: 'generic', title: `Commented on #${value.issueNumber}`, content: [{ type: 'text', text: value.url }] }
+}
+
+/** Narrow structural view of issue_close arguments. */
+export interface IssueCloseArgs {
+  ownerRepo?: string
+  issueNumber: number
+  stateReason?: 'completed' | 'not_planned'
+}
+
+/** Narrow structural view of a closed-issue canonical value. */
+export interface IssueClosedValue {
+  status: 'closed'
+  url: string
+  number: number
+  title: string
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for issue_close. */
+export function issueCloseCall(args: IssueCloseArgs): ToolCallView {
+  return { card: 'generic', title: `Close issue #${args.issueNumber}`, rawInput: { issueNumber: args.issueNumber, ...args.stateReason !== undefined ? { stateReason: args.stateReason } : {} } }
+}
+
+/** Completed card for issue_close. */
+export function issueCloseResult(_args: IssueCloseArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as IssueClosedValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if (value.status === 'error') {
+    return { card: 'generic', title: 'Issue not closed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return { card: 'generic', title: `Closed issue #${value.number}`, content: [{ type: 'text', text: value.url }] }
 }
 
 /** Narrow structural view of gh_review arguments. */
@@ -155,11 +232,27 @@ export interface PrSummaryValue {
   deletions: number
   base: string
   head: string
-  ci: { summary: string; status?: string; conclusion?: string; runs?: Array<{ name: string; status: string; conclusion?: string }> }
-  comments?: Array<{ id: number; user: string; path?: string; line?: number; body: string }>
+  ci: {
+    summary: string
+    status?: string
+    conclusion?: string
+    error?: string
+    runs?: Array<{ name: string; status: string; conclusion?: string }>
+  }
+  comments: {
+    items: Array<{ id: number; user: string; path?: string; line?: number; body: string }>
+    error?: string
+  }
   findings?: FindingValue[]
-  diff: { length: number; truncated: boolean; excerpt: string; files?: Array<{ path: string; added: number; removed: number }> }
-  rateLimit: { remaining?: number | null; resetAt?: number | null }
+  diff: {
+    length: number
+    truncated: boolean
+    excerpt: string
+    text: string
+    error?: string
+    files?: Array<{ path: string; added: number; removed: number }>
+  }
+  rateLimit: RateLimitValueView
 }
 
 /** Pending card for gh_review. */
@@ -169,15 +262,18 @@ export function ghReviewCall(args: GhReviewArgs): ToolCallView {
 
 /** Completed card for gh_review: headline facts and CI state. */
 export function ghReviewResult(_args: GhReviewArgs, result: ToolResult): ToolResultView | undefined {
-  const value = result.meta as PrSummaryValue | undefined
+  const value = result.meta as PrSummaryValue | GithubErrorValue | undefined
   if (value === undefined) return undefined
+  if ('status' in value) {
+    return { card: 'generic', title: 'PR review failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
   return {
     card: 'generic',
     title: `PR #${value.number} — ${value.title}`,
     content: [{
       type: 'text',
       text: `${value.repo} · ${value.state} · ${value.base} ← ${value.head}\n`
-        + `+${value.additions} −${value.deletions} · ${value.comments?.length ?? 0} comment(s) · ${value.findings?.length ?? 0} finding(s)\n`
+        + `+${value.additions} −${value.deletions} · ${value.comments.items?.length ?? 0} comment(s) · ${value.findings?.length ?? 0} finding(s)\n`
         + `CI: ${value.ci.summary}`,
     }],
   }
@@ -197,6 +293,7 @@ export interface IssueItemValue {
   number: number
   title: string
   state: string
+  kind: 'issue' | 'pr' | 'comment'
   author: string
   url: string
   comments: number
@@ -210,7 +307,7 @@ export interface IssueListValue {
   action: 'list' | 'get' | 'comments'
   total: number
   items?: IssueItemValue[]
-  rateLimit: { remaining?: number | null; resetAt?: number | null }
+  rateLimit: RateLimitValueView
 }
 
 /** Pending card for gh_issue. */
@@ -220,12 +317,63 @@ export function ghIssueCall(args: GhIssueArgs): ToolCallView {
 
 /** Completed card for gh_issue. */
 export function ghIssueResult(_args: GhIssueArgs, result: ToolResult): ToolResultView | undefined {
-  const value = result.meta as IssueListValue | undefined
+  const value = result.meta as IssueListValue | GithubErrorValue | undefined
   if (value === undefined) return undefined
+  if ('status' in value) {
+    return { card: 'generic', title: 'Issue read failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
   return {
     card: 'generic',
     title: `Issues (${value.action}) — ${value.repo}`,
-    content: [{ type: 'text', text: (value.items ?? []).map(item => `#${item.number} ${item.title} [${item.state}]`).join('\n') || '(no issues)' }],
+    content: [{ type: 'text', text: (value.items ?? []).map(item => `#${item.number} ${item.title} [${item.kind}/${item.state}]`).join('\n') || '(no issues)' }],
+  }
+}
+
+/** Narrow structural view of gh_search arguments. */
+export interface SearchArgs {
+  q: string
+  sort?: 'comments' | 'reactions' | 'created' | 'updated'
+  order?: 'desc' | 'asc'
+  perPage?: number
+}
+
+/** Narrow structural view of one gh_search item. */
+export interface SearchItemValue {
+  number: number
+  title: string
+  state: string
+  kind: 'issue' | 'pr'
+  author: string
+  url: string
+  repo: string
+  comments: number
+  createdAt: string
+}
+
+/** Narrow structural view of the gh_search canonical value. */
+export interface SearchValue {
+  query: string
+  total: number
+  items: SearchItemValue[]
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for gh_search. */
+export function ghSearchCall(args: SearchArgs): ToolCallView {
+  return { card: 'generic', title: `Search GitHub: ${args.q}`, rawInput: { q: args.q } }
+}
+
+/** Completed card for gh_search. */
+export function ghSearchResult(_args: SearchArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as SearchValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if ('status' in value) {
+    return { card: 'generic', title: 'Search failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return {
+    card: 'generic',
+    title: `Search results — ${value.total} total`,
+    content: [{ type: 'text', text: value.items.map(item => `#${item.number} ${item.title} [${item.kind}/${item.state}] ${item.repo}`).join('\n') || '(no results)' }],
   }
 }
 

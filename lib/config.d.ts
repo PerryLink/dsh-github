@@ -9,7 +9,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 /** GitHub write actions the plugin may perform (each still requires approval). */
-export type GithubAction = 'pr.create' | 'review.post' | 'issue.create';
+export type GithubAction = 'pr.create' | 'review.post' | 'issue.create' | 'issue.comment' | 'issue.close';
 /** Where a GitHub token is looked up. `auto` tries them in order. */
 export type TokenSource = 'auto' | 'credentials' | 'env' | 'gh';
 export interface Config {
@@ -25,12 +25,24 @@ export interface Config {
     defaultOwnerRepo?: string;
     /** Whether `/pr create` may instruct the model to commit and push first. */
     autoCommit: boolean;
-    /** Byte cap for PR diffs read into a review (diff or review job). */
+    /** Character cap for PR diffs read into a review (diff or review job). */
     maxDiffChars: number;
+    /** Character cap for the diff excerpt rendered into tool output. */
+    renderExcerptChars: number;
     /** Cap for PR comments listed by gh_review. */
     maxComments: number;
     /** Deadline for one background review job; exceeded jobs fail with detail. */
     reviewJobTimeoutMs: number;
+    /** Cap for in-memory review-job records; oldest settled records evict first. */
+    maxReviewRecords: number;
+    /**
+     * Review engine: `static` runs the deterministic analyzer; `model` delegates
+     * the capped diff to a one-shot subagent through the host's `subagents` seam
+     * (the owner agent is the parent). Fails loud when the seam is absent.
+     */
+    reviewMode: 'static' | 'model';
+    /** Subagent provider name for `reviewMode: "model"`; defaults to the first registered. */
+    modelReviewProvider?: string;
     /** Maximum 429 retry attempts per GitHub API request. */
     maxRetries: number;
     /** Base backoff for 429 retries (doubles per attempt). */

@@ -17,7 +17,7 @@ import type { CommandDefinition, CommandInvocation, CommandResult, CommandsServi
 import type { GithubState } from './state.ts'
 
 const USAGE_PR = 'Usage: /pr create [title]'
-const USAGE_REVIEW = 'Usage: /review <pr> | /review stop <jobId> | /review post <jobId>'
+const USAGE_REVIEW = 'Usage: /review <pr> [--max-diff <n>] [--no-ci] [--no-comments] | /review stop <jobId> | /review post <jobId>'
 const USAGE_ISSUE = 'Usage: /issue open <title>'
 
 /** Queue a model instruction: wake an idle driver, inject into a busy one. */
@@ -48,7 +48,7 @@ export function registerPrCommand(commands: CommandsService, state: GithubState)
 
 /** Gather git state and queue a pr_create instruction for the model. */
 async function createPrDraft(invocation: CommandInvocation, title: string, state: GithubState): Promise<CommandResult> {
-  const git = await readGitState(state.workspaceDir, state.runGit, invocation.signal)
+  const git = await readGitState(state.workspaceDir, state.runGit, invocation.signal, state.apiHost)
   if (git.error !== undefined) {
     return { kind: 'error', text: `could not read git state: ${git.error}. Run /pr create inside a git checkout.` }
   }
@@ -85,13 +85,16 @@ export function registerReviewCommand(commands: CommandsService, jobs: JobRegist
   return commands.register({
     name: 'review',
     description: 'Review a GitHub pull request in a background job',
-    input: { hint: '<pr> | stop <jobId> | post <jobId>' },
+    input: { hint: '<pr> [--max-diff <n>] [--no-ci] [--no-comments] | stop <jobId> | post <jobId>' },
     handler: async (invocation): Promise<CommandResult> => {
       const input = invocation.rawInput.trim()
       if (input.length === 0) return { kind: 'success', text: USAGE_REVIEW }
       if (input.startsWith('stop ')) {
         const jobId = input.slice('stop '.length).trim()
         if (jobId.length === 0) return { kind: 'error', text: USAGE_REVIEW }
+        if (!state.records.has(jobId)) {
+          return { kind: 'error', text: `no review job "${jobId}". List jobs with job_list or check the /review output.` }
+        }
         const outcome = jobs.kill(jobId, invocation.agent, 'user requested stop via /review stop')
         return { kind: 'success', text: outcome === 'requested' ? `requested stop of job ${jobId}` : `job ${jobId} had already finished` }
       }
@@ -106,8 +109,9 @@ export function registerReviewCommand(commands: CommandsService, jobs: JobRegist
           return { kind: 'error', text: `review job "${jobId}" is ${record.status}; wait for completion before posting.` }
         }
         notify(invocation.agent,
-          `The user ran /review post ${jobId}. Call the review_post tool with { "jobId": "${jobId}" } to publish the review comment `
-          + `for PR #${record.pr} in ${record.repo} (${record.report.findings.length} finding(s)). Posting asks the human for approval.`)
+          `The user ran /review post ${jobId}. Call the review_post tool with { "jobId": "${jobId}" } to publish the review `
+          + `for PR #${record.pr} in ${record.repo} (${record.report.findings.length} finding(s)). Use mode "inline" for line-anchored `
+          + 'comments or "summary" for one aggregated comment. Posting asks the human for approval.')
         return { kind: 'success', text: `queued review_post for job ${jobId} (PR #${record.pr}, ${record.report.findings.length} finding(s)). Posting requires your approval.` }
       }
       return startReview(invocation, input, jobs, state)
@@ -115,21 +119,61 @@ export function registerReviewCommand(commands: CommandsService, jobs: JobRegist
   })
 }
 
+/** Parse `/review <pr>` options: --max-diff <n>, --no-ci, --no-comments. */
+function parseReviewOptions(input: string): { pr: string; options: { maxDiffChars?: number; includeCi: boolean; includeComments: boolean } } {
+  const parts = input.split(/\s+/)
+  const options: { maxDiffChars?: number; includeCi: boolean; includeComments: boolean } = { includeCi: true, includeComments: true }
+  let pr = ''
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index] ?? ''
+    if (part === '--max-diff') {
+      const value = parts[index + 1]
+      if (value === undefined || !/^\d+$/.test(value)) throw new Error(`--max-diff needs a positive number. ${USAGE_REVIEW}`)
+      options.maxDiffChars = Number(value)
+      index += 1
+      continue
+    }
+    if (part === '--no-ci') { options.includeCi = false; continue }
+    if (part === '--no-comments') { options.includeComments = false; continue }
+    if (pr.length > 0) throw new Error(`unexpected argument "${part}". ${USAGE_REVIEW}`)
+    pr = part
+  }
+  if (pr.length === 0) throw new Error(USAGE_REVIEW)
+  return { pr, options }
+}
+
 /** Start a background review job for one PR reference. */
 async function startReview(invocation: CommandInvocation, input: string, jobs: JobRegistry, state: GithubState): Promise<CommandResult> {
-  const ref = state.parsePrRef(input)
+  let parsed: { pr: string; options: { maxDiffChars?: number; includeCi: boolean; includeComments: boolean } }
+  try {
+    parsed = parseReviewOptions(input)
+  } catch (error) {
+    return { kind: 'error', text: error instanceof Error ? error.message : USAGE_REVIEW }
+  }
+  const ref = state.parsePrRef(parsed.pr)
   if (ref === null) {
-    return { kind: 'error', text: `"${input}" is not a PR reference. Use a number, "#number", "owner/repo#number", or a pull URL.` }
+    return { kind: 'error', text: `"${parsed.pr}" is not a PR reference. Use a number, "#number", "owner/repo#number", or a pull URL.` }
   }
   const repoResult = ref.repo !== undefined ? { ok: true as const, repo: ref.repo } : await state.resolveRepo(undefined, invocation.signal)
   if (!repoResult.ok) return { kind: 'error', text: `${repoResult.message}. ${repoResult.guidance}` }
 
-  const jobId = startReviewJob(jobs, state, {
-    repo: repoResult.repo,
-    pr: ref.number,
-    label: `review PR #${ref.number} (${repoResult.repo})`,
-    owner: invocation.agent,
-  })
+  let jobId: string
+  try {
+    jobId = startReviewJob(jobs, state, {
+      repo: repoResult.repo,
+      pr: ref.number,
+      label: `review PR #${ref.number} (${repoResult.repo})`,
+      owner: invocation.agent,
+      ...parsed.options,
+    })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    return {
+      kind: 'error',
+      text: `could not start the review job: ${detail}.\n`
+        + 'Load @deepseek-ai/dsh-tool-jobs in the agent composition (it serves the job registry and owns completion notices), then retry.',
+    }
+  }
   return {
     kind: 'success',
     text: `started review job ${jobId} for PR #${ref.number} in ${repoResult.repo}.\n`
