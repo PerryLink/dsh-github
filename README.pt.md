@@ -55,6 +55,7 @@
 - [Desenvolvimento](#🧪-desenvolvimento)
 - [Estrutura do repositório](#🗂-estrutura-do-repositório)
 - [Tópicos](#🏷-tópicos)
+- [Contribuidores](#contribuidores)
 - [Licença](#licença)
 
 ## 🚀 Início rápido

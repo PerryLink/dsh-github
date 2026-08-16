@@ -54,6 +54,7 @@
 - [Development](#🧪-development)
 - [Repository layout](#🗂-repository-layout)
 - [Topics](#🏷-topics)
+- [Contributors](#contributors)
 - [License](#license)
 - [PerryLink DSH Plugin Family](#perrylink-dsh-plugin-family)
 
