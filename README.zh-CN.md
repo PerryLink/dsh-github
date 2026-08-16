@@ -239,6 +239,8 @@ pnpm run check:readmes   # 交叉检查 5 个 README 的目录锚点、工具与
 
 测试通过注入的 runner mock 掉 GitHub API、`gh` CLI 与 git——不联网、不用真实凭证。`test/security.test.ts` 断言 token 字符串不出现在任何模型或人类可见输出中。`test/e2e.test.ts` 是可选真实 API 冒烟测试：未设置 `DSH_GITHUB_E2E_TOKEN` 时自动跳过（只打只读端点；独立变量保证单测套件与环境隔离）。
 
+要在本地演练 composite action，运行 `node scripts/local-test.mjs --owner-repo you/repo --pr 42`（全部选项见 `--help`）。模拟器为每个子进程显式写死 `DSH_HOME`、`DSH_PROFILE_DIR`、`RUNNER_TEMP` 与输出目录——全部位于全新的系统临时目录沙箱内，即使存在 Machine 级 `DSH_HOME` 也绝不读写你真实的 dsh home——并按 `action.yml` 的顺序回放 install → prepare → headless run → post 四步。`action-patch.mjs` 与 `action-post.mjs` 在 GitHub Actions runner 之外一律拒绝运行，因此 action 不会把 profile overlay 或报告写到未知的本地位置。
+
 ## 🗂 目录结构
 
 ```
