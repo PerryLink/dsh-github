@@ -144,9 +144,11 @@ allowBuilds:
 | `maxRetries` | `3` | 单请求的 429 重试次数 |
 | `retryBaseMs` | `500` | 重试退避基数（逐次翻倍） |
 | `retryMaxWaitMs` | `60000` | 重试退避上限 |
+| `requestTimeoutMs` | `30000` | 单次请求硬超时；超时即中止 fetch |
 | `apiBaseUrl` | `https://api.github.com` | GitHub REST 基地址（GitHub Enterprise） |
-| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | 写动作白名单；名单外直接拒绝 |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | 写动作白名单；名单外直接拒绝 |
 | `workspaceDir` | 进程 cwd | 只读 git 检查的工作目录 |
+| `ci` | `{ enabled: false, … }` | CI 集成段：轮询式审查机器人、状态检查门禁与一次性 `ci_run` 工具（其下为全部 `ci.*` 子键） |
 
 ## 🛠 工具
 
@@ -222,7 +224,7 @@ allowBuilds:
 - **默认静态分析器** —— 确定性规则集（`src/review.ts`），零 token、可复现。`reviewMode: "model"` 会把截断后的 diff 交给宿主 `subagents` 接缝的一次性 subagent 做 LLM 评审（消耗 token；需要接缝与已注册的 provider）。
 - **job 与记录是进程内状态** —— 审查报告按 job id 存于插件内存，与宿主 job 注册表同为进程级生命周期；记录表受 `maxReviewRecords` 上限约束（最旧已终态记录先淘汰）。
 - **npm `latest` 标签过期** —— 本插件用 `^0.1.0-rc.5` peer 范围对齐 `dsh-base` 提供的 profile 闭包，开发时钉 `0.1.0-rc.6`。不要裸跑 `npm i @deepseek-ai/dsh-tools`。
-- **CI / GitHub Action**（`dsh-github-action`，对标 claude-code-action / codex-action 的 headless「审查 PR → 评论」闭环）是计划中的 v2 配套仓库。
+- **CI / GitHub Action** — 随本仓库发布（v0.6.0）：复合动作（`action.yml`）负责审查 PR、修复 CI 并产出报告；轮询式审查机器人带幂等行内评论；外加状态检查门禁。所有写动作仍需审批。
 
 ## 🧪 开发
 

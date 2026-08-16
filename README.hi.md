@@ -144,9 +144,11 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 | `maxRetries` | `3` | प्रति request 429 retry प्रयास |
 | `retryBaseMs` | `500` | Retry backoff आधार (प्रति प्रयास दोगुना) |
 | `retryMaxWaitMs` | `60000` | Retry backoff की अधिकतम सीमा |
+| `requestTimeoutMs` | `30000` | प्रति request का hard timeout; exceed होने पर fetch abort |
 | `apiBaseUrl` | `https://api.github.com` | GitHub REST base URL (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; बाकी सब approval से पहले अस्वीकार |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | Write-action whitelist; बाकी सब approval से पहले अस्वीकार |
 | `workspaceDir` | process cwd | read-only git inspection के लिए working directory |
+| `ci` | `{ enabled: false, … }` | CI integration section: polling review bot, status-check gate, और one-shot `ci_run` tool (सभी `ci.*` keys इसी में हैं) |
 
 ## 🛠 टूल्स
 
@@ -223,7 +225,7 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 - **Static analyzer by default** — deterministic rules (`src/review.ts`), शून्य tokens, reproducible। `reviewMode: "model"` LLM review के लिए capped diff को host के `subagents` seam के ज़रिए एक one-shot subagent को सौंपता है (tokens खर्च होते हैं; seam और एक registered provider की आवश्यकता होती है)।
 - **Jobs और records process-local हैं** — review report plugin memory में job id के आधार पर रहता है, जो host job registry के lifetime से मेल खाता है; record map `maxReviewRecords` से capped है (सबसे पुराने settled records पहले evict होते हैं)।
 - **npm `latest` dist-tags पुराने हैं** — plugin `^0.1.0-rc.5` peer ranges घोषित करता है ताकि यह `dsh-base` द्वारा दिए गए profile closure के विरुद्ध resolve हो, और विकास के लिए `0.1.0-rc.6` pin करता है। कभी भी bare `npm i @deepseek-ai/dsh-tools` से install न करें।
-- **CI / GitHub Action** (`dsh-github-action`, claude-code-action / codex-action की भावना में headless review→comment loop) एक नियोजित v2 companion repository है।
+- **CI / GitHub Action** — इसी repository में शामिल है (v0.6.0): एक composite action (`action.yml`) जो PRs की समीक्षा करती है, CI ठीक करती है, और report लिखती है; idempotent inline comments वाला polling review bot; और एक status-check gate। हर write approval-gated रहता है।
 
 ## 🧪 विकास
 
