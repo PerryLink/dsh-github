@@ -96,7 +96,15 @@ export interface PostedReviewValue {
 
 /** Pending card for review_post. */
 export function reviewPostCall(args: ReviewPostArgs): ToolCallView {
-  return { card: 'generic', title: `Post review comments (job ${args.jobId})`, rawInput: { jobId: args.jobId, ...args.mode !== undefined ? { mode: args.mode } : {} } }
+  return {
+    card: 'generic',
+    title: `Post review comments (job ${args.jobId})`,
+    rawInput: {
+      jobId: args.jobId,
+      ...args.mode !== undefined ? { mode: args.mode } : {},
+      ...args.body !== undefined ? { bodyChars: args.body.length } : {},
+    },
+  }
 }
 
 /** Completed card for review_post. */
@@ -330,8 +338,7 @@ export function ghIssueResult(_args: GhIssueArgs, result: ToolResult): ToolResul
 }
 
 /** Narrow structural view of gh_search arguments. */
-export interface SearchArgs {
-  q: string
+export interface SearchArgs {  q: string
   sort?: 'comments' | 'reactions' | 'created' | 'updated'
   order?: 'desc' | 'asc'
   perPage?: number
@@ -380,4 +387,190 @@ export function ghSearchResult(_args: SearchArgs, result: ToolResult): ToolResul
 /** Identity projection: persist the whole canonical value for card replay. */
 export function identityMeta(_args: unknown, value: JsonValue): JsonValue {
   return value
+}
+
+/** Narrow structural view of pr_merge arguments. */
+export interface PrMergeArgs {
+  pr: string
+  mergeMethod?: 'merge' | 'squash' | 'rebase'
+  commitTitle?: string
+  commitMessage?: string
+  deleteBranch?: boolean
+}
+
+/** Narrow structural view of a merged-PR canonical value. */
+export interface MergedPrValue {
+  status: 'merged'
+  merged: boolean
+  sha?: string
+  message: string
+  url: string
+  branchDeleted: boolean
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for pr_merge. */
+export function prMergeCall(args: PrMergeArgs): ToolCallView {
+  return {
+    card: 'generic',
+    title: `Merge pull request ${args.pr}`,
+    rawInput: {
+      pr: args.pr,
+      ...args.mergeMethod !== undefined ? { mergeMethod: args.mergeMethod } : {},
+      ...args.deleteBranch !== undefined ? { deleteBranch: args.deleteBranch } : {},
+    },
+  }
+}
+
+/** Completed card for pr_merge: the merge result, or a readable failure. */
+export function prMergeResult(_args: PrMergeArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as MergedPrValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if (value.status === 'error') {
+    return { card: 'generic', title: 'Pull request not merged', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return {
+    card: 'generic',
+    title: value.merged ? 'Pull request merged' : 'Merge not performed',
+    content: [{ type: 'text', text: `${value.message}\n${value.url}${value.branchDeleted ? '\nhead branch deleted' : ''}` }],
+  }
+}
+
+/** Narrow structural view of pr_update arguments. */
+export interface PrUpdateArgs {
+  pr: string
+  title?: string
+  body?: string
+  state?: 'open' | 'closed'
+  base?: string
+}
+
+/** Narrow structural view of an updated-PR canonical value. */
+export interface UpdatedPrValue {
+  status: 'updated'
+  url: string
+  number: number
+  title: string
+  state: string
+  base: string
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for pr_update. */
+export function prUpdateCall(args: PrUpdateArgs): ToolCallView {
+  return {
+    card: 'generic',
+    title: `Update pull request ${args.pr}`,
+    rawInput: {
+      pr: args.pr,
+      ...args.title !== undefined ? { title: args.title } : {},
+      ...args.state !== undefined ? { state: args.state } : {},
+      ...args.base !== undefined ? { base: args.base } : {},
+    },
+  }
+}
+
+/** Completed card for pr_update. */
+export function prUpdateResult(_args: PrUpdateArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as UpdatedPrValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if (value.status === 'error') {
+    return { card: 'generic', title: 'Pull request not updated', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return {
+    card: 'generic',
+    title: `Updated pull request #${value.number}`,
+    content: [{ type: 'text', text: `${value.url}\n${value.title} (${value.state}, base ${value.base})` }],
+  }
+}
+
+/** Narrow structural view of gh_repo arguments. */
+export interface GhRepoArgs {
+  ownerRepo?: string
+}
+
+/** Narrow structural view of the gh_repo canonical value. */
+export interface RepoValue {
+  repo: string
+  description: string
+  defaultBranch: string
+  visibility: string
+  stars: number
+  forks: number
+  openIssues: number
+  language: string
+  license: string
+  topics: string[]
+  url: string
+  updatedAt: string
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for gh_repo. */
+export function ghRepoCall(args: GhRepoArgs): ToolCallView {
+  return { card: 'generic', title: `Repository metadata${args.ownerRepo !== undefined ? `: ${args.ownerRepo}` : ''}`, rawInput: { ...args.ownerRepo !== undefined ? { ownerRepo: args.ownerRepo } : {} } }
+}
+
+/** Completed card for gh_repo. */
+export function ghRepoResult(_args: GhRepoArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as RepoValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if ('status' in value) {
+    return { card: 'generic', title: 'Repository read failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  return {
+    card: 'generic',
+    title: value.repo,
+    content: [{
+      type: 'text',
+      text: `${value.description}\n`
+        + `${value.defaultBranch} · ${value.language ?? 'unknown language'} · ${value.license}\n`
+        + `⭐ ${value.stars} · 🍴 ${value.forks} · issues ${value.openIssues} · ${value.visibility}\n`
+        + `${value.url}`,
+    }],
+  }
+}
+
+/** Narrow structural view of gh_file arguments. */
+export interface GhFileArgs {
+  ownerRepo?: string
+  path: string
+  ref?: string
+  maxChars?: number
+}
+
+/** Narrow structural view of the gh_file canonical value. */
+export interface FileValue {
+  repo: string
+  path: string
+  ref: string
+  size: number
+  truncated: boolean
+  content: string
+  sha: string
+  url: string
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for gh_file. */
+export function ghFileCall(args: GhFileArgs): ToolCallView {
+  return { card: 'generic', title: `Read file: ${args.path}`, rawInput: { path: args.path, ...args.ref !== undefined ? { ref: args.ref } : {} } }
+}
+
+/** Completed card for gh_file: first lines plus size facts. */
+export function ghFileResult(_args: GhFileArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as FileValue | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if ('status' in value) {
+    return { card: 'generic', title: 'File read failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  const preview = value.content.split('\n').slice(0, 12).join('\n')
+  return {
+    card: 'generic',
+    title: `${value.repo}/${value.path} @ ${value.ref}`,
+    content: [{
+      type: 'text',
+      text: `${value.size} bytes${value.truncated ? ' (truncated)' : ''} · ${value.sha.slice(0, 7)}\n${preview}${value.content.length > preview.length ? '\n…' : ''}`,
+    }],
+  }
 }

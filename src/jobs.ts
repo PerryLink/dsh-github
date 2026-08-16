@@ -138,7 +138,7 @@ function runReviewWork(state: GithubState, record: ReviewJobRecord, input: Requi
         return runModelReview(state, record, input.owner, controller, cancelReason, capped, truncated)
       }
 
-      const report: ReviewReport = analyzeDiff(capped, input.maxDiffChars)
+      const report: ReviewReport = analyzeDiff(capped, input.maxDiffChars, { maxFindings: state.config.maxFindings, maxLineLength: state.config.maxLineLength })
       record.report = report
 
       const notes: string[] = []

@@ -23,10 +23,11 @@
 
 ---
 
-**dsh-github** is a bundle plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) — the "everything is a plugin" agent harness. It fills the GitHub gap between dsh and tools like [Claude Code](https://github.com/anthropics/claude-code) (`gh claude` / [claude-code-action](https://github.com/anthropics/claude-code-action)) and [Codex](https://github.com/openai/codex) (`@codex review` / Autofix CI): your agent can **read a PR, review a PR, open a PR, comment on and close issues, and search** — while a human approves every write and the token stays secret.
+**dsh-github** is a bundle plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) — the "everything is a plugin" agent harness. It fills the GitHub gap between dsh and tools like [Claude Code](https://github.com/anthropics/claude-code) (`gh claude` / [claude-code-action](https://github.com/anthropics/claude-code-action)) and [Codex](https://github.com/openai/codex) (`@codex review` / Autofix CI): your agent can **read a PR, review a PR, open a PR, merge and update PRs, read repo metadata and files, comment on and close issues, and search** — while a human approves every write and the token stays secret.
 
-- 🛠 **8 tools** — `pr_create` · `gh_review` · `review_post` · `gh_issue` · `issue_open` · `issue_comment` · `issue_close` · `gh_search`, all canonical-JSON via `defineTool`
+- 🛠 **12 tools** — `pr_create` · `pr_merge` · `pr_update` · `gh_review` · `review_post` · `gh_issue` · `issue_open` · `issue_comment` · `issue_close` · `gh_search` · `gh_repo` · `gh_file`, all canonical-JSON via `defineTool`
 - ⌨️ **3 command families** — `/pr create` · `/review` (start/stop/post) · `/issue open`
+- 🔀 **Full PR lifecycle** — create → review → update (title/body/state/base) → merge (merge/squash/rebase, optional head-branch delete)
 - 📝 **Inline reviews** — `review_post` posts either one summary comment or line-anchored review comments against the PR head commit
 - 🔒 **Approval-gated writes** — every GitHub write goes through `ctx.approval` (default `ask`, fail-closed); approval reasons preview titles, body sizes, and comment overrides
 - 🗝 **Token secrecy** — credentials seam → environment → `gh` CLI, resolved per operation, never in logs, events, renders, or errors
@@ -52,6 +53,7 @@
 - [Repository layout](#🗂-repository-layout)
 - [Topics](#🏷-topics)
 - [License](#license)
+- [PerryLink DSH Plugin Family](#perrylink-dsh-plugin-family)
 
 ## 🚀 Quick start
 
@@ -59,8 +61,8 @@
 # 1. install (npm registry — simplest; or use the tarball channel below)
 dsh plugin --profile <name> add @perrylink/dsh-github
 #    tarball channel (no registry needed):
-#    pnpm pack → dsh-github-0.4.0.tgz
-#    dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
+#    pnpm pack → dsh-github-<version>.tgz
+#    dsh plugin --profile <name> add ./dsh-github-<version>.tgz
 
 # 2. configure a GitHub token (recommended: the credentials seam)
 #    $DSH_HOME/.credentials.yaml
@@ -80,9 +82,13 @@ Verify: `dsh --profile <name> --dump-config` must show the `# == dsh-github` sec
 | Area | What you get |
 |---|---|
 | **Create PRs** | `/pr create [title]` reads git state (branch, changed files, commits ahead) and hands the agent a draft; `pr_create` opens the PR and returns its URL |
+| **Update PRs** | `pr_update` edits title, body, state, or target branch — approval-gated like every other write |
+| **Merge PRs** | `pr_merge` merges with `merge`/`squash`/`rebase`, optional commit title/message and head-branch deletion after the merge |
 | **Review PRs** | `gh_review` summarizes metadata, capped diff (full text in the canonical value, bounded excerpt in the render), comments, CI status, and static findings — per-section fetch failures are reported as `diff.error` / `comments.error` / `ci.error` |
 | **Post reviews** | `review_post` publishes one aggregated issue-level comment (`mode: "summary"`, default) or line-anchored review comments on the PR head commit (`mode: "inline"`); a `body` override lets the model polish the comment first — after human approval |
 | **Background reviews** | `/review <pr>` fetches metadata, the capped diff, CI checks, and existing comments in a `ctx.jobs` job; the completion output carries the findings summary, CI status, and comment count. `reviewMode: "model"` delegates the diff to a one-shot subagent instead of the static analyzer |
+| **Read repos** | `gh_repo` reads repository metadata: description, default branch, visibility, stars, forks, open issues, language, license, topics |
+| **Read files** | `gh_file` reads one file at a branch/tag/commit with base64 decoding and a configurable cap; directories report a structured error |
 | **Read issues** | `gh_issue` lists / gets / comments; pull requests in listings are marked `kind: "pr"` |
 | **Manage issues** | `issue_open` creates, `issue_comment` comments (also works on PRs), `issue_close` closes with an optional state reason — all approval-gated |
 | **Search** | `gh_search` queries issues and pull requests with GitHub search syntax, surfacing the separate search quota |
@@ -98,7 +104,7 @@ Four documented channels — pick one.
 | Channel | Command | Notes |
 |---|---|---|
 | **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | Published package — the simplest channel |
-| **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | Ships with `lib/` built — no build permission |
+| **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-<version>.tgz` | Ships with `lib/` built — no build permission |
 | **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Needs `prepare` + `allowBuilds` (see below); pin the commit |
 | **local link** | `pnpm link --dir .` then `dsh plugin add @perrylink/dsh-github` | Development |
 
@@ -132,13 +138,16 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 | `maxComments` | `20` | Cap for PR comments listed by `gh_review` |
 | `reviewJobTimeoutMs` | `600000` | Deadline for one background review job (fails with `timeout`) |
 | `maxReviewRecords` | `50` | Cap for in-memory review-job records; oldest settled records evict first |
+| `maxFileChars` | `12000` | Character cap for file contents read by `gh_file` |
+| `maxFindings` | `50` | Cap for analyzer findings per review |
+| `maxLineLength` | `300` | Line length beyond which the analyzer flags a long-line finding |
 | `reviewMode` | `static` | Review engine: `static` (deterministic analyzer) or `model` (one-shot subagent through the host's `subagents` seam; fails loud when the seam is absent) |
 | `modelReviewProvider` | — | Subagent provider name for `reviewMode: "model"`; defaults to the first registered provider |
 | `maxRetries` | `3` | 429 retry attempts per request |
 | `retryBaseMs` | `500` | Retry backoff base (doubles per attempt) |
 | `retryMaxWaitMs` | `60000` | Retry backoff ceiling |
 | `apiBaseUrl` | `https://api.github.com` | GitHub REST base URL (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; anything else is denied before approval |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; anything else is denied before approval |
 | `workspaceDir` | process cwd | Working directory for read-only git inspection |
 
 ## 🛠 Tools
@@ -146,7 +155,11 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 | Tool | Kind | Parameters | Returns |
 |---|---|---|---|
 | `pr_create` | write | `title*`, `body?`, `base?`, `head?`, `draft?`, `ownerRepo?` | `{status:'created', url, number, title, state, draft, base, head, rateLimit}` or structured error |
+| `pr_merge` | write | `pr*` (number / `#n` / `o/r#n` / URL), `mergeMethod?`, `commitTitle?`, `commitMessage?`, `deleteBranch?` | `{status:'merged', merged, sha?, message, url, branchDeleted, branchDeleteNote?, rateLimit}` or structured error |
+| `pr_update` | write | `pr*` (number / `#n` / `o/r#n` / URL), `title?`, `body?`, `state?` (`open`/`closed`), `base?` | `{status:'updated', url, number, title, state, base, rateLimit}` or structured error |
 | `gh_review` | read | `pr*` (number / `#n` / `o/r#n` / URL), `fields?`, `maxDiffChars?` | metadata, capped diff (full `diff.text` + bounded `diff.excerpt` + per-file stats), comments, CI, static findings, per-section `error` fields, rate limit |
+| `gh_repo` | read | `ownerRepo?` | `{repo, description, defaultBranch, visibility, stars, forks, openIssues, language, license, topics, url, updatedAt, rateLimit}` or structured error |
+| `gh_file` | read | `ownerRepo?`, `path*`, `ref?`, `maxChars?` | `{repo, path, ref, size, truncated, content, sha, url, rateLimit}` or structured error |
 | `gh_issue` | read | `action*` (`list`/`get`/`comments`), `ownerRepo?`, `issueNumber?`, `state?`, `limit?` | normalized items (each marked `kind: issue/pr/comment`) + rate limit |
 | `review_post` | write | `jobId*`, `mode?` (`summary`/`inline`), `body?` | `{status:'posted', mode, url, commentId?, reviewId?, findings, rateLimit}` or structured error |
 | `issue_open` | write | `title*`, `body?`, `labels?`, `ownerRepo?` | `{status:'created', url, number, title, rateLimit}` or structured error |
@@ -177,8 +190,9 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
          /review ───┼──► ctx.jobs.start("github-review") ──► job    │
          /issue ────┼──► agent.followup                              │
                     │                                               │
- model ─── pr_create / gh_review / gh_issue / review_post /         │
-           issue_open / issue_comment / issue_close / gh_search     │
+ model ─── pr_create / pr_merge / pr_update / gh_review /           │
+           review_post / gh_issue / issue_open / issue_comment /    │
+           issue_close / gh_search / gh_repo / gh_file              │
            (defineTool, canonical JSON only)                        │
                     │                                               │
                     └───────┬───────────────┬───────────────┬───────┘
@@ -190,7 +204,7 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 ```
 
 - **Credential seam.** `tokenSource: auto` resolves per operation in the order credentials seam (`GITHUB_TOKEN` reference) → environment variable → `gh` CLI token. The value is a local variable handed to the REST client; it never enters canonical values, renders, cards, command outputs, injected notices, job output, approval reasons, or error messages.
-- **Approval.** All writes flow through model tools. A `tools/pre-execute` waterfall listener returns `ask` for the five write tools, so the registry asks the human through `ctx.approval` (the host logs the `approval/asked` + `approval/decided` audit pair) and fails closed without an answerer. Approval reasons preview what would be published (titles, body sizes, and the first line of an overridden review body). Commands never write directly: command handlers run with no open turn, so the approval seam is structurally closed to them — a write command gathers read-only context, then wakes the agent (`followup` when idle, `inject` when busy) so the model runs the gated tool inside a turn.
+- **Approval.** All writes flow through model tools. A `tools/pre-execute` waterfall listener returns `ask` for the seven write tools, so the registry asks the human through `ctx.approval` (the host logs the `approval/asked` + `approval/decided` audit pair) and fails closed without an answerer. Approval reasons preview what would be published (titles, body sizes, merge methods, and the first line of an overridden review body). Commands never write directly: command handlers run with no open turn, so the approval seam is structurally closed to them — a write command gathers read-only context, then wakes the agent (`followup` when idle, `inject` when busy) so the model runs the gated tool inside a turn.
 - **Background review.** `/review <pr>` starts a `github-review` job on `ctx.jobs` (label, owner, timeout, cancelable). The job resolves the token per operation, fetches the PR metadata (capturing the head-commit SHA for inline posting), the capped diff, and — unless disabled — CI check runs and existing review comments, then runs a deterministic multi-file analyzer (`src/review.ts`: hardcoded secrets, Google API keys, credential assignments, debug artifacts, eval, TODO markers, long lines, oversized changes) — zero tokens spent, fully testable. With `reviewMode: "model"`, the job instead hands the capped diff to a one-shot subagent through the host's `subagents` seam (the owning agent is the parent) and stores the child's Markdown output as the postable report; a missing seam or provider fails loud. Supplementary fetch failures are noted in the output without failing the job. Completion notices reach the initiating session through the host's `dsh-tool-jobs` consumer; the model reads the report via the existing `job_output` tool and publishes it with `review_post` — approval required.
 - **Model-visible ⇔ logged.** The plugin appends **no custom session event types**. Out-of-repo event types are not in the host's `KNOWN_SESSION_EVENT_TYPES`, so an unknown required event would make the session log unreadable after plugin removal (the host deliberately defers a registration surface for external plugins). All model-visible content therefore flows through host-logged surfaces: `tool/result` canonical values, `user/message` notices via `agent.inject`/`agent.followup`, the `command/run` + `command/done` lifecycle pair, and the `approval/asked` + `approval/decided` audit pair.
 - **Pure presenters.** `presentCall`/`presentResult` are pure functions of `args` (+ the persisted `result.meta`), identical on live streaming and log replay. PR creation shows a generic card with the PR URL.
@@ -202,7 +216,7 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 - `/pr create` never commits or pushes by itself; with `autoCommit: true` the model performs those writes through the bash tool's own approval gate. dsh-github does **not** manage git identity (dsh-git-identity's job) or worktrees (dsh-worktree's job).
 - The review job performs no writes: it reads a diff and stores a report in process memory; only `review_post` publishes, after approval.
 - Posted comments interpolate diff-derived file names, which are untrusted repository content: `formatPostBody` backtick-escapes and HTML-escapes file names so a hostile PR cannot inject Markdown into the review comment.
-- Issue/PR bodies, comments, and search results read from GitHub are external untrusted content that enters model context — the same inherent tradeoff as web fetching; the plugin marks them as external content in its renders.
+- File contents read by `gh_file` and issue/PR bodies, comments, and search results read from GitHub are external untrusted content that enters model context — the same inherent tradeoff as web fetching; the plugin marks them as external content in its renders.
 - Rate limits: 429s are retried with backoff and the remaining quota is surfaced to the model on every result, including failures.
 
 ## ⚠️ Known limitations
@@ -221,7 +235,7 @@ pnpm test          # vitest: config, credentials, 429/retry, tools, commands, jo
 pnpm typecheck
 pnpm build         # tsc → lib/ (noEmitOnError)
 pnpm pack          # installable tarball
-pnpm run check:readmes   # cross-checks TOC anchors in all 5 READMEs
+pnpm run check:readmes   # cross-checks TOC anchors, tools, and config keys in all 5 READMEs
 ```
 
 Tests mock the GitHub API, the `gh` CLI, and git through injected runners — no network, no real credentials. `test/security.test.ts` asserts the token string never appears in any model- or human-visible output. `test/e2e.test.ts` contains opt-in real-API smoke tests that self-skip unless `DSH_GITHUB_E2E_TOKEN` is set (read-only endpoints only; the dedicated variable keeps the unit suite hermetic).
@@ -238,7 +252,7 @@ src/git.ts            read-only git inspection + origin parsing for any API host
 src/review.ts         deterministic diff analyzer + sanitized comment drafting
 src/jobs.ts           github-review background job producer (metadata + diff + CI + comments)
 src/approval-gate.ts  tools/pre-execute ask/deny gate with write previews
-src/tools.ts          the eight model-facing tools
+src/tools.ts          the twelve model-facing tools
 src/commands.ts       /pr, /review, /issue
 src/present.ts        pure UI-card presenters
 test/                 vitest suite + mock host scaffolding + opt-in e2e smoke

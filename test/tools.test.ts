@@ -42,9 +42,9 @@ async function loaded(routes = DEFAULT_ROUTES, config: Record<string, unknown> =
 }
 
 describe('tool registration', () => {
-  it('registers all eight tools', async () => {
+  it('registers all twelve tools', async () => {
     const services = await loaded()
-    for (const name of ['pr_create', 'gh_review', 'review_post', 'gh_issue', 'issue_open', 'issue_comment', 'issue_close', 'gh_search']) {
+    for (const name of ['pr_create', 'pr_merge', 'pr_update', 'gh_review', 'review_post', 'gh_issue', 'issue_open', 'issue_comment', 'issue_close', 'gh_search', 'gh_repo', 'gh_file']) {
       expect(services.tools.get(name).name).toBe(name)
     }
   })
@@ -54,7 +54,11 @@ describe('tool registration', () => {
     expect(services.tools.get('gh_review').isConcurrencySafe?.({ pr: '7' })).toBe(true)
     expect(services.tools.get('gh_issue').isConcurrencySafe?.({ action: 'list' })).toBe(true)
     expect(services.tools.get('gh_search').isConcurrencySafe?.({ q: 'x' })).toBe(true)
+    expect(services.tools.get('gh_repo').isConcurrencySafe?.({})).toBe(true)
+    expect(services.tools.get('gh_file').isConcurrencySafe?.({ path: 'a.txt' })).toBe(true)
     expect(services.tools.get('pr_create').isConcurrencySafe?.({ title: 'x' })).toBe(false)
+    expect(services.tools.get('pr_merge').isConcurrencySafe?.({ pr: '7' })).toBe(false)
+    expect(services.tools.get('pr_update').isConcurrencySafe?.({ pr: '7', title: 'x' })).toBe(false)
     expect(services.tools.get('review_post').isConcurrencySafe?.({ jobId: 'x' })).toBe(false)
     expect(services.tools.get('issue_open').isConcurrencySafe?.({ title: 'x' })).toBe(false)
     expect(services.tools.get('issue_comment').isConcurrencySafe?.({ issueNumber: 1, body: 'x' })).toBe(false)
@@ -93,6 +97,23 @@ describe('pr_create tool', () => {
     const services = await loaded()
     const value = await services.tools.run('pr_create', { title: 'x' })
     expect(value).toMatchObject({ head: 'feat/shiny' })
+  })
+
+  it('refuses detached HEAD instead of sending "HEAD" as the branch', async () => {
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async (args: string[]) => {
+        if (args.join(' ').includes('rev-parse')) return { stdout: 'HEAD\n' }
+        throw new Error('unused')
+      },
+      fetchImpl: stubFetch([{ match: () => true, respond: () => jsonResponse(404, { message: 'unexpected call' }) }]),
+    })
+    const value = await services.tools.run('pr_create', { title: 'x' })
+    expect(value).toMatchObject({ status: 'error', code: 'no-head' })
+    expect((value as { message: string }).message).toContain('detached HEAD')
+    expect((value as { guidance: string }).guidance).toContain('Check out a branch')
   })
 
   it('honors an explicit head/base/ownerRepo', async () => {
@@ -449,5 +470,243 @@ describe('signal handling', () => {
     const value = await services.tools.run('pr_create', { title: 'x', base: 'main', head: 'h' }, undefined, controller.signal)
       .catch(error => error)
     expect(value).not.toMatchObject({ status: 'created' })
+  })
+})
+
+describe('pr_merge tool', () => {
+  const MERGE_ROUTES = [
+    { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7', respond: () => jsonResponse(200, PULL_PAYLOAD) },
+    {
+      match: (m: string, u: URL) => m === 'PUT' && u.pathname === '/repos/o/r/pulls/7/merge',
+      respond: () => jsonResponse(200, { sha: 'merged-sha', merged: true, message: 'Pull Request successfully merged' }, { 'x-ratelimit-remaining': '8' }),
+    },
+  ]
+
+  it('merges with the head SHA and returns the canonical value', async () => {
+    let mergeBody: string | undefined
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        if (url.pathname === '/repos/o/r/pulls/7' && init?.method === 'GET') return jsonResponse(200, PULL_PAYLOAD)
+        if (url.pathname === '/repos/o/r/pulls/7/merge' && init?.method === 'PUT') {
+          mergeBody = String(init.body ?? '')
+          return jsonResponse(200, { sha: 'merged-sha', merged: true, message: 'Pull Request successfully merged' }, { 'x-ratelimit-remaining': '8' })
+        }
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('pr_merge', { pr: 'o/r#7', mergeMethod: 'squash', commitTitle: 'feat: shiny (#7)' })
+    expect(value).toMatchObject({
+      status: 'merged', merged: true, sha: 'merged-sha', url: 'https://github.com/o/r/pull/7', branchDeleted: false,
+    })
+    expect((value as { rateLimit: { remaining: number } }).rateLimit.remaining).toBe(8)
+    const body = JSON.parse(mergeBody as string) as Record<string, unknown>
+    expect(body.merge_method).toBe('squash')
+    expect(body.sha).toBe('abc123')
+    expect(body.commit_title).toBe('feat: shiny (#7)')
+  })
+
+  it('deletes the head branch after merging when requested', async () => {
+    const calls: string[] = []
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        calls.push(`${init?.method} ${url.pathname}`)
+        if (url.pathname === '/repos/o/r/pulls/7' && init?.method === 'GET') return jsonResponse(200, PULL_PAYLOAD)
+        if (url.pathname === '/repos/o/r/pulls/7/merge') return jsonResponse(200, { sha: 's', merged: true, message: 'merged' })
+        if (url.pathname === '/repos/o/r/git/refs/heads%2Ffeat%2Fshiny' && init?.method === 'DELETE') return new Response(null, { status: 204 })
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('pr_merge', { pr: '7', deleteBranch: true })
+    expect(value).toMatchObject({ status: 'merged', branchDeleted: true })
+    expect(calls).toContain('DELETE /repos/o/r/git/refs/heads%2Ffeat%2Fshiny')
+  })
+
+  it('notes a failed branch deletion without failing the merge', async () => {
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        if (url.pathname === '/repos/o/r/pulls/7' && init?.method === 'GET') return jsonResponse(200, PULL_PAYLOAD)
+        if (url.pathname === '/repos/o/r/pulls/7/merge') return jsonResponse(200, { sha: 's', merged: true, message: 'merged' })
+        if (init?.method === 'DELETE') return jsonResponse(422, { message: 'Reference does not exist' })
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('pr_merge', { pr: '7', deleteBranch: true })
+    expect(value).toMatchObject({ status: 'merged', branchDeleted: false })
+    expect((value as { branchDeleteNote: string }).branchDeleteNote).toContain('422')
+  })
+
+  it('surfaces a not-mergeable PR as a structured error', async () => {
+    const services = await loaded([
+      { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7', respond: () => jsonResponse(200, PULL_PAYLOAD) },
+      { match: (m: string, u: URL) => m === 'PUT' && u.pathname === '/repos/o/r/pulls/7/merge', respond: () => jsonResponse(405, { message: 'Pull Request is not mergeable' }) },
+    ])
+    const value = await services.tools.run('pr_merge', { pr: 'o/r#7' })
+    expect(value).toMatchObject({ status: 'error', code: 'github-api' })
+    expect((value as { message: string }).message).toContain('405')
+  })
+
+  it('rejects an invalid PR reference structurally', async () => {
+    const services = await loaded(MERGE_ROUTES)
+    const value = await services.tools.run('pr_merge', { pr: 'not-a-ref' })
+    expect(value).toMatchObject({ status: 'error', code: 'invalid-pr' })
+  })
+})
+
+describe('pr_update tool', () => {
+  const UPDATED_PAYLOAD = { ...PULL_PAYLOAD, title: 'new title', state: 'closed' }
+
+  it('patches only the provided fields and returns the updated PR', async () => {
+    let patchBody: string | undefined
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        if (url.pathname === '/repos/o/r/pulls/7' && init?.method === 'PATCH') {
+          patchBody = String(init.body ?? '')
+          return jsonResponse(200, UPDATED_PAYLOAD, { 'x-ratelimit-remaining': '7' })
+        }
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('pr_update', { pr: 'o/r#7', title: 'new title', state: 'closed' })
+    expect(value).toMatchObject({ status: 'updated', number: 7, title: 'new title', state: 'closed', base: 'main' })
+    const body = JSON.parse(patchBody as string) as Record<string, unknown>
+    expect(body).toEqual({ title: 'new title', state: 'closed' })
+  })
+
+  it('requires at least one editable field', async () => {
+    const services = await loaded()
+    const value = await services.tools.run('pr_update', { pr: 'o/r#7' })
+    expect(value).toMatchObject({ status: 'error', code: 'invalid-args' })
+  })
+
+  it('rejects an empty title', async () => {
+    const services = await loaded()
+    const value = await services.tools.run('pr_update', { pr: 'o/r#7', title: '   ' })
+    expect(value).toMatchObject({ status: 'error', code: 'invalid-args' })
+  })
+})
+
+describe('gh_repo tool', () => {
+  const REPO_PAYLOAD = {
+    description: 'the main repo',
+    default_branch: 'main',
+    visibility: 'public',
+    stargazers_count: 42,
+    forks_count: 7,
+    open_issues_count: 3,
+    language: 'TypeScript',
+    license: { spdx_id: 'Apache-2.0' },
+    topics: ['dsh', 'plugin'],
+    html_url: 'https://github.com/o/r',
+    updated_at: '2026-08-14T00:00:00Z',
+  }
+
+  it('maps repository metadata into the canonical value', async () => {
+    const services = await loaded([
+      { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r', respond: () => jsonResponse(200, REPO_PAYLOAD, { 'x-ratelimit-remaining': '6' }) },
+    ])
+    const value = await services.tools.run('gh_repo', {})
+    expect(value).toMatchObject({
+      repo: 'o/r', description: 'the main repo', defaultBranch: 'main', visibility: 'public',
+      stars: 42, forks: 7, openIssues: 3, language: 'TypeScript', license: 'Apache-2.0',
+      topics: ['dsh', 'plugin'], url: 'https://github.com/o/r',
+    })
+    expect((value as { rateLimit: { remaining: number } }).rateLimit.remaining).toBe(6)
+  })
+
+  it('surfaces a missing repository as a structured error', async () => {
+    const services = await loaded([
+      { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r', respond: () => jsonResponse(404, { message: 'Not Found' }) },
+    ])
+    const value = await services.tools.run('gh_repo', {})
+    expect(value).toMatchObject({ status: 'error', code: 'github-api' })
+  })
+})
+
+describe('gh_file tool', () => {
+  const FILE_PAYLOAD = {
+    name: 'README.md',
+    path: 'README.md',
+    sha: 'file-sha-123',
+    size: 12,
+    content: Buffer.from('hello world\n').toString('base64'),
+    encoding: 'base64',
+    html_url: 'https://github.com/o/r/blob/main/README.md',
+  }
+
+  it('decodes base64 content and caps it at the configured limit', async () => {
+    let seenPath: string | undefined
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r', maxFileChars: 5 },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        seenPath = url.pathname
+        if (url.pathname === '/repos/o/r/contents/README.md' && init?.method === 'GET') return jsonResponse(200, FILE_PAYLOAD, { 'x-ratelimit-remaining': '5' })
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('gh_file', { path: 'README.md' })
+    expect(value).toMatchObject({
+      repo: 'o/r', path: 'README.md', ref: 'default', size: 12, truncated: true, content: 'hello', sha: 'file-sha-123',
+    })
+    expect((value as { rateLimit: { remaining: number } }).rateLimit.remaining).toBe(5)
+    expect(seenPath).toBe('/repos/o/r/contents/README.md')
+  })
+
+  it('passes the ref query and encodes path segments', async () => {
+    const seen: Array<{ path: string; ref: string | null }> = []
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
+        seen.push({ path: url.pathname, ref: url.searchParams.get('ref') })
+        if (init?.method === 'GET') return jsonResponse(200, { ...FILE_PAYLOAD, path: 'src/a b.ts' })
+        return jsonResponse(404, { message: 'nope' })
+      }) as typeof fetch,
+    })
+    const value = await services.tools.run('gh_file', { path: 'src/a b.ts', ref: 'v1.0' })
+    expect(value).toMatchObject({ path: 'src/a b.ts', ref: 'v1.0' })
+    expect(seen[0]?.path).toBe('/repos/o/r/contents/src/a%20b.ts')
+    expect(seen[0]?.ref).toBe('v1.0')
+  })
+
+  it('reports a directory path as a structured error', async () => {
+    const services = await loaded([
+      { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/contents/src', respond: () => jsonResponse(200, [{ name: 'a.ts' }]) },
+    ])
+    const value = await services.tools.run('gh_file', { path: 'src' })
+    expect(value).toMatchObject({ status: 'error', code: 'is-directory' })
+    expect((value as { guidance: string }).guidance).toContain('directory')
+  })
+
+  it('rejects an empty or absolute path structurally', async () => {
+    const services = await loaded()
+    expect(await services.tools.run('gh_file', { path: '   ' })).toMatchObject({ status: 'error', code: 'invalid-args' })
+    expect(await services.tools.run('gh_file', { path: '/etc/passwd' })).toMatchObject({ status: 'error', code: 'invalid-args' })
   })
 })

@@ -55,6 +55,56 @@ describe('GithubClient 429 retry', () => {
     expect(String(error.message)).toContain('caller cancelled')
   })
 
+  it('retries a 403 secondary rate limit (Retry-After present) and succeeds', async () => {
+    let calls = 0
+    const fetchImpl = stubFetch([{
+      match: () => true,
+      respond: () => {
+        calls += 1
+        return calls < 2
+          ? jsonResponse(403, { message: 'You have exceeded a secondary rate limit' }, { 'retry-after': '0', 'x-ratelimit-remaining': '0' })
+          : jsonResponse(200, { ok: true }, { 'x-ratelimit-remaining': '41' })
+      },
+    }])
+    const client = new GithubClient(TOKEN, { ...options, fetchImpl })
+    const response = await client.requestJson<{ ok: boolean }>('GET', '/repos/o/r')
+    expect(response.data).toEqual({ ok: true })
+    expect(calls).toBe(2)
+  })
+
+  it('fails fast on a 403 without Retry-After (permission denial)', async () => {
+    let calls = 0
+    const fetchImpl = stubFetch([{
+      match: () => true,
+      respond: () => {
+        calls += 1
+        return jsonResponse(403, { message: 'Resource not accessible by integration' })
+      },
+    }])
+    const client = new GithubClient(TOKEN, { ...options, fetchImpl })
+    const error = await client.requestJson('GET', '/repos/o/r').catch(error => error)
+    expect(error).toBeInstanceOf(GithubError)
+    expect(error.status).toBe(403)
+    expect(error.message).toBe('Resource not accessible by integration')
+    expect(calls).toBe(1)
+  })
+
+  it('gives up after maxRetries on repeated 403 secondary limits', async () => {
+    let calls = 0
+    const fetchImpl = stubFetch([{
+      match: () => true,
+      respond: () => {
+        calls += 1
+        return jsonResponse(403, { message: 'secondary limit' }, { 'retry-after': '0' })
+      },
+    }])
+    const client = new GithubClient(TOKEN, { ...options, fetchImpl })
+    const error = await client.requestJson('GET', '/repos/o/r').catch(error => error)
+    expect(error).toBeInstanceOf(GithubError)
+    expect(error.status).toBe(403)
+    expect(calls).toBe(4) // first attempt + maxRetries (3)
+  })
+
   it('surfaces a GitHub error body without the token', async () => {
     const fetchImpl = stubFetch([{
       match: () => true,

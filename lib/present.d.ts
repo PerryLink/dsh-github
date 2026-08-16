@@ -251,4 +251,95 @@ export declare function ghSearchCall(args: SearchArgs): ToolCallView;
 export declare function ghSearchResult(_args: SearchArgs, result: ToolResult): ToolResultView | undefined;
 /** Identity projection: persist the whole canonical value for card replay. */
 export declare function identityMeta(_args: unknown, value: JsonValue): JsonValue;
+/** Narrow structural view of pr_merge arguments. */
+export interface PrMergeArgs {
+    pr: string;
+    mergeMethod?: 'merge' | 'squash' | 'rebase';
+    commitTitle?: string;
+    commitMessage?: string;
+    deleteBranch?: boolean;
+}
+/** Narrow structural view of a merged-PR canonical value. */
+export interface MergedPrValue {
+    status: 'merged';
+    merged: boolean;
+    sha?: string;
+    message: string;
+    url: string;
+    branchDeleted: boolean;
+    rateLimit: RateLimitValueView;
+}
+/** Pending card for pr_merge. */
+export declare function prMergeCall(args: PrMergeArgs): ToolCallView;
+/** Completed card for pr_merge: the merge result, or a readable failure. */
+export declare function prMergeResult(_args: PrMergeArgs, result: ToolResult): ToolResultView | undefined;
+/** Narrow structural view of pr_update arguments. */
+export interface PrUpdateArgs {
+    pr: string;
+    title?: string;
+    body?: string;
+    state?: 'open' | 'closed';
+    base?: string;
+}
+/** Narrow structural view of an updated-PR canonical value. */
+export interface UpdatedPrValue {
+    status: 'updated';
+    url: string;
+    number: number;
+    title: string;
+    state: string;
+    base: string;
+    rateLimit: RateLimitValueView;
+}
+/** Pending card for pr_update. */
+export declare function prUpdateCall(args: PrUpdateArgs): ToolCallView;
+/** Completed card for pr_update. */
+export declare function prUpdateResult(_args: PrUpdateArgs, result: ToolResult): ToolResultView | undefined;
+/** Narrow structural view of gh_repo arguments. */
+export interface GhRepoArgs {
+    ownerRepo?: string;
+}
+/** Narrow structural view of the gh_repo canonical value. */
+export interface RepoValue {
+    repo: string;
+    description: string;
+    defaultBranch: string;
+    visibility: string;
+    stars: number;
+    forks: number;
+    openIssues: number;
+    language: string;
+    license: string;
+    topics: string[];
+    url: string;
+    updatedAt: string;
+    rateLimit: RateLimitValueView;
+}
+/** Pending card for gh_repo. */
+export declare function ghRepoCall(args: GhRepoArgs): ToolCallView;
+/** Completed card for gh_repo. */
+export declare function ghRepoResult(_args: GhRepoArgs, result: ToolResult): ToolResultView | undefined;
+/** Narrow structural view of gh_file arguments. */
+export interface GhFileArgs {
+    ownerRepo?: string;
+    path: string;
+    ref?: string;
+    maxChars?: number;
+}
+/** Narrow structural view of the gh_file canonical value. */
+export interface FileValue {
+    repo: string;
+    path: string;
+    ref: string;
+    size: number;
+    truncated: boolean;
+    content: string;
+    sha: string;
+    url: string;
+    rateLimit: RateLimitValueView;
+}
+/** Pending card for gh_file. */
+export declare function ghFileCall(args: GhFileArgs): ToolCallView;
+/** Completed card for gh_file: first lines plus size facts. */
+export declare function ghFileResult(_args: GhFileArgs, result: ToolResult): ToolResultView | undefined;
 //# sourceMappingURL=present.d.ts.map

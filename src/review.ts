@@ -31,7 +31,16 @@ export interface ReviewReport {
   truncated: boolean
 }
 
-const MAX_FINDINGS = 50
+const DEFAULT_MAX_FINDINGS = 50
+const DEFAULT_MAX_LINE_LENGTH = 300
+
+/** Tunables for the analyzer; every key has a config counterpart. */
+export interface AnalyzerOptions {
+  /** Cap for findings per review. Defaults to 50. */
+  maxFindings?: number
+  /** Line length beyond which a long-line finding is raised. Defaults to 300. */
+  maxLineLength?: number
+}
 
 interface RuleCheck {
   rule: string
@@ -48,8 +57,6 @@ const LINE_RULES: readonly RuleCheck[] = [
   { rule: 'eval-usage', severity: 'warning', message: 'dynamic evaluation (eval/new Function); avoid unless necessary', pattern: /\beval\s*\(|new\s+Function\s*\(/ },
   { rule: 'todo-marker', severity: 'info', message: 'leftover marker (TODO/FIXME/XXX); confirm it is tracked', pattern: /\b(TODO|FIXME|XXX)\b/ },
 ]
-
-const MAX_LINE_LENGTH = 300
 
 interface ParsedHunk {
   file: string
@@ -124,30 +131,33 @@ export function parseDiffStats(diff: string, maxChars: number): DiffFileStat[] {
  * Analyze a unified diff into findings and a postable comment body.
  * @param diff - unified diff text (already capped by the caller or capped here).
  * @param maxChars - character cap applied before parsing.
+ * @param options - analyzer tunables; defaults mirror the config defaults.
  * @returns findings (capped), one-line summary, and Markdown post body.
  */
-export function analyzeDiff(diff: string, maxChars: number): ReviewReport {
+export function analyzeDiff(diff: string, maxChars: number, options: AnalyzerOptions = {}): ReviewReport {
+  const maxFindings = Math.max(options.maxFindings ?? DEFAULT_MAX_FINDINGS, 1)
+  const maxLineLength = Math.max(options.maxLineLength ?? DEFAULT_MAX_LINE_LENGTH, 1)
   const added = parseAddedLines(diff, maxChars)
   const findings: Finding[] = []
 
   const perFileAdded = new Map<string, number>()
   for (const item of added) {
     perFileAdded.set(item.file, (perFileAdded.get(item.file) ?? 0) + 1)
-    if (findings.length >= MAX_FINDINGS) break
+    if (findings.length >= maxFindings) break
     for (const rule of LINE_RULES) {
       if (rule.pattern.test(item.text)) {
         findings.push({ file: item.file, line: item.line, severity: rule.severity, rule: rule.rule, message: rule.message })
         break
       }
     }
-    if (findings.length >= MAX_FINDINGS) break
-    if (item.text.length > MAX_LINE_LENGTH) {
-      findings.push({ file: item.file, line: item.line, severity: 'info', rule: 'long-line', message: `line exceeds ${MAX_LINE_LENGTH} characters; consider splitting it` })
+    if (findings.length >= maxFindings) break
+    if (item.text.length > maxLineLength) {
+      findings.push({ file: item.file, line: item.line, severity: 'info', rule: 'long-line', message: `line exceeds ${maxLineLength} characters; consider splitting it` })
     }
   }
 
   for (const [file, count] of perFileAdded) {
-    if (findings.length >= MAX_FINDINGS) break
+    if (findings.length >= maxFindings) break
     if (count > 400) findings.push({ file, line: null, severity: 'info', rule: 'large-change', message: `this PR adds ${count} lines to this file; consider splitting the commit` })
   }
 

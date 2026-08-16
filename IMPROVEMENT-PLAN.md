@@ -1,112 +1,84 @@
-# dsh-github 完善与提升方案
+# dsh-github 完善与提升方案（v0.5.0）
 
-> **实施状态：✅ 已全部实施（v0.4.0，2026-08-14）。** 阶段 1-4 全部落地，包括阶段 4 的 `gh_search` 与模型化评审（`reviewMode: "model"`，经宿主 `subagents` 接缝）；仅 `dsh-github-action` 配套仓库 / npm 发布等需要外部账户的项保留为后续动作（见文末「阶段 4」）。验证：111 个测试通过、typecheck/build/check-readmes/pack 全绿。
+> **实施状态：🔨 实施中（v0.5.0）。** 本文档在 v0.4.1 基线（111 个 vitest 用例全绿、npm `@perrylink/dsh-github@0.4.1` 已发布、仓库 PerryLink/dsh-github 已含 topics）上形成的第二轮完善方案。上一轮方案（v0.2.0–v0.4.1）已全部落地，见 CHANGELOG.md。
 >
-> 研究基线：`dsh-github` v0.1.0（仓库 `PerryLink/dsh-github`，工作副本 `D:\deepseek-harness\Project\Plugins\dsh-github`）。
-> 验证基线：77 个 vitest 用例全部通过；`git status` 干净；插件契约（注册即 effect、waterfall `next()`、模型可见⇔已记录、Schemastery 校验、`defineTool` 规范 JSON、纯函数 presenter、打包三通道）与官方 `dsh-plugin-guide` 及本地 harness checkout（`0.1.0-rc.5`）逐条核对无红线违规。
-> 本文档按「问题清单 → 分阶段实施 → 验收」组织；每条问题附源码证据（`文件:行`，相对插件根目录）。
+> 验证基线：`pnpm test` 111 passed / 2 skipped（e2e 需 `DSH_GITHUB_E2E_TOKEN`）；`git status` 干净；本地 harness checkout（`packages/jobs/jobs/src/types.ts`、`packages/subagent/subagent/src/types.ts`）与插件本地类型视图逐条核对：`JobStart`/`JobHooks`/`JobOutcome`/`JobSnapshot`、`SubagentStartRequest`/`SubagentRun`/`SubagentResult` 均未发生破坏性变化（subagent 仅新增可选 `agentOptions`/`outputSchema`/`maxDepth`/`toolFilter`/`persona` 能力，插件不依赖）。
+>
+> 本方案聚焦三类：**PR 生命周期补全**（合并/更新）、**仓库读取能力**（仓库元数据/文件读取）、**正确性与工程化加固**（二级限流重试、detached HEAD、硬编码可调参数、README 漂移门禁）。
 
 ---
 
-## 一、现状盘点（研究结论）
+## 一、现状盘点（第二轮研究结论）
 
-**架构**：单 bundle 插件，5 个工具（`pr_create` / `gh_review` / `review_post` / `gh_issue` / `issue_open`）、3 组命令（`/pr` `/review` `/issue`）、`tools/pre-execute` 审批门、凭据接缝逐操作解析 token、429 退避重试、确定性静态分析器（零 token）后台 review job。整体设计是干净的：命令处理器不写 GitHub（无 open turn，审批缝结构上对其关闭），写操作全部经模型工具走审批——这是对宿主机制的正确运用。
+**已具备（保持）**：8 个工具（5 写 3 读）、3 组命令、审批门 + `allowedActions`、逐操作 token 解析、429 退避重试、后台 review job（static/model 双引擎）、行级评论、GHE 支持、5 语言文档、CI、check-readmes 锚点门禁。
 
-**亮点（应保留）**：
-- 无自定义 Session 事件（外部插件事件不在 `KNOWN_SESSION_EVENT_TYPES`，会毁掉日志可读性）——判断正确且文档化。
-- token 逐操作解析、不缓存、不进任何可见面——符合凭据接缝契约，且有专门安全测试。
-- `applyWithDeps` + 注入式 runner（git/gh/fetch）——测试零网络零壳，设计优秀。
-- 本地类型视图（`src/types.ts`）镜像宿主服务，与 checkout 中 `JobStart`/`JobHooks`/`kill`/`CommandDefinition.recordInput` 等签名逐一核对一致。
+**本轮发现的短板**：
 
-**主要短板**（详见第二节）：`gh_review` 静默吞错与 diff 可见性截断、issue 列表混入 PR、GHE 远程解析缺口、`review_post` 不可编辑、无行级 review 评论（README 自己承认的 v2 缺口）、工程化缺失（无 CI、死依赖、文档死链）。
+1. **PR 生命周期只到「创建」**：模型不能合并 PR，也不能改标题/目标分支——`pr_create` 之后的能力断档（证据：`src/tools.ts` 工具表无 merge/update；`src/config.ts:13` 动作表无 `pr.merge`/`pr.update`）。
+2. **仓库读取只有 PR/issue 两个面**：读仓库元数据（默认分支、语言、license）或读任意文件内容（评审上下文、README、配置）都只能靠 bash/curl 绕道（证据：工具表无 repo/file 读取）。
+3. **二级限流不重试**：GitHub 对 secondary rate limit / abuse detection 返回 **403 + Retry-After**（非 429）；当前客户端只重试 429，403 一律立刻失败（证据：`src/github.ts:178` 仅 `response.status !== 429` 才退出重试循环）。
+4. **detached HEAD 会发出非法 PR**：`git rev-parse --abbrev-ref HEAD` 在游离态返回字面量 `HEAD`，`pr_create` 会把它当作 head 分支发给 API（证据：`src/tools.ts:197-202` 无分支名校验）。
+5. **分析器硬编码可调参数**：`MAX_FINDINGS = 50`、`MAX_LINE_LENGTH = 300` 写死在 `src/review.ts:34,52`，违反「不得硬编码 tunable」（cordis.yml 改不了）。
+6. **model review 的发布面措辞失真**：model 评审报告 `findings` 恒为 `[]`，`/review post` 通知与审批理由显示「0 finding(s)」（证据：`src/commands.ts:113-115`、`src/approval-gate.ts:59`）。
+7. **README 漂移只能靠人眼**：`check-readmes.mjs` 只查锚点；工具表/配置表漏行、版本号过期（如 5 语言 README 里的 `dsh-github-0.4.0.tgz`）无机械门禁（证据：`scripts/check-readmes.mjs:31-44`；`README.md:62-63,101`）。
+8. **`review_post` 卡片丢弃 body 覆盖**（rawInput 只有 jobId/mode，与其它卡片风格不一致；证据：`src/present.ts:99`）。
 
 ---
 
-## 二、问题清单（按优先级）
+## 二、问题清单与方案
 
-### P0 — 正确性与一致性（先修）
+### A. 新工具（v0.5.0 主线）
 
-| # | 问题 | 证据 | 方案 |
+| # | 工具 | 类型 | 方案 |
 |---|---|---|---|
-| P0-1 | `RepoStateView` 接口重复声明两次（interface merging 掩盖了复制粘贴错误） | `src/state.ts:101-106` 与 `:119-124` | 删除其中一份。 |
-| P0-2 | 模块 JSDoc 引用不存在的 README 小节 | `src/index.ts:16` 指向 “README.md ‘Session events and audit’”，README 无此标题 | 改为指向「Architecture → Model-visible ⇔ logged」或补上该小节。 |
-| P0-3 | `maxDiffChars` 文档写 “Byte cap”，实现按 UTF-16 码元截断 | `src/config.ts:31`（注释）vs `src/tools.ts:60-62`（`text.length`/`slice`） | 统一为「字符数」口径（改注释/描述），不做字节级截断（diff 基本 ASCII，无实际收益）。 |
-| P0-4 | `gh_review` 抓取最多 `maxDiffChars`（默认 8000）字符的 diff，但模型可见面（canonical `diff.excerpt` 与 render）硬编码只暴露 2000 字符——抓取的 75% 被浪费，且 2000 是硬编码可调参数（违反「无硬编码 tunable」精神） | `src/tools.ts:396`（`diffText.slice(0, 2000)`）、`:421`（render） | canonical 值完整返回截断后的 diff（`diff.text`），render 仍展示首段 + 截断说明；render 首段长度作为 Config 字段（如 `renderExcerptChars`，默认 2000）。 |
-| P0-5 | `gh_review` 把「diff 抓取失败」与「截断」混为一个 `truncated` 位，且 comments/CI 抓取失败被静默吞掉——权限不足（如 token 无 `checks:read`）时模型看到的是「no checks reported」而非失败原因 | `src/tools.ts:341-369`（三处 `catch {}` 静默）、`:395-397`（`truncated: diffTruncated \|\| diffError`） | 三节各加结构化错误字段（`diff.error?` / `comments.error?` / `ci.error?`，值如 `'github-api-404'`/`'timeout'`），canonical schema 同步；结果保持部分成功语义。 |
-| P0-6 | `gh_issue list` 把 PR 也列出来（GitHub `/issues` 端点含 PR） | `src/tools.ts:567`（无过滤）；REST 载荷中 PR 条目带 `pull_request` 键 | 过滤掉带 `pull_request` 的条目，或在 item 上标 `kind: 'issue' \| 'pr'`（推荐后者：不丢信息、模型可区分）。 |
-| P0-7 | `repoFromRemoteUrl` 只认 `github.com`，但 `apiBaseUrl` 明确支持 GitHub Enterprise——GHE 用户每次调用都要手写 `ownerRepo` | `src/git.ts:45-48`、`src/config.ts:85-87` | 解析改为与配置的 API host 对齐：接受 `[任意主机][:/]owner/repo`（或至少校验解析出的主机 == `apiBaseUrl` 主机）；保持 `github.com` 默认行为不变。 |
-| P0-8 | 429/403 等失败时，错误规范值丢弃 `GithubError` 已携带的 rate-limit 事实（读操作成功面有、失败面没有）；写操作结果完全没有 rate-limit | `src/tools.ts:52-57`（`githubErrorValue` 丢弃 `error.rateLimit`） | ERROR_SCHEMA 增加可选 `rateLimit`；`githubErrorValue` 透传；写工具成功值也附 `rateLimit`（与读面一致）。 |
-| P0-9 | `/review stop <不存在id>` 时宿主 `jobs.kill` 抛 `unknown job`，命令处理器不捕获，用户看到原始异常文本 | `src/commands.ts:95`；宿主 `packages/jobs/jobs-local/src/index.ts:216`（`expect` 抛出） | 先查 `state.records`，未知 id 返回 `{kind:'error', text: ...}` 干净错误。 |
-| P0-10 | `/review <pr>` 在未加载 `dsh-tool-jobs` 控制器时，`ctx.jobs.start` 直接抛出宿主内部错误（“no job controller serves this agent”），无指引 | `src/commands.ts:127`；宿主 `jobs-local/src/index.ts:131-134` | 捕获 `start` 异常，返回干净错误 + 指引（“load @deepseek-ai/dsh-tool-jobs”）。 |
-| P0-11 | 审批理由对写操作仅展示标题，新增可编辑 body 后需展示内容预览（见 P1-2） | `src/approval-gate.ts:32-48` | `pr_create`/`issue_open`/`review_post` 的 ask reason 增加 body 长度/首行预览，让人类审批时知道将发布什么。 |
+| A-1 | `pr_merge` | 写 | `PUT /repos/{o}/{r}/pulls/{n}/merge`；参数 `pr*`（复用 `parsePrRef`）、`mergeMethod?`（`merge`/`squash`/`rebase`，默认 `merge`）、`commitTitle?`、`commitMessage?`、`deleteBranch?`（默认 false，先 GET PR 元数据取 `head.ref`，合并成功后 best-effort `DELETE /git/refs/heads/{ref}`，失败仅记 `branchDeleteNote`）；新动作 `pr.merge` 入 `allowedActions` 默认值；审批理由含 PR、方法与删分支提示；返回 `{status:'merged', merged, sha, message, url, branchDeleted, rateLimit}` 或结构化错误（405 未可合并 → `github-api-405`）。 |
+| A-2 | `pr_update` | 写 | `PATCH /repos/{o}/{r}/pulls/{n}`；参数 `pr*`、`title?`、`body?`、`state?`（`open`/`closed`）、`base?`，四者至少其一否则 `invalid-args`；新动作 `pr.update`；返回 `{status:'updated', url, number, title, state, base, rateLimit}`。 |
+| A-3 | `gh_repo` | 读 | `GET /repos/{o}/{r}`；参数 `ownerRepo?`；并发安全；返回 `{repo, description, defaultBranch, visibility, stars, forks, openIssues, language, license, topics, url, updatedAt, rateLimit}`。 |
+| A-4 | `gh_file` | 读 | `GET /repos/{o}/{r}/contents/{path}?ref=…`；参数 `ownerRepo?`、`path*`、`ref?`、`maxChars?`（默认新配置 `maxFileChars`=12000）；base64 解码，超限截断并置 `truncated`；目录（数组响应）→ 结构化错误 `is-directory`；并发安全；返回 `{repo, path, ref, size, truncated, content, sha, url, rateLimit}`。 |
 
-### P1 — 功能与体验（主线价值）
+### B. 正确性加固
 
-| # | 问题 | 证据 | 方案 |
-|---|---|---|---|
-| P1-1 | 行级 review 评论是 README 自认的最大 v2 缺口：`review_post` 只能发一条 issue 级聚合评论，分析器已算出 `file + line` 却用不上 | `src/review.ts:14-22`（Finding 带 line）、`src/tools.ts:481-483`（POST `/issues/{n}/comments`）；README.md:189 | ① 后台 job 在抓 diff 的同时抓 PR 元数据，记录 `head.sha`（`src/jobs.ts:84` 目前只抓 diff）；② `review_post` 增加 `mode: 'summary' \| 'inline'`（默认 `summary` 保持兼容）：`inline` 走 `POST /repos/{o}/{r}/pulls/{n}/reviews`（`event: 'COMMENT'`，`comments: [{path, line, body}]`），`line === null` 的 finding（如 `large-change`）并入 review body；③ 行号来自分析器的新文件行号，与 head commit 对齐。 |
-| P1-2 | `review_post` 原样发布 job 草稿，模型不能在校准后修改评语 | `src/tools.ts:481-483`（`body: record.report.postBody` 无参数） | 增加可选 `body` 参数（空串拒绝）；审批 reason 展示 body 预览（联动 P0-11）。 |
-| P1-3 | 后台 review job 只抓 diff，完成通知和 `job_output` 里没有 CI 状态与既有评论——模型被迫再跑一次 `gh_review` | `src/jobs.ts:84`（仅 diff 请求） | job 内一并抓取元数据 + check-runs + 评论（与 `gh_review` 同源归一），报告含 CI 摘要与评论数；仍确定性、零 token。 |
-| P1-4 | issue 生命周期只有「读 + 建」：不能评论、不能关闭 | `src/tools.ts:493-602`（gh_issue 只读）、`:605-662`（issue_open 只建） | 新写工具 `issue_comment`（`POST /issues/{n}/comments`，参数 `ownerRepo`/`issueNumber`/`body`）与新写工具 `issue_close`（`PATCH /issues/{n}`，`state: 'closed'`，可选 `reason` 并入 body）；`allowedActions` 增加 `'issue.comment'`/`'issue.close'`，默认放行，均审批门控。 |
-| P1-5 | 分析器密钥规则覆盖偏窄 | `src/review.ts:41` | 规则表补 `AIza[0-9A-Za-z_-]{35}`（Google API key）、`password\s*[:=]\s*['"]?[^\s'"]+`（弱提示）等常见形态；保持消息固定文本、绝不回显命中的密文（防二次泄露）。 |
-| P1-6 | 评语 Markdown 注入面：文件名来自 diff（不可信仓库内容），直接插入 `### ${file}` | `src/review.ts:174` | 文件名与消息在 `formatPostBody` 内转义（反引号包裹 + 转义内部反引号/HTML 特殊字符），防止恶意 PR 文件名注入评语 Markdown。 |
-| P1-7 | `/review` 无法透传 diff 上限/字段选择 | `src/commands.ts:119-139` | `/review <pr>` 支持可选参数（如 `/review o/r#7 --maxDiff 4000 --no-ci`），映射到 job 输入。 |
+| # | 问题 | 方案 |
+|---|---|---|
+| B-1 | 403+Retry-After 不重试（二级限流） | `GithubClient.request` 把「403 且带 `retry-after` 头」纳入重试（同样受 `maxRetries`/`retryMaxWaitMs`/signal 约束）；无 Retry-After 的 403（权限）立即失败；补 `test/github.test.ts` 用例（重试后成功 / 无头立即失败）。 |
+| B-2 | detached HEAD 发非法 PR | `pr_create` 取到 `git.branch === 'HEAD'` 时返回 `{code:'no-head', guidance:…}`，不请求 API；补用例。 |
+| B-3 | 分析器硬编码 tunable | 新配置 `maxFindings`（默认 50，min 1）、`maxLineLength`（默认 300，min 1）；`analyzeDiff(diff, maxChars, options?)` 增可选第三参，tools/jobs 传配置值，纯函数默认值不变（review.test.ts 兼容）。 |
+| B-4 | model review 发布面措辞 | `/review post` 通知与审批理由：当 `report.findings` 为空且 `summary` 以 `model review` 开头时显示「model review」而非「0 finding(s)」；`review_post` 审批理由同步。 |
+| B-5 | inline 空评论数组 | `review_post` inline 且无行级 finding 时省略 `comments` 键（body-only review），避免空数组边缘行为。 |
 
-### P2 — 工程化、依赖与文档
+### C. 工程化、文档与门禁
 
-| # | 问题 | 证据 | 方案 |
-|---|---|---|---|
-| P2-1 | `@deepseek-ai/dsh-scope` 在 peerDependencies 中但全仓零引用（死依赖，装进每个 profile 闭包） | `package.json:60`；grep `src/`+`test/` 无命中 | 删除该 peer；同时复核其余 peer：`dsh-session`/`dsh-llm` 仅类型使用但 `.d.ts` 引用，保留；`dsh-tools`/`dsh-credentials`/`cordis` 运行时必需，保留。 |
-| P2-2 | 无 CI；`scripts/check-readmes.mjs` 未接入任何 script 或门禁 | `package.json:24-30`；仓库无 `.github/` | 新增 `.github/workflows/ci.yml`：pnpm install → typecheck → test → build → `pnpm pack` → check-readmes（含 5 语言 README 锚点互检）；`package.json` 增加 `check:readmes` script。 |
-| P2-3 | README 安全措辞不准确：“Token lives only in the credential layer + Authorization header”——`env`/`gh` 来源时 token 实际来自进程环境/gh CLI | README.md:31、:83 | 改为准确表述：「逐操作读取，只写入 Authorization 头，绝不进入日志/事件/渲染/错误面」。 |
-| P2-4 | 无 CHANGELOG；版本号 0.1.0 未随功能演进规划 | 仓库根 | 引入 CHANGELOG.md（keep-a-changelog 格式）；按本方案阶段发 0.2.0 / 0.3.0 / 0.4.0。 |
-| P2-5 | README 徽章硬编码 “Tests: 77 passed”，每次加测试即过期 | README.md:20 | 改为不含数字的徽章，或接入 shields.io 动态测试徽章。 |
-| P2-6 | `present.ts` 卡片 rawInput 风格不一致（`reviewPostCall` 用裸字符串，其他用对象） | `src/present.ts:86` | 统一为 `{ jobId: args.jobId }`。 |
-| P2-7 | 无真实 API 冒烟测试（全部走 mock） | `test/`；README.md:204 | 新增 opt-in e2e：有 `GITHUB_TOKEN` 环境变量才跑（否则 self-skip，仿 harness e2e 政策），只对只读端点（`GET /rate_limit`、公开 PR 元数据）打真实 API。 |
-| P2-8 | 提示注入面未文档化：PR 评论/issue 正文是外部不可信内容，进入模型上下文 | `src/tools.ts:390`（comments.body 进 canonical） | README「Security boundaries」补一段：外部内容被标注来源（render 前缀 `[from PR comment]`），并说明这是读网页式固有权衡。 |
-| P2-9 | 进程内 `state.records` 无上限增长（长会话大量 review 不回收） | `src/state.ts:39,74`；README.md:190 承认 process-local | 增加 Config `maxReviewRecords`（默认 50），超限按 LRU 淘汰最旧已终态记录；已发布/killed 记录优先淘汰。 |
+| # | 问题 | 方案 |
+|---|---|---|
+| C-1 | README 漂移无机械门禁 | `check-readmes.mjs` 增加：① 从 `src/tools.ts` 解析全部工具名、从 `src/config.ts` 解析全部配置键，断言 5 语言 README 各提及一遍；② 断言 `package.json` 版本号出现在 5 语言 README（tarball 通道处）；③ 保留锚点互检。 |
+| C-2 | tarball 通道版本号过期 | 5 语言 README 的 `dsh-github-0.4.0.tgz` 统一改为 `dsh-github-<version>.tgz`（`pnpm pack` 产出，不再随版本过期）；删除本地过期 `dsh-github-0.4.0.tgz` 产物。 |
+| C-3 | 版本/变更记录 | `package.json` → 0.5.0；CHANGELOG 新增 `[0.5.0]` 段（Added/Changed/Fixed）；发布后打 tag `v0.5.0` 并在 GitHub 建 Release。 |
+| C-4 | 5 语言文档同步 | 特性列表（12 工具）、配置表（+`maxFileChars`/`maxFindings`/`maxLineLength`、`allowedActions` 默认值）、工具表（+4 行）、架构图工具清单、安全边界（`gh_file` 外部内容标注）、安装通道、布局说明（“twelve model-facing tools”）、模块 JSDoc（`src/index.ts`、`src/tools.ts`）。 |
+| C-5 | 仓库描述过时 | 通过 GitHub API 更新仓库 description 至覆盖合并/更新/文件读取的新特性面。 |
+| C-6 | e2e 冒烟扩展 | `test/e2e.test.ts` 增加一条真实 API 用例：读取 `deepseek-ai/deepseek-harness` 仓库一个已知小文件（contents 端点，只读）；本地验证时以用户 token 实跑。 |
+| C-7 | 卡片与测试面 | `reviewPostCall` rawInput 增 `bodyChars`；新增 4 工具的 `presentCall`/`presentResult`；`test/tools.test.ts`「registers all eight tools」→ twelve；security.test.ts 工具清单补 4 个新工具；approval-gate 补 `pr.merge`/`pr.update` 决策与理由用例；config.test.ts 补新键校验；新增 `test/present.test.ts` 覆盖新卡片纯函数。 |
 
 ---
 
 ## 三、分阶段实施
 
-### 阶段 1 — v0.2.0「正确性与工程化」（纯修复，无破坏性变更）
-包含：P0-1 ~ P0-11、P1-5、P1-6、P2-1 ~ P2-6、P2-8。
-- 每项改动用例先行/同行：P0-5/P0-8 改 canonical schema → 同步 `present.ts` 视图与 `tools.test.ts` 断言；P0-7 加 GHE 远程解析用例；P0-9/P0-10 补命令层错误路径用例（当前 `test/commands.test.ts` 无 unknown-job stop 用例）。
-- `dsh-scope` 移除后 `pnpm install` 重算 lockfile。
-- 5 语言 README 同步：新错误字段、安全措辞（P2-3）、injection 说明（P2-8）、配置表新增 `renderExcerptChars`/`maxReviewRecords`；`check:readmes` 过门禁。
-
-### 阶段 2 — v0.3.0「评审深度」
-包含：P1-1（行级评论）、P1-2（body 可编辑）、P1-3（job 报告富化）、P1-7（/review 参数）、P0-11（审批预览）。
-- `ReviewJobRecord` 增加 `headSha`；`src/jobs.ts` 抓元数据 + diff；`review_post` schema 增 `mode`/`body`，`oneOf` 输出不变（`posted` 增 `mode`、`reviewId?`）。
-- 测试：inline 模式请求体断言（`event: 'COMMENT'`、`comments[].line` 与 finding.line 一致、`line: null` 归入 body）；审批 reason 含预览断言。
-- README 更新工具表、Known limitations（“One aggregated comment” 条目改写为「summary 默认 + inline 可选」）。
-
-### 阶段 3 — v0.4.0「issue 生命周期」
-包含：P1-4（`issue_comment` / `issue_close`）。
-- `allowedActions` 类型与默认值扩展；审批门映射新工具；presenter + 测试 + 5 语言 README。
-
-### 阶段 4 — v1.0 方向
-- ✅ **模型化评审（已实施）**：`reviewMode: 'model'` + `modelReviewProvider` 配置；job 把截断 diff 交给宿主 `subagents` 接缝的一次性 subagent（parent = 发起 job 的 agent），子 agent 的 Markdown 输出成为可发布报告；接缝/provider 缺失响亮失败（start 期即检查）。
-- ✅ **`gh_search` 工具（已实施）**：GitHub 搜索语法查询 issue/PR，独立搜索配额透传。
-- ⏳ **`dsh-github-action` 配套仓库**：需你的 GitHub 账户，另行创建仓库。
-- ✅ **发布 npm（已实施）**：裸名 `dsh-github` 已被 registry 上无关项目（`kaziii/dsh-github-connector`）占用，故以 `@perrylink/dsh-github` 作用域名发布（插件模块名不变）。
-- ❌ **record 持久化（session 级）**：宿主 job 注册表本身进程级，单独持久化记录会误导；保留进程级 + `maxReviewRecords` 上限约束。
-
----
+1. **基础设施**：config（新键/新动作）→ github（403 重试）→ review（tunable 选项）→ 测试先行补用例。
+2. **新工具**：present.ts 类型与卡片 → tools.ts 四个新工具 + B-2/B-5 → approval-gate 映射 → index.ts 注册与文档。
+3. **发布面**：commands 措辞（B-4）→ 测试全量（tools/security/approval-gate/config/present/github/e2e）→ `pnpm test`/`typecheck`/`build`/`pack`/`check:readmes` 全绿。
+4. **文档**：5 语言 README + CHANGELOG + package.json 版本 + check-readmes 扩展（C-1/C-2）。
+5. **交付**：本地以用户 token 跑 e2e → commit → tag `v0.5.0` → push → GitHub Release + 仓库描述 → `npm publish`（prepublishOnly 自带 build+test 门禁）→ 更新本文件状态。
 
 ## 四、验收标准
 
-1. `pnpm test`（含新增用例）全绿，`pnpm typecheck`、`pnpm build`、`pnpm pack`、`node scripts/check-readmes.mjs` 全绿。
-2. 新增行为均有用例覆盖；P0 各项至少一条失败路径用例（静默吞错、unknown job、无控制器、GHE remote、PR 混入 list、错误面 rateLimit）。
-3. 真实加载验证：`dsh --profile <name> --dump-config` 无 FAILED；`/review`、`gh_review`、`review_post --inline` 在 Web UI 走通一次（无 key 时至少 dump-config + 命令注册面验证）。
-4. 5 语言 README 同步且锚点互检通过；CHANGELOG 记录每版本条目。
-5. 安全测试保持并扩展：token 不出现在任何可见面（含新错误字段、审批预览、行级评论体）；P1-6 转义用例（恶意文件名）进入 `test/review.test.ts`。
+1. `pnpm test` 全绿（新增用例覆盖：403 重试、detached HEAD、pr_merge/pr_update/gh_repo/gh_file 各成功与失败路径、新配置校验、新审批动作、新卡片）；`pnpm typecheck`、`pnpm build`、`pnpm pack`、`pnpm run check:readmes` 全绿。
+2. security.test.ts 扩展后 token 不泄漏断言覆盖 12 个工具的全部可见面。
+3. e2e 以真实 token 实跑通过（只读端点）。
+4. 5 语言 README 工具/配置清单与源码一致（check-readmes 机械断言）；CHANGELOG 完整。
+5. GitHub：main 分支 + `v0.5.0` tag + Release 建成；npm：`@perrylink/dsh-github@0.5.0` 发布成功且 `latest` dist-tag 指向 0.5.0。
 
 ## 五、明确不做（避免范围蔓延）
 
-- 不引入自定义 Session 事件（宿主契约，见研究笔记）。
-- 不改 agent-loop、不碰宿主仓库（`packages/`）；本仓库是独立插件包。
-- 不做 `dsh-github-action` 配套仓库（需外部账户，后续动作）。
-- 不做 GraphQL/搜索 API（阶段 4 方向）。
+- 不做 GraphQL、不做 Actions/Workflow 触发工具、不做 commit/分支写入工具（git 写入归 bash 审批门）。
+- 不引入自定义 Session 事件（宿主契约）；不改 agent-loop、不碰宿主仓库。
+- 不做 record 持久化（进程级与宿主 job 注册表一致，已有 `maxReviewRecords` 上限）。
 - 不把 token 加进任何 config 字段（凭据缝契约红线）。

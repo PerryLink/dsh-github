@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-15
+
+### Added
+
+- `pr_merge` tool: merge a pull request with `merge` / `squash` / `rebase`, optional commit title/message, and optional head-branch deletion after the merge (approval-gated, action `pr.merge`). The tool passes the head-commit SHA for consistency and reports branch-deletion failures as a note without failing the merge.
+- `pr_update` tool: edit a pull request's title, body, state (`open`/`closed`), or target branch (approval-gated, action `pr.update`; at least one field required).
+- `gh_repo` tool: read a repository's metadata (description, default branch, visibility, stars, forks, open issues, language, license, topics, last update). Concurrency-safe.
+- `gh_file` tool: read one file from a repository at a branch, tag, or commit (base64-decoded, capped by the new `maxFileChars` config, per-call `maxChars` override); directories are reported as a structured `is-directory` error. Concurrency-safe.
+- Analyzer tunables moved into configuration: `maxFindings` (default 50) and `maxLineLength` (default 300) replace the hardcoded constants in `src/review.ts`.
+- Secondary-rate-limit resilience: the REST client now retries **403 responses carrying a `Retry-After` header** (GitHub's secondary-limit / abuse-detection signal) under the same `maxRetries` / backoff / signal rules as 429s; 403s without `Retry-After` still fail fast as permission denials.
+- 204 No Content responses are handled by the JSON client (needed by the branch-deletion call).
+- `test/present.test.ts`: pure-function coverage for the new UI cards plus the `review_post` body-size indicator.
+- The `check:readmes` gate now also asserts that every README mentions every tool and config key from the source, that no README pins a versioned tarball name, and that CHANGELOG.md carries a section for the current version.
+- Real-API e2e smoke for the contents endpoint (base64 decode path).
+
+### Changed
+
+- `/pr create` refuses detached-HEAD checkouts with a structured `no-head` error instead of sending the literal branch name `HEAD` to the API.
+- `/review post` and the `review_post` approval reason label model-review jobs "model review" instead of "0 finding(s)".
+- `review_post` inline mode omits the `comments` key entirely for body-only reviews (no line-anchored findings) instead of posting an empty array.
+- The `review_post` pending card records the body override as a character count (`bodyChars`) rather than dropping it or dumping the text.
+- `allowedActions` defaults now include `pr.merge` and `pr.update`.
+- README install channels reference `dsh-github-<version>.tgz` instead of a stale pinned version.
+
 ## [0.4.1] - 2026-08-14
 
 ### Fixed

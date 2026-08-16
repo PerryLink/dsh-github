@@ -9,7 +9,7 @@
  */
 import z from '@deepseek-ai/schemastery';
 /** GitHub write actions the plugin may perform (each still requires approval). */
-export type GithubAction = 'pr.create' | 'review.post' | 'issue.create' | 'issue.comment' | 'issue.close';
+export type GithubAction = 'pr.create' | 'review.post' | 'issue.create' | 'issue.comment' | 'issue.close' | 'pr.merge' | 'pr.update';
 /** Where a GitHub token is looked up. `auto` tries them in order. */
 export type TokenSource = 'auto' | 'credentials' | 'env' | 'gh';
 export interface Config {
@@ -35,6 +35,12 @@ export interface Config {
     reviewJobTimeoutMs: number;
     /** Cap for in-memory review-job records; oldest settled records evict first. */
     maxReviewRecords: number;
+    /** Cap for file contents read by gh_file. */
+    maxFileChars: number;
+    /** Cap for analyzer findings per review. */
+    maxFindings: number;
+    /** Line length beyond which the analyzer flags a long-line finding. */
+    maxLineLength: number;
     /**
      * Review engine: `static` runs the deterministic analyzer; `model` delegates
      * the capped diff to a one-shot subagent through the host's `subagents` seam

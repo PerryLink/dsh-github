@@ -27,6 +27,13 @@ export interface ReviewReport {
     /** Whether the analyzed diff exceeded the cap and was truncated. */
     truncated: boolean;
 }
+/** Tunables for the analyzer; every key has a config counterpart. */
+export interface AnalyzerOptions {
+    /** Cap for findings per review. Defaults to 50. */
+    maxFindings?: number;
+    /** Line length beyond which a long-line finding is raised. Defaults to 300. */
+    maxLineLength?: number;
+}
 /** Split a unified diff into per-file added lines with new-file line numbers. */
 export declare function parseAddedLines(diff: string, maxChars: number): Array<{
     file: string;
@@ -45,9 +52,10 @@ export declare function parseDiffStats(diff: string, maxChars: number): DiffFile
  * Analyze a unified diff into findings and a postable comment body.
  * @param diff - unified diff text (already capped by the caller or capped here).
  * @param maxChars - character cap applied before parsing.
+ * @param options - analyzer tunables; defaults mirror the config defaults.
  * @returns findings (capped), one-line summary, and Markdown post body.
  */
-export declare function analyzeDiff(diff: string, maxChars: number): ReviewReport;
+export declare function analyzeDiff(diff: string, maxChars: number, options?: AnalyzerOptions): ReviewReport;
 /** Markdown comment body grouped by file, ready for a PR issue comment. */
 export declare function formatPostBody(findings: readonly Finding[], truncated: boolean): string;
 //# sourceMappingURL=review.d.ts.map

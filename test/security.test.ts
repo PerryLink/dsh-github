@@ -21,8 +21,11 @@ const accept = (init?: RequestInit): string => String((init?.headers as Record<s
 const FULL_ROUTES = [
   { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r', respond: () => jsonResponse(200, { default_branch: 'main' }) },
   { match: (m: string, u: URL) => m === 'POST' && u.pathname === '/repos/o/r/pulls', respond: () => jsonResponse(201, PULL_PAYLOAD) },
+  { match: (m: string, u: URL) => m === 'PUT' && u.pathname === '/repos/o/r/pulls/7/merge', respond: () => jsonResponse(200, { sha: 's', merged: true, message: 'merged' }) },
+  { match: (m: string, u: URL) => m === 'PATCH' && u.pathname === '/repos/o/r/pulls/7', respond: () => jsonResponse(200, PULL_PAYLOAD) },
   { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) !== 'application/vnd.github.diff', respond: () => jsonResponse(200, PULL_PAYLOAD) },
   { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) === 'application/vnd.github.diff', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
+  { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/contents/README.md', respond: () => jsonResponse(200, { name: 'README.md', path: 'README.md', sha: 's', size: 2, content: Buffer.from('hi').toString('base64'), encoding: 'base64', html_url: 'https://github.com/o/r/blob/main/README.md' }) },
   { match: () => true, respond: () => jsonResponse(404, { message: 'not stubbed' }) },
 ]
 
@@ -47,12 +50,16 @@ describe('token non-leakage (S2)', () => {
 
     for (const [name, args] of [
       ['pr_create', { title: 'x' }],
+      ['pr_merge', { pr: 'o/r#7' }],
+      ['pr_update', { pr: 'o/r#7', title: 't' }],
       ['gh_review', { pr: 'o/r#7' }],
       ['gh_issue', { action: 'list' }],
       ['issue_open', { title: 'x' }],
       ['issue_comment', { issueNumber: 1, body: 'x' }],
       ['issue_close', { issueNumber: 1 }],
       ['gh_search', { q: 'repo:o/r bug' }],
+      ['gh_repo', {}],
+      ['gh_file', { path: 'README.md' }],
     ] as Array<[string, Record<string, unknown>]>) {
       const value = await services.tools.run(name, args, agent).catch(error => ({ thrown: String(error) }))
       collect(name, value)
@@ -103,12 +110,16 @@ describe('token non-leakage (S2)', () => {
     const outputs: string[] = []
     for (const [name, args] of [
       ['pr_create', { title: 'x', base: 'main', head: 'h' }],
+      ['pr_merge', { pr: '7' }],
+      ['pr_update', { pr: '7', title: 't' }],
       ['gh_review', { pr: '7' }],
       ['gh_issue', { action: 'list' }],
       ['issue_open', { title: 'x' }],
       ['issue_comment', { issueNumber: 1, body: 'x' }],
       ['issue_close', { issueNumber: 1 }],
       ['gh_search', { q: 'x' }],
+      ['gh_repo', {}],
+      ['gh_file', { path: 'a.txt' }],
       ['review_post', { jobId: 'nope' }],
     ] as Array<[string, Record<string, unknown>]>) {
       const value = await services.tools.run(name, args, agent).catch(error => ({ thrown: String(error) }))

@@ -24,10 +24,11 @@
 
 ---
 
-**dsh-github** [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) के लिए एक bundle plugin है — जो "everything is a plugin" एजेंट harness है। यह dsh और [Claude Code](https://github.com/anthropics/claude-code) (`gh claude` / [claude-code-action](https://github.com/anthropics/claude-code-action)) तथा [Codex](https://github.com/openai/codex) (`@codex review` / Autofix CI) जैसे टूल्स के बीच की GitHub कमी को पूरा करता है: आपका एजेंट **PR पढ़ सकता है, PR की समीक्षा (review) कर सकता है, PR खोल सकता है, issues पर comment कर सकता है और उन्हें close कर सकता है, और खोज सकता है** — जबकि हर write को एक मानव अनुमोदित (approve) करता है और token गुप्त रहता है।
+**dsh-github** [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) के लिए एक bundle plugin है — जो "everything is a plugin" एजेंट harness है। यह dsh और [Claude Code](https://github.com/anthropics/claude-code) (`gh claude` / [claude-code-action](https://github.com/anthropics/claude-code-action)) तथा [Codex](https://github.com/openai/codex) (`@codex review` / Autofix CI) जैसे टूल्स के बीच की GitHub कमी को पूरा करता है: आपका एजेंट **PR पढ़ सकता है, PR की समीक्षा (review) कर सकता है, PR खोल सकता है, PRs को merge और update कर सकता है, repo metadata और files पढ़ सकता है, issues पर comment कर सकता है और उन्हें close कर सकता है, और खोज सकता है** — जबकि हर write को एक मानव अनुमोदित (approve) करता है और token गुप्त रहता है।
 
-- 🛠 **8 टूल्स** — `pr_create` · `gh_review` · `review_post` · `gh_issue` · `issue_open` · `issue_comment` · `issue_close` · `gh_search`, सभी `defineTool` के ज़रिए canonical-JSON
+- 🛠 **12 टूल्स** — `pr_create` · `pr_merge` · `pr_update` · `gh_review` · `review_post` · `gh_issue` · `issue_open` · `issue_comment` · `issue_close` · `gh_search` · `gh_repo` · `gh_file`, सभी `defineTool` के ज़रिए canonical-JSON
 - ⌨️ **3 कमांड परिवार** — `/pr create` · `/review` (start/stop/post) · `/issue open`
+- 🔀 **पूरा PR lifecycle** — बनाएँ → समीक्षा करें → update करें (title/body/state/base branch) → merge करें (merge/squash/rebase, वैकल्पिक head-branch deletion)
 - 📝 **Inline reviews** — `review_post` एक summary comment या PR head commit के विरुद्ध line-anchored review comments प्रकाशित करता है
 - 🔒 **Approval-नियंत्रित writes** — हर GitHub write `ctx.approval` से होकर गुजरता है (डिफ़ॉल्ट `ask`, fail-closed); approval reasons titles, body sizes, और comment overrides की पूर्व-झलक देते हैं
 - 🗝 **Token गोपनीयता** — credentials seam → environment → `gh` CLI, प्रति operation resolved, कभी logs, events, renders, या errors में नहीं
@@ -60,8 +61,8 @@
 # 1. install (npm registry — सबसे सरल; या नीचे दिया गया tarball channel इस्तेमाल करें)
 dsh plugin --profile <name> add @perrylink/dsh-github
 #    tarball channel (registry की ज़रूरत नहीं):
-pnpm pack                              # inside this repo → dsh-github-0.4.0.tgz
-dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
+#    pnpm pack → dsh-github-<version>.tgz
+#    dsh plugin --profile <name> add ./dsh-github-<version>.tgz
 
 # 2. configure a GitHub token (recommended: the credentials seam)
 #    $DSH_HOME/.credentials.yaml
@@ -81,9 +82,13 @@ dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 | क्षेत्र | आपको क्या मिलता है |
 |---|---|
 | **PR बनाएँ** | `/pr create [title]` git स्थिति (branch, changed files, commits ahead) पढ़ता है और एजेंट को एक draft देता है; `pr_create` PR खोलता है और उसका URL लौटाता है |
+| **PR update करें** | `pr_update` title, body, state, या base branch को संपादित करता है — हर दूसरे write की तरह approval-नियंत्रित |
+| **PR merge करें** | `pr_merge` `merge`/`squash`/`rebase` से merge करता है, वैकल्पिक commit title/message और merge के बाद head-branch deletion |
 | **PR की समीक्षा करें** | `gh_review` metadata, capped diff (canonical value में पूरा text, render में bounded excerpt), comments, CI status, और static findings का सारांश देता है — per-section fetch failures `diff.error` / `comments.error` / `ci.error` के रूप में रिपोर्ट होते हैं |
 | **समीक्षाएँ पोस्ट करें** | `review_post` एक aggregated issue-level comment (`mode: "summary"`, डिफ़ॉल्ट) या PR head commit पर line-anchored review comments (`mode: "inline"`) प्रकाशित करता है; एक `body` override model को पहले comment को निखारने देता है — मानवीय approval के बाद |
 | **Background reviews** | `/review <pr>` एक `ctx.jobs` job में metadata, capped diff, CI checks, और existing comments fetch करता है; completion output findings summary, CI status, और comment count लेकर आता है; `reviewMode: "model"` static analyzer के बजाय diff को एक one-shot subagent को सौंपता है |
+| **Repos पढ़ें** | `gh_repo` repository metadata पढ़ता है: description, default branch, visibility, stars, forks, open issues, language, license, topics |
+| **Files पढ़ें** | `gh_file` किसी branch/tag/commit पर एक file पढ़ता है, base64 decoding और configurable cap के साथ; directories एक structured error लौटाती हैं |
 | **Issues पढ़ें** | `gh_issue` lists / gets / comments करता है; listings में pull requests `kind: "pr"` के रूप में marked होते हैं |
 | **Issues प्रबंधित करें** | `issue_open` बनाता है, `issue_comment` comment करता है (PRs पर भी काम करता है), `issue_close` एक optional state reason के साथ close करता है — सभी approval-नियंत्रित |
 | **खोजें** | `gh_search` GitHub search syntax से issues और pull requests को query करता है, अलग search quota दिखाता है |
@@ -99,7 +104,7 @@ dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz
 | चैनल | कमांड | नोट्स |
 |---|---|---|
 | **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | npm पर प्रकाशित — सबसे सरल channel |
-| **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-0.4.0.tgz` | built `lib/` के साथ आता है — कोई build permission आवश्यक नहीं |
+| **npm tarball** | `dsh plugin --profile <name> add ./dsh-github-<version>.tgz` | built `lib/` के साथ आता है — कोई build permission आवश्यक नहीं |
 | **git source** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | `prepare` + `allowBuilds` चाहिए (नीचे देखें); commit को pin करें |
 | **local link** | `pnpm link --dir .` then `dsh plugin add @perrylink/dsh-github` | विकास |
 
@@ -131,13 +136,16 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 | `maxComments` | `20` | `gh_review` द्वारा सूचीबद्ध PR comments की सीमा |
 | `reviewJobTimeoutMs` | `600000` | एक background review job की समय-सीमा (`timeout` के साथ fail होता है) |
 | `maxReviewRecords` | `50` | in-memory review-job records की सीमा; सबसे पुराने settled records पहले evict होते हैं |
+| `maxFileChars` | `12000` | `gh_file` द्वारा पढ़े गए file contents की character सीमा |
+| `maxFindings` | `50` | प्रति review analyzer findings की सीमा |
+| `maxLineLength` | `300` | line length जिसके पार analyzer long-line finding flag करता है |
 | `reviewMode` | `static` | Review engine: `static` (deterministic analyzer) या `model` (host के `subagents` seam के ज़रिए one-shot subagent; seam अनुपस्थित होने पर fail loud) |
 | `modelReviewProvider` | — | `reviewMode: "model"` के लिए subagent provider नाम; डिफ़ॉल्ट रूप से पहले registered provider का उपयोग |
 | `maxRetries` | `3` | प्रति request 429 retry प्रयास |
 | `retryBaseMs` | `500` | Retry backoff आधार (प्रति प्रयास दोगुना) |
 | `retryMaxWaitMs` | `60000` | Retry backoff की अधिकतम सीमा |
 | `apiBaseUrl` | `https://api.github.com` | GitHub REST base URL (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; बाकी सब approval से पहले अस्वीकार |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; बाकी सब approval से पहले अस्वीकार |
 | `workspaceDir` | process cwd | read-only git inspection के लिए working directory |
 
 ## 🛠 टूल्स
@@ -145,7 +153,11 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 | टूल | प्रकार | पैरामीटर | लौटाता है |
 |---|---|---|---|
 | `pr_create` | write | `title*`, `body?`, `base?`, `head?`, `draft?`, `ownerRepo?` | `{status:'created', url, number, title, state, draft, base, head, rateLimit}` या structured error |
+| `pr_merge` | write | `pr*` (number / `#n` / `o/r#n` / URL), `mergeMethod?`, `commitTitle?`, `commitMessage?`, `deleteBranch?` | `{status:'merged', merged, sha?, message, url, branchDeleted, branchDeleteNote?, rateLimit}` या structured error |
+| `pr_update` | write | `pr*` (number / `#n` / `o/r#n` / URL), `title?`, `body?`, `state?` (`open`/`closed`), `base?` | `{status:'updated', url, number, title, state, base, rateLimit}` या structured error |
 | `gh_review` | read | `pr*` (number / `#n` / `o/r#n` / URL), `fields?`, `maxDiffChars?` | metadata, capped diff (पूरा `diff.text` + bounded `diff.excerpt` + per-file stats), comments, CI, static findings, per-section `error` fields, rate limit |
+| `gh_repo` | read | `ownerRepo?` | `{repo, description, defaultBranch, visibility, stars, forks, openIssues, language, license, topics, url, updatedAt, rateLimit}` या structured error |
+| `gh_file` | read | `ownerRepo?`, `path*`, `ref?`, `maxChars?` | `{repo, path, ref, size, truncated, content, sha, url, rateLimit}` या structured error |
 | `gh_issue` | read | `action*` (`list`/`get`/`comments`), `ownerRepo?`, `issueNumber?`, `state?`, `limit?` | normalized items (हर एक `kind: issue/pr/comment` marked) + rate limit |
 | `review_post` | write | `jobId*`, `mode?` (`summary`/`inline`), `body?` | `{status:'posted', mode, url, commentId?, reviewId?, findings, rateLimit}` या structured error |
 | `issue_open` | write | `title*`, `body?`, `labels?`, `ownerRepo?` | `{status:'created', url, number, title, rateLimit}` या structured error |
@@ -176,8 +188,9 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
          /review ───┼──► ctx.jobs.start("github-review") ──► job    │
          /issue ────┼──► agent.followup                              │
                     │                                               │
- मॉडल ─── pr_create / gh_review / gh_issue / review_post /         │
-           issue_open / issue_comment / issue_close / gh_search     │
+ मॉडल ─── pr_create / pr_merge / pr_update / gh_review /           │
+           review_post / gh_issue / issue_open / issue_comment /    │
+           issue_close / gh_search / gh_repo / gh_file              │
            (defineTool, canonical JSON only)                        │
                     │                                               │
                     └───────┬───────────────┬───────────────┬───────┘
@@ -189,7 +202,7 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 ```
 
 - **Credential seam.** `tokenSource: auto` प्रति operation क्रम में resolve करता है: credentials seam (`GITHUB_TOKEN` reference) → environment variable → `gh` CLI token। यह मान एक local variable है जो REST client को दिया जाता है; यह कभी canonical values, renders, cards, command outputs, injected notices, job output, approval reasons, या error messages में नहीं जाता।
-- **Approval.** सभी writes model tools से होकर गुजरते हैं। एक `tools/pre-execute` waterfall listener पाँच write tools के लिए `ask` लौटाता है, इसलिए registry `ctx.approval` के ज़रिए मानव से पूछता है (host `approval/asked` + `approval/decided` audit pair log करता है) और बिना answerer के fail closed हो जाता है। Approval reasons यह पूर्व-झलक देते हैं कि क्या प्रकाशित होगा (titles, body sizes, और overridden review body की पहली line)। Commands कभी सीधे write नहीं करते: command handlers बिना किसी open turn के चलते हैं, इसलिए approval seam उनके लिए संरचनात्मक रूप से बंद है — एक write command read-only context इकट्ठा करता है, फिर एजेंट को जगाता है (idle होने पर `followup`, busy होने पर `inject`) ताकि model gated tool को एक turn के भीतर चलाए।
+- **Approval.** सभी writes model tools से होकर गुजरते हैं। एक `tools/pre-execute` waterfall listener सात write tools के लिए `ask` लौटाता है, इसलिए registry `ctx.approval` के ज़रिए मानव से पूछता है (host `approval/asked` + `approval/decided` audit pair log करता है) और बिना answerer के fail closed हो जाता है। Approval reasons यह पूर्व-झलक देते हैं कि क्या प्रकाशित होगा (titles, body sizes, merge methods, और overridden review body की पहली line)। Commands कभी सीधे write नहीं करते: command handlers बिना किसी open turn के चलते हैं, इसलिए approval seam उनके लिए संरचनात्मक रूप से बंद है — एक write command read-only context इकट्ठा करता है, फिर एजेंट को जगाता है (idle होने पर `followup`, busy होने पर `inject`) ताकि model gated tool को एक turn के भीतर चलाए।
 - **Background review.** `/review <pr>` `ctx.jobs` पर एक `github-review` job शुरू करता है (label, owner, timeout, cancelable)। Job प्रति operation token resolve करता है, PR metadata fetch करता है (inline posting के लिए head-commit SHA कैप्चर करते हुए), capped diff, और — जब तक disabled न हो — CI check runs और existing review comments, फिर एक deterministic multi-file analyzer चलाता है (`src/review.ts`: hardcoded secrets, Google API keys, credential assignments, debug artifacts, eval, TODO markers, long lines, oversized changes) — शून्य tokens खर्च, पूर्णतः testable। `reviewMode: "model"` होने पर, job इसके बजाय capped diff को host के `subagents` seam के ज़रिए एक one-shot subagent को सौंपता है (owning agent parent होता है) और child के Markdown output को postable report के रूप में store करता है; seam या provider अनुपस्थित होने पर fail loud होता है। Supplementary fetch failures output में नोट किए जाते हैं बिना job को fail किए। Completion notices शुरू करने वाले session तक host के `dsh-tool-jobs` consumer के ज़रिए पहुँचते हैं; model रिपोर्ट को मौजूदा `job_output` tool से पढ़ता है और उसे `review_post` से प्रकाशित करता है — approval आवश्यक।
 - **Model-visible ⇔ logged.** Plugin **कोई custom session event types नहीं** जोड़ता। Out-of-repo event types host के `KNOWN_SESSION_EVENT_TYPES` में नहीं हैं, इसलिए एक unknown required event plugin हटाने के बाद session log को अपठनीय बना देता (host जानबूझकर external plugins के लिए registration surface को defer करता है)। इसलिए सारा model-visible content host-logged surfaces से होकर बहता है: `tool/result` canonical values, `agent.inject`/`agent.followup` के ज़रिए `user/message` notices, `command/run` + `command/done` lifecycle pair, और `approval/asked` + `approval/decided` audit pair।
 - **Pure presenters.** `presentCall`/`presentResult` `args` (+ persisted `result.meta`) के pure functions हैं, जो live streaming और log replay पर समान रहते हैं। PR creation PR URL के साथ एक generic card दिखाता है।
@@ -201,7 +214,7 @@ Load time पर Schemastery-सत्यापित (fail loud)। Profile क
 - `/pr create` कभी खुद commit या push नहीं करता; `autoCommit: true` के साथ model वे writes bash tool के अपने approval gate से करता है। dsh-github git identity (dsh-git-identity का काम) या worktrees (dsh-worktree का काम) का प्रबंधन **नहीं** करता।
 - Review job कोई write नहीं करता: यह एक diff पढ़ता है और रिपोर्ट को process memory में रखता है; केवल `review_post` approval के बाद प्रकाशित करता है।
 - Posted comments diff से लिए गए file names को interpolate करते हैं, जो untrusted repository content हैं: `formatPostBody` file names को backtick-escape और HTML-escape करता है ताकि कोई hostile PR review comment में Markdown inject न कर सके।
-- GitHub से पढ़े गए issue/PR bodies, comments, और search results external untrusted content हैं जो model context में प्रवेश करते हैं — web fetching जैसा ही inherent tradeoff; plugin उन्हें अपने renders में external content के रूप में mark करता है।
+- `gh_file` द्वारा पढ़े गए file contents और GitHub से पढ़े गए issue/PR bodies, comments, और search results external untrusted content हैं जो model context में प्रवेश करते हैं — web fetching जैसा ही inherent tradeoff; plugin उन्हें अपने renders में external content के रूप में mark करता है।
 - Rate limits: 429s को backoff के साथ retry किया जाता है और शेष quota हर result पर (failures सहित) model को दिखाया जाता है।
 
 ## ⚠️ ज्ञात सीमाएँ
@@ -220,7 +233,7 @@ pnpm test          # vitest: config, credentials, 429/retry, tools, commands, jo
 pnpm typecheck
 pnpm build         # tsc → lib/ (noEmitOnError)
 pnpm pack          # installable tarball
-pnpm run check:readmes   # cross-checks TOC anchors in all 5 READMEs
+pnpm run check:readmes   # cross-checks TOC anchors, tools, and config keys in all 5 READMEs
 ```
 
 Tests injected runners के ज़रिए GitHub API, `gh` CLI, और git को mock करते हैं — कोई network नहीं, कोई real credentials नहीं। `test/security.test.ts` पुष्टि करता है कि token string किसी भी model- या human-visible output में कभी नहीं आता। `test/e2e.test.ts` में opt-in real-API smoke tests हैं जो `DSH_GITHUB_E2E_TOKEN` सेट न होने पर खुद को skip कर लेते हैं (केवल read-only endpoints)।
@@ -237,7 +250,7 @@ src/git.ts            read-only git inspection + origin parsing for any API host
 src/review.ts         deterministic diff analyzer + sanitized comment drafting
 src/jobs.ts           github-review background job producer (metadata + diff + CI + comments)
 src/approval-gate.ts  tools/pre-execute ask/deny gate with write previews
-src/tools.ts          the eight model-facing tools
+src/tools.ts          the twelve model-facing tools
 src/commands.ts       /pr, /review, /issue
 src/present.ts        pure UI-card presenters
 test/                 vitest suite + mock host scaffolding + opt-in e2e smoke

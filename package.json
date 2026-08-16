@@ -1,7 +1,7 @@
 {
   "name": "@perrylink/dsh-github",
-  "version": "0.4.1",
-  "description": "GitHub integration for DeepSeek Harness: create pull requests, review PRs with background jobs, and read issues — every write gated by human approval",
+  "version": "0.5.0",
+  "description": "GitHub integration for DeepSeek Harness: create, merge, and update pull requests, review PRs with background jobs, read issues, repos, and files — every write gated by human approval",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

@@ -36,4 +36,15 @@ describe.skipIf(!HAS_TOKEN)('real GitHub API smoke', () => {
     expect(response.data.full_name).toBe('deepseek-ai/deepseek-harness')
     expect(response.data.default_branch.length).toBeGreaterThan(0)
   })
+
+  it('reads one small file through the contents endpoint (base64 decode path)', async () => {
+    const response = await client().requestJson<{ path: string; encoding?: string; content?: string; sha?: string }>(
+      'GET', '/repos/deepseek-ai/deepseek-harness/contents/package.json',
+    )
+    expect(response.status).toBe(200)
+    expect(response.data.path).toBe('package.json')
+    expect(response.data.encoding).toBe('base64')
+    expect(typeof response.data.content).toBe('string')
+    expect(Buffer.from(response.data.content ?? '', 'base64').toString('utf8')).toContain('"name"')
+  })
 })

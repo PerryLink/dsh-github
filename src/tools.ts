@@ -1,13 +1,14 @@
 /**
  * The model-facing tool surface of dsh-github.
  *
- * Eight tools: pr_create / review_post / issue_open / issue_comment /
- * issue_close (writes, approval-gated by the tools/pre-execute listener in
- * approval-gate.ts) and gh_review / gh_issue / gh_search (concurrency-safe
- * reads). Every execute returns only the canonical JSON value declared by its
- * output schema; infrastructure failures throw so the registry marks them
- * isError. Tokens never appear in canonical values, rendered content, or
- * thrown messages. Rate-limit facts ride every result, including errors.
+ * Twelve tools: pr_create / pr_merge / pr_update / review_post / issue_open /
+ * issue_comment / issue_close (writes, approval-gated by the tools/pre-execute
+ * listener in approval-gate.ts) and gh_review / gh_issue / gh_search / gh_repo /
+ * gh_file (concurrency-safe reads). Every execute returns only the canonical
+ * JSON value declared by its output schema; infrastructure failures throw so
+ * the registry marks them isError. Tokens never appear in canonical values,
+ * rendered content, or thrown messages. Rate-limit facts ride every result,
+ * including errors.
  * @module dsh-github/tools
  */
 import { defineTool } from '@deepseek-ai/dsh-tools'
@@ -17,10 +18,13 @@ import { readGitState } from './git.ts'
 import { analyzeDiff, formatPostBody, parseDiffStats, type Finding } from './review.ts'
 import { rateLimitValue, type GithubState, type RateLimitValue } from './state.ts'
 import {
-  ghIssueCall, ghIssueResult, ghReviewCall, ghReviewResult, ghSearchCall, ghSearchResult,
+  ghFileCall, ghFileResult, ghIssueCall, ghIssueResult, ghRepoCall, ghRepoResult,
+  ghReviewCall, ghReviewResult, ghSearchCall, ghSearchResult,
   identityMeta, issueCloseCall, issueCloseResult, issueCommentCall, issueCommentResult,
-  issueOpenCall, issueOpenResult, prCreateCall, prCreateResult, reviewPostCall, reviewPostResult,
-  type GithubErrorValue, type IssueListValue, type PrSummaryValue, type SearchValue,
+  issueOpenCall, issueOpenResult, prCreateCall, prCreateResult, prMergeCall, prMergeResult,
+  prUpdateCall, prUpdateResult, reviewPostCall, reviewPostResult,
+  type FileValue, type GithubErrorValue, type IssueListValue, type PrSummaryValue,
+  type RepoValue, type SearchValue,
 } from './present.ts'
 
 const RATE_LIMIT_PROPERTIES = {
@@ -198,6 +202,9 @@ export function prCreateTool(state: GithubState) {
       if (head === undefined || head.length === 0) {
         const git = await readGitState(state.workspaceDir, state.runGit, exec.signal, state.apiHost)
         if (git.branch === null) return errorValue('no-head', 'could not determine the head branch', 'Pass `head` explicitly or run inside a git checkout.')
+        if (git.branch === 'HEAD') {
+          return errorValue('no-head', 'the checkout is in detached HEAD state', 'Check out a branch (or pass `head` explicitly) before creating a pull request.')
+        }
         head = git.branch
       }
 
@@ -429,7 +436,9 @@ export function ghReviewTool(state: GithubState) {
         }
       }
 
-      const findings: Finding[] = fields.has('findings') ? analyzeDiff(diffText, maxDiffChars).findings : []
+      const findings: Finding[] = fields.has('findings')
+        ? analyzeDiff(diffText, maxDiffChars, { maxFindings: state.config.maxFindings, maxLineLength: state.config.maxLineLength }).findings
+        : []
 
       const value: PrSummaryValue = {
         repo: repoResult.repo,
@@ -571,11 +580,15 @@ export function reviewPostTool(state: GithubState) {
               body: {
                 body: reviewBody,
                 event: 'COMMENT',
-                comments: inline.map(finding => ({
-                  path: finding.file,
-                  line: finding.line,
-                  body: `**${finding.severity}** \`${finding.rule}\`: ${finding.message}`,
-                })),
+                // A body-only review omits `comments` entirely: GitHub rejects
+                // an empty array edge more strictly than a missing key.
+                ...inline.length > 0 ? {
+                  comments: inline.map(finding => ({
+                    path: finding.file,
+                    line: finding.line,
+                    body: `**${finding.severity}** \`${finding.rule}\`: ${finding.message}`,
+                  })),
+                } : {},
               },
             },
           )
@@ -993,6 +1006,378 @@ export function ghSearchTool(state: GithubState) {
               createdAt: item.created_at ?? '',
             }
           }),
+          rateLimit: rateLimitValue(response.rateLimit),
+        }
+        return value
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}
+
+/** `pr_merge`: merge a pull request (write; approval-gated upstream). */
+export function prMergeTool(state: GithubState) {
+  return defineTool({
+    name: 'pr_merge',
+    description: 'Merge a GitHub pull request. Requires approval. `pr` accepts a number, "#number", '
+      + '"owner/repo#number", or a pull-request URL. Optionally deletes the head branch after the merge.',
+    parameters: {
+      pr: { type: 'string', required: true, description: 'PR number, #number, owner/repo#number, or pull URL.' },
+      mergeMethod: { type: 'string', enum: ['merge', 'squash', 'rebase'], description: 'Merge method. Defaults to merge.' },
+      commitTitle: { type: 'string', description: 'Merge commit title (squash/rebase).' },
+      commitMessage: { type: 'string', description: 'Merge commit message (squash/rebase).' },
+      deleteBranch: { type: 'boolean', description: 'Delete the head branch after merging. Defaults to false.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            status: { type: 'string', required: true, const: 'merged' },
+            merged: { type: 'boolean', required: true },
+            sha: { type: 'string' },
+            message: { type: 'string', required: true },
+            url: { type: 'string', required: true },
+            branchDeleted: { type: 'boolean', required: true },
+            branchDeleteNote: { type: 'string' },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if (value.status === 'error') {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        const deleted = value.branchDeleted ? ' (head branch deleted)' : value.branchDeleteNote !== undefined ? ` (branch delete failed: ${value.branchDeleteNote})` : ''
+        return [{ type: 'text', text: `merged pull request: ${value.url}${deleted} — ${value.message}` }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => false,
+    presentCall: prMergeCall,
+    presentResult: prMergeResult,
+    async execute(args, exec) {
+      const ref = state.parsePrRef(args.pr)
+      if (ref === null) return errorValue('invalid-pr', `"${args.pr}" is not a PR reference`, 'Use a number, "#number", "owner/repo#number", or a pull URL.')
+      const repoResult = ref.repo !== undefined ? { ok: true as const, repo: ref.repo } : await state.resolveRepo(undefined, exec.signal)
+      if (!repoResult.ok) return errorValue(repoResult.code, repoResult.message, repoResult.guidance)
+
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      const client = state.client(token.token.value)
+
+      let headRef: string | undefined
+      let headSha: string | undefined
+      let prUrl: string
+      try {
+        const metadata = await client.requestJson<PullPayload>('GET', `/repos/${repoResult.repo}/pulls/${ref.number}`, { signal: exec.signal })
+        headRef = metadata.data.head?.ref
+        headSha = metadata.data.head?.sha
+        prUrl = metadata.data.html_url
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+
+      try {
+        const merged = await client.requestJson<{ sha?: string; merged?: boolean; message?: string }>(
+          'PUT', `/repos/${repoResult.repo}/pulls/${ref.number}/merge`,
+          {
+            signal: exec.signal,
+            body: {
+              merge_method: args.mergeMethod ?? 'merge',
+              ...headSha !== undefined ? { sha: headSha } : {},
+              ...args.commitTitle !== undefined ? { commit_title: args.commitTitle } : {},
+              ...args.commitMessage !== undefined ? { commit_message: args.commitMessage } : {},
+            },
+          },
+        )
+        let branchDeleted = false
+        let branchDeleteNote: string | undefined
+        if (args.deleteBranch === true && headRef !== undefined && headRef.length > 0) {
+          try {
+            await client.requestJson<unknown>('DELETE', `/repos/${repoResult.repo}/git/refs/${encodeURIComponent(`heads/${headRef}`)}`, { signal: exec.signal })
+            branchDeleted = true
+          } catch (error) {
+            branchDeleteNote = error instanceof GithubError ? `GitHub API ${error.status}` : 'delete failed'
+          }
+        }
+        return {
+          status: 'merged',
+          merged: merged.data.merged === true,
+          ...merged.data.sha !== undefined ? { sha: merged.data.sha } : {},
+          message: merged.data.message ?? 'merged',
+          url: prUrl,
+          branchDeleted,
+          ...branchDeleteNote !== undefined ? { branchDeleteNote } : {},
+          rateLimit: rateLimitValue(merged.rateLimit),
+        } as const
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}
+
+/** `pr_update`: edit a pull request (write; approval-gated upstream). */
+export function prUpdateTool(state: GithubState) {
+  return defineTool({
+    name: 'pr_update',
+    description: 'Update a GitHub pull request: title, body, state (open/closed), or target branch. '
+      + 'Requires approval. At least one field must be provided.',
+    parameters: {
+      pr: { type: 'string', required: true, description: 'PR number, #number, owner/repo#number, or pull URL.' },
+      title: { type: 'string', description: 'New PR title.' },
+      body: { type: 'string', description: 'New PR description body.' },
+      state: { type: 'string', enum: ['open', 'closed'], description: 'New PR state.' },
+      base: { type: 'string', description: 'New target branch.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            status: { type: 'string', required: true, const: 'updated' },
+            url: { type: 'string', required: true },
+            number: { type: 'integer', required: true },
+            title: { type: 'string', required: true },
+            state: { type: 'string', required: true },
+            base: { type: 'string', required: true },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if (value.status === 'error') {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        return [{ type: 'text', text: `updated pull request #${value.number} (${value.state}, base ${value.base}): ${value.url}` }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => false,
+    presentCall: prUpdateCall,
+    presentResult: prUpdateResult,
+    async execute(args, exec) {
+      if (args.title !== undefined && args.title.trim().length === 0) return errorValue('invalid-args', 'title must not be empty')
+      if (args.base !== undefined && args.base.trim().length === 0) return errorValue('invalid-args', 'base must not be empty')
+      if (args.title === undefined && args.body === undefined && args.state === undefined && args.base === undefined) {
+        return errorValue('invalid-args', 'pass at least one of title, body, state, or base')
+      }
+      const ref = state.parsePrRef(args.pr)
+      if (ref === null) return errorValue('invalid-pr', `"${args.pr}" is not a PR reference`, 'Use a number, "#number", "owner/repo#number", or a pull URL.')
+      const repoResult = ref.repo !== undefined ? { ok: true as const, repo: ref.repo } : await state.resolveRepo(undefined, exec.signal)
+      if (!repoResult.ok) return errorValue(repoResult.code, repoResult.message, repoResult.guidance)
+
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      try {
+        const updated = await state.client(token.token.value).requestJson<PullPayload>(
+          'PATCH', `/repos/${repoResult.repo}/pulls/${ref.number}`,
+          {
+            signal: exec.signal,
+            body: {
+              ...args.title !== undefined ? { title: args.title } : {},
+              ...args.body !== undefined ? { body: args.body } : {},
+              ...args.state !== undefined ? { state: args.state } : {},
+              ...args.base !== undefined ? { base: args.base } : {},
+            },
+          },
+        )
+        const data = updated.data
+        return {
+          status: 'updated',
+          url: data.html_url,
+          number: data.number,
+          title: data.title,
+          state: data.state,
+          base: data.base?.ref ?? '',
+          rateLimit: rateLimitValue(updated.rateLimit),
+        } as const
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}
+
+/** `gh_repo`: read one repository's metadata (read; concurrency-safe). */
+export function ghRepoTool(state: GithubState) {
+  return defineTool({
+    name: 'gh_repo',
+    description: 'Read a GitHub repository\'s metadata: description, default branch, visibility, stars, forks, '
+      + 'open issues, language, license, topics, and last update. Read-only and concurrency-safe.',
+    parameters: {
+      ownerRepo: { type: 'string', description: 'Repository as owner/repo. Defaults to configured or git origin.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            repo: { type: 'string', required: true },
+            description: { type: 'string', required: true },
+            defaultBranch: { type: 'string', required: true },
+            visibility: { type: 'string', required: true },
+            stars: { type: 'integer', required: true },
+            forks: { type: 'integer', required: true },
+            openIssues: { type: 'integer', required: true },
+            language: { type: 'string', required: true },
+            license: { type: 'string', required: true },
+            topics: { type: 'array', required: true, items: { type: 'string' } },
+            url: { type: 'string', required: true },
+            updatedAt: { type: 'string', required: true },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if ('status' in value) {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        return [{
+          type: 'text',
+          text: `${value.repo}: ${value.description}\n`
+            + `default branch ${value.defaultBranch} · ${value.language} · ${value.license}\n`
+            + `stars ${value.stars} · forks ${value.forks} · open issues ${value.openIssues} · ${value.visibility}\n${value.url}`,
+        }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => true,
+    presentCall: ghRepoCall,
+    presentResult: ghRepoResult,
+    async execute(args, exec) {
+      const repoResult = await state.resolveRepo(args.ownerRepo, exec.signal)
+      if (!repoResult.ok) return errorValue(repoResult.code, repoResult.message, repoResult.guidance)
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      try {
+        const response = await state.client(token.token.value).requestJson<{
+          description?: string | null
+          default_branch?: string
+          visibility?: string
+          stargazers_count?: number
+          forks_count?: number
+          open_issues_count?: number
+          language?: string | null
+          license?: { spdx_id?: string } | null
+          topics?: string[]
+          html_url?: string
+          updated_at?: string
+        }>('GET', `/repos/${repoResult.repo}`, { signal: exec.signal })
+        const data = response.data
+        const value: RepoValue = {
+          repo: repoResult.repo,
+          description: data.description ?? '',
+          defaultBranch: data.default_branch ?? '',
+          visibility: data.visibility ?? 'unknown',
+          stars: data.stargazers_count ?? 0,
+          forks: data.forks_count ?? 0,
+          openIssues: data.open_issues_count ?? 0,
+          language: data.language ?? '',
+          license: data.license?.spdx_id ?? '',
+          topics: data.topics ?? [],
+          url: data.html_url ?? '',
+          updatedAt: data.updated_at ?? '',
+          rateLimit: rateLimitValue(response.rateLimit),
+        }
+        return value
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}
+
+interface ContentsPayload {
+  name?: string
+  path?: string
+  sha?: string
+  size?: number
+  content?: string
+  encoding?: string
+  html_url?: string
+}
+
+/** `gh_file`: read one file from a repository (read; concurrency-safe). */
+export function ghFileTool(state: GithubState) {
+  return defineTool({
+    name: 'gh_file',
+    description: 'Read one file from a GitHub repository at a branch, tag, or commit (defaults to the default '
+      + 'branch). File contents are base64-decoded and capped; directories and oversized blobs are reported '
+      + 'as structured errors. Read-only and concurrency-safe.',
+    parameters: {
+      ownerRepo: { type: 'string', description: 'Repository as owner/repo. Defaults to configured or git origin.' },
+      path: { type: 'string', required: true, description: 'Repository file path, e.g. "README.md" or "src/index.ts".' },
+      ref: { type: 'string', description: 'Branch, tag, or commit SHA. Defaults to the default branch.' },
+      maxChars: { type: 'number', description: 'Cap for the file contents. Defaults to the plugin config.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            repo: { type: 'string', required: true },
+            path: { type: 'string', required: true },
+            ref: { type: 'string', required: true },
+            size: { type: 'integer', required: true },
+            truncated: { type: 'boolean', required: true },
+            content: { type: 'string', required: true },
+            sha: { type: 'string', required: true },
+            url: { type: 'string', required: true },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if ('status' in value) {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        return [{
+          type: 'text',
+          text: `${value.repo}/${value.path} @ ${value.ref} (${value.size} bytes${value.truncated ? ', truncated' : ''}):\n${value.content}`,
+        }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => true,
+    presentCall: ghFileCall,
+    presentResult: ghFileResult,
+    async execute(args, exec) {
+      const path = args.path.trim()
+      if (path.length === 0 || path.startsWith('/')) return errorValue('invalid-args', 'path must be a non-empty repository-relative file path')
+      const repoResult = await state.resolveRepo(args.ownerRepo, exec.signal)
+      if (!repoResult.ok) return errorValue(repoResult.code, repoResult.message, repoResult.guidance)
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      const maxChars = args.maxChars !== undefined && args.maxChars > 0 ? Math.floor(args.maxChars) : state.config.maxFileChars
+      const query = args.ref !== undefined ? `?ref=${encodeURIComponent(args.ref)}` : ''
+      const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/')
+      try {
+        const response = await state.client(token.token.value).requestJson<ContentsPayload | unknown[]>(
+          'GET', `/repos/${repoResult.repo}/contents/${encodedPath}${query}`, { signal: exec.signal },
+        )
+        const data = response.data
+        if (Array.isArray(data)) {
+          return errorValue('is-directory', `"${path}" is a directory; pass a file path`, 'List the directory with gh_file on its entries or use a narrower path.')
+        }
+        const raw = data.content ?? ''
+        const text = data.encoding === 'base64' && raw.length > 0 ? Buffer.from(raw, 'base64').toString('utf8') : raw
+        const capped = capText(text, maxChars)
+        const value: FileValue = {
+          repo: repoResult.repo,
+          path: data.path ?? path,
+          ref: args.ref ?? 'default',
+          size: data.size ?? Buffer.byteLength(text),
+          truncated: capped.truncated,
+          content: capped.text,
+          sha: data.sha ?? '',
+          url: data.html_url ?? '',
           rateLimit: rateLimitValue(response.rateLimit),
         }
         return value

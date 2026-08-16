@@ -1,6 +1,7 @@
 /**
- * Minimal GitHub REST client: JSON requests with 429 backoff-retry and
- * rate-limit surfacing, plus the `application/vnd.github.diff` text endpoint.
+ * Minimal GitHub REST client: JSON requests with 429/403 rate-limit
+ * backoff-retry and rate-limit surfacing, plus the
+ * `application/vnd.github.diff` text endpoint.
  *
  * The token travels only in the Authorization header of outgoing requests;
  * request bodies, error messages, and returned values never contain it.
@@ -40,11 +41,12 @@ interface ClientOptions {
     fetchImpl: typeof fetch;
 }
 /**
- * Authenticated GitHub REST client with 429 retry.
+ * Authenticated GitHub REST client with rate-limit retry.
  *
- * Retries honor Retry-After / x-ratelimit-reset and the caller's signal;
- * non-2xx responses surface as {@link GithubError} carrying the status and
- * current rate-limit facts. Errors never contain the token.
+ * Retries 429 (primary limit) and 403-with-Retry-After (secondary limit /
+ * abuse detection) honoring Retry-After / x-ratelimit-reset and the caller's
+ * signal; other non-2xx responses surface as {@link GithubError} carrying the
+ * status and current rate-limit facts. Errors never contain the token.
  */
 export declare class GithubClient {
     private readonly token;
@@ -57,7 +59,7 @@ export declare class GithubClient {
         text: string;
         rateLimit: RateLimitInfo;
     }>;
-    /** Fetch with Authorization, 429 retry, and signal handling. */
+    /** Fetch with Authorization, 429/403-retry, and signal handling. */
     private request;
 }
 /** Build a client from config; resolves the base URL once. */

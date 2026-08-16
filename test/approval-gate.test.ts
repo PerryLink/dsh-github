@@ -74,6 +74,20 @@ describe('approval gate (tools/pre-execute)', () => {
     expect(await decide(services, 'review_post', { jobId: 'github-review-1' })).toMatchObject({ kind: 'ask' })
   })
 
+  it('asks for approval on pr_merge and pr_update with readable reasons', async () => {
+    const services = await loaded()
+    const merge = await decide(services, 'pr_merge', { pr: 'o/r#7', mergeMethod: 'squash', deleteBranch: true })
+    expect(merge).toMatchObject({ kind: 'ask' })
+    expect((merge as { reason: string }).reason).toContain('merge GitHub pull request o/r#7 via squash (delete head branch after merge)')
+    const update = await decide(services, 'pr_update', { pr: 'o/r#7', title: 'renamed', state: 'closed', base: 'dev' })
+    expect(update).toMatchObject({ kind: 'ask' })
+    const updateReason = (update as { reason: string }).reason
+    expect(updateReason).toContain('update GitHub pull request o/r#7')
+    expect(updateReason).toContain('title "renamed"')
+    expect(updateReason).toContain('state closed')
+    expect(updateReason).toContain('base dev')
+  })
+
   it('enriches the review_post reason with findings, mode, and the body override preview', async () => {
     const services = makeServices()
     services.credentials.values.set('GITHUB_TOKEN', TOKEN)
@@ -110,16 +124,51 @@ describe('approval gate (tools/pre-execute)', () => {
 
   it('denies write actions missing from the allowedActions whitelist', async () => {
     const services = await loaded({ allowedActions: ['review.post'] })
-    for (const [name, args] of [['pr_create', { title: 'x' }], ['issue_comment', { issueNumber: 1, body: 'x' }], ['issue_close', { issueNumber: 1 }]] as Array<[string, Record<string, unknown>]>) {
+    for (const [name, args] of [['pr_create', { title: 'x' }], ['issue_comment', { issueNumber: 1, body: 'x' }], ['issue_close', { issueNumber: 1 }], ['pr_merge', { pr: '7' }], ['pr_update', { pr: '7', title: 'x' }]] as Array<[string, Record<string, unknown>]>) {
       const decision = await decide(services, name, args)
       expect(decision).toMatchObject({ kind: 'deny' })
       expect((decision as { reason: string }).reason).toContain('allowedActions')
     }
   })
 
+  it('labels the review_post reason "model review" for model-review jobs', async () => {
+    const services = makeServices()
+    services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+    const subagents = {
+      list: () => ['spawn'],
+      start: async (_name: string, _request: { prompt: Array<{ type: 'text'; text: string }>; parent: unknown }) => ({
+        result: Promise.resolve({ output: [{ type: 'text', text: 'model review text' }], stopReason: 'completed' }),
+        dispose: async () => {},
+      }),
+    }
+    services.ctx.provide('subagents', subagents)
+    await loadPlugin(services, {
+      config: { defaultOwnerRepo: 'o/r', reviewMode: 'model' },
+      runGit: async () => { throw new Error('unused') },
+      fetchImpl: stubFetch([
+        {
+          match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && String((i?.headers as Record<string, string> | undefined)?.Accept ?? '') !== 'application/vnd.github.diff',
+          respond: () => jsonResponse(200, PULL_PAYLOAD),
+        },
+        {
+          match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && String((i?.headers as Record<string, string> | undefined)?.Accept ?? '') === 'application/vnd.github.diff',
+          respond: () => new Response('diff --git a/a.ts b/a.ts\n', { status: 200, headers: { 'Content-Type': 'text/plain' } }),
+        },
+        { match: () => true, respond: () => jsonResponse(404, { message: 'not stubbed' }) },
+      ]),
+    })
+    const agent = new MockAgent()
+    await services.commands.run('review', 'o/r#7 --no-ci --no-comments', agent)
+    const jobId = [...services.jobs.records.keys()][0] as string
+    await services.jobs.hooks(jobId).done
+    const decision = await decide(services, 'review_post', { jobId })
+    expect(decision).toMatchObject({ kind: 'ask' })
+    expect((decision as { reason: string }).reason).toContain('PR #7 (model review)')
+  })
+
   it('delegates non-write tools via next()', async () => {
     const services = await loaded()
-    for (const [name, args] of [['bash', { command: 'ls' }], ['gh_review', { pr: '7' }], ['gh_search', { q: 'x' }], ['gh_issue', { action: 'list' }]] as Array<[string, Record<string, unknown>]>) {
+    for (const [name, args] of [['bash', { command: 'ls' }], ['gh_review', { pr: '7' }], ['gh_search', { q: 'x' }], ['gh_issue', { action: 'list' }], ['gh_repo', {}], ['gh_file', { path: 'a.txt' }]] as Array<[string, Record<string, unknown>]>) {
       const decision = await decide(services, name, args)
       expect(decision).toEqual({ kind: 'allow' })
     }

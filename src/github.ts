@@ -1,6 +1,7 @@
 /**
- * Minimal GitHub REST client: JSON requests with 429 backoff-retry and
- * rate-limit surfacing, plus the `application/vnd.github.diff` text endpoint.
+ * Minimal GitHub REST client: JSON requests with 429/403 rate-limit
+ * backoff-retry and rate-limit surfacing, plus the
+ * `application/vnd.github.diff` text endpoint.
  *
  * The token travels only in the Authorization header of outgoing requests;
  * request bodies, error messages, and returned values never contain it.
@@ -103,11 +104,12 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * Authenticated GitHub REST client with 429 retry.
+ * Authenticated GitHub REST client with rate-limit retry.
  *
- * Retries honor Retry-After / x-ratelimit-reset and the caller's signal;
- * non-2xx responses surface as {@link GithubError} carrying the status and
- * current rate-limit facts. Errors never contain the token.
+ * Retries 429 (primary limit) and 403-with-Retry-After (secondary limit /
+ * abuse detection) honoring Retry-After / x-ratelimit-reset and the caller's
+ * signal; other non-2xx responses surface as {@link GithubError} carrying the
+ * status and current rate-limit facts. Errors never contain the token.
  */
 export class GithubClient {
   private readonly token: string
@@ -132,6 +134,7 @@ export class GithubClient {
       }
       throw new GithubError(response.status, message, rateLimit)
     }
+    if (response.status === 204) return { status: response.status, data: undefined as T, rateLimit }
     const data = await response.json() as T
     return { status: response.status, data, rateLimit }
   }
@@ -153,7 +156,7 @@ export class GithubClient {
     return { text: await response.text(), rateLimit }
   }
 
-  /** Fetch with Authorization, 429 retry, and signal handling. */
+  /** Fetch with Authorization, 429/403-retry, and signal handling. */
   private async request(method: string, path: string, options: GithubRequestOptions): Promise<Response> {
     let attempt = 0
     for (;;) {
@@ -175,7 +178,12 @@ export class GithubClient {
         if (options.signal?.aborted) throw options.signal.reason instanceof Error ? options.signal.reason : new Error('aborted')
         throw error
       }
-      if (response.status !== 429 || attempt >= this.options.maxRetries) return response
+      // Retry primary (429) and secondary (403 + Retry-After) rate limits only;
+      // a 403 without Retry-After is a permission denial and must fail fast.
+      const retryable =
+        response.status === 429
+        || (response.status === 403 && response.headers.get('retry-after') !== null)
+      if (!retryable || attempt >= this.options.maxRetries) return response
       await sleep(retryDelayMs(response.headers, attempt, this.options), options.signal)
       attempt += 1
     }

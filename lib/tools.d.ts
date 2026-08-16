@@ -18,4 +18,12 @@ export declare function issueCommentTool(state: GithubState): import("@deepseek-
 export declare function issueCloseTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
 /** `gh_search`: search issues and pull requests (read; uses the search quota). */
 export declare function ghSearchTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `pr_merge`: merge a pull request (write; approval-gated upstream). */
+export declare function prMergeTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `pr_update`: edit a pull request (write; approval-gated upstream). */
+export declare function prUpdateTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `gh_repo`: read one repository's metadata (read; concurrency-safe). */
+export declare function ghRepoTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `gh_file`: read one file from a repository (read; concurrency-safe). */
+export declare function ghFileTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
 //# sourceMappingURL=tools.d.ts.map
