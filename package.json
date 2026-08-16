@@ -58,6 +58,45 @@
       "patch": "./cordis.patch.yml"
     }
   },
+  "dshWorkshop": {
+    "schema": "omdsh-workshop-package/v1",
+    "type": "plugin",
+    "integration": {
+      "protocol": "harness-profile",
+      "artifact": "cordis.patch.yml"
+    },
+    "install": {
+      "mode": "transactional",
+      "adapter": "profile-bundle",
+      "failurePolicy": "generation-rollback",
+      "touchesCurrentBeforeActivation": false
+    },
+    "lifecycle": {
+      "activation": "restart-profile",
+      "dispose": "supported"
+    },
+    "permissions": [
+      "network:outbound",
+      "filesystem:write"
+    ],
+    "compatibility": {
+      "dshVersions": [
+        "0.1.0-rc.6"
+      ]
+    },
+    "capability": {
+      "id": "gh-ci",
+      "kind": "command",
+      "invocation": "/ci",
+      "expected": "runs the review engine for the requested PR, posts idempotent inline review comments and publishes the status-check verdict (success / changes needed)"
+    },
+    "evidence": {
+      "install": null,
+      "failureIsolation": null,
+      "hotReload": null,
+      "remove": null
+    }
+  },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1"
   },
