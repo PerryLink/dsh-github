@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-16
+
+### Added
+
+- Local-machine protection for the action scripts: `action-patch.mjs` and `action-post.mjs` refuse to run outside a GitHub Actions runner (no `RUNNER_TEMP` / `GITHUB_WORKSPACE`), and the new `scripts/local-test.mjs` simulates the composite action in a fully isolated sandbox — `DSH_HOME`, `DSH_PROFILE_DIR`, and the output directory are hardcoded under the system temp directory, overriding any inherited (machine-scope) `DSH_HOME`.
+- Regression coverage for the CI-context guards in `test/action-guard.test.ts`, plus local-testing notes in all five READMEs.
+
 ## [0.6.0] - 2026-08-16
 
 ### Added
@@ -12,7 +19,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `ci` config section: master switch, review engine (`static`/`model`), CI-driver auto-approve list, status-check name and blocking behavior, fail-on severity, poll interval, label/path filters, sensitive-path and test-existence rules, change-size caps, concurrency cap, comment posting, and report directory.
 - `ci.run` write action joins the `allowedActions` default list.
 - `requestTimeoutMs` config: hard per-request timeout that aborts the fetch when exceeded.
-- Local-machine protection for the action scripts: `action-patch.mjs` and `action-post.mjs` refuse to run outside a GitHub Actions runner (no `RUNNER_TEMP` / `GITHUB_WORKSPACE`), and the new `scripts/local-test.mjs` simulates the composite action in a fully isolated sandbox — `DSH_HOME`, `DSH_PROFILE_DIR`, and the output directory are hardcoded under the system temp directory, overriding any inherited (machine-scope) `DSH_HOME`.
 
 ### Changed
 
