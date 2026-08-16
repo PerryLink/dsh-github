@@ -14,7 +14,7 @@ import { repoFromRemoteUrl, type GitRunner } from './git.ts'
 import { resolveToken, type GhRunner, type TokenResolution } from './credential.ts'
 import type { SubagentsService } from './types.ts'
 import type { ReviewReport } from './review.ts'
-import type { Config } from './config.ts'
+import { CiConfig, type Config } from './config.ts'
 
 /** Result of resolving which repository a call targets. */
 export type RepoResolution = { ok: true; repo: string } | { ok: false; code: string; message: string; guidance: string }
@@ -63,6 +63,8 @@ export interface GithubState {
   workspaceDir: string
   /** Hostname of the configured REST API base, for origin-URL matching. */
   apiHost: string
+  /** True while this process is the composite action's CI driver (`DSH_GITHUB_CI_DRIVER=1`). */
+  isCiDriver: boolean
   /** Register one review-job record, evicting settled records past the cap. */
   rememberRecord(id: string, record: ReviewJobRecord): void
 }
@@ -81,25 +83,29 @@ const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
  * @param fetchImpl - fetch implementation (injectable in tests).
  */
 export function createState(ctx: { credentials: CredentialProvider; subagents?: SubagentsService }, config: Config, runGit: GitRunner, runGh: GhRunner, fetchImpl?: typeof fetch): GithubState {
-  const clientOptions = clientOptionsFromConfig(config, fetchImpl)
-  const apiHost = new URL(config.apiBaseUrl).hostname.toLowerCase()
+  // A composition omitting the whole `ci` block gets the schema defaults here,
+  // so every consumer can read `config.ci.*` without undefined checks.
+  const normalizedConfig: Config = { ...config, ci: CiConfig(config.ci ?? {}) as CiConfig }
+  const clientOptions = clientOptionsFromConfig(normalizedConfig, fetchImpl)
+  const apiHost = new URL(normalizedConfig.apiBaseUrl).hostname.toLowerCase()
   const records = new Map<string, ReviewJobRecord>()
   const state: GithubState = {
-    config,
+    config: normalizedConfig,
     credentials: ctx.credentials,
     subagents: ctx.subagents,
     records,
     runGit,
     runGh,
-    workspaceDir: config.workspaceDir ?? process.cwd(),
+    workspaceDir: normalizedConfig.workspaceDir ?? process.cwd(),
     apiHost,
-    resolveToken: (signal?: AbortSignal) => resolveToken(ctx.credentials, config.tokenSource, config.tokenRef, runGh, signal),
+    isCiDriver: process.env.DSH_GITHUB_CI_DRIVER === '1',
+    resolveToken: (signal?: AbortSignal) => resolveToken(ctx.credentials, normalizedConfig.tokenSource, normalizedConfig.tokenRef, runGh, signal),
     client: (token: string) => new GithubClient(token, clientOptions),
     resolveRepo: (ownerRepo: string | undefined, signal?: AbortSignal) => resolveRepo(state, ownerRepo, signal),
     parsePrRef: parsePrRef,
     rememberRecord: (id, record) => {
       records.set(id, record)
-      while (records.size > config.maxReviewRecords) {
+      while (records.size > normalizedConfig.maxReviewRecords) {
         const oldestSettled = [...records.entries()].find(([, item]) => item.status !== 'running')
         if (oldestSettled === undefined) break // every record is running; the cap is best-effort.
         records.delete(oldestSettled[0])

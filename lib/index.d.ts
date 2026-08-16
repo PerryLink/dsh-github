@@ -1,16 +1,21 @@
 /**
  * dsh-github: GitHub integration for DeepSeek Harness.
  *
- * Tools: pr_create / pr_merge / pr_update (writes), gh_review (read),
- * review_post (write), gh_issue (read), issue_open / issue_comment /
- * issue_close (writes), gh_repo / gh_file / gh_search (reads). Commands: /pr
- * create, /review (start|stop|post), /issue open. Background review jobs run
- * the deterministic analyzer by default; `reviewMode: "model"` delegates the
- * capped diff to a one-shot subagent through the host's `subagents` seam.
- * Every GitHub write is gated by the tools/pre-execute approval listener
- * (default ask) and the allowedActions whitelist; the token travels only
- * through the credentials seam / environment / gh CLI and never reaches
- * model-visible text, session events, or logs.
+ * Tools: pr_create / pr_merge / pr_update / review_post / issue_open /
+ * issue_comment / issue_close / ci_run (writes), gh_review / gh_issue /
+ * gh_search / gh_repo / gh_file (reads). Commands: /pr create, /review
+ * (start|stop|post), /issue open, /ci (scan|status|start|stop|run — when
+ * `ci.enabled`). Background review jobs run the deterministic analyzer by
+ * default; `reviewMode: "model"` delegates the capped diff to a one-shot
+ * subagent through the host's `subagents` seam. The CI surface (`ci.*`
+ * config) adds the polling review bot, the status-check gate, and the
+ * one-shot `ci_run` pipeline consumed by the composite action
+ * (`action.yml`). Every GitHub write is gated by the tools/pre-execute
+ * approval listener (default ask) and the allowedActions whitelist — except
+ * the CI driver (`DSH_GITHUB_CI_DRIVER=1`), which auto-allows exactly the
+ * actions listed in `ci.autoApprove`; the token travels only through the
+ * credentials seam / environment / gh CLI and never reaches model-visible
+ * text, session events, or logs.
  *
  * Model-visible ⇔ logged: the plugin appends NO custom session event types —
  * the host refuses logs with unknown out-of-repo event types, so all content

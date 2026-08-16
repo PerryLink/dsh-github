@@ -1,0 +1,161 @@
+# dsh-github — official-grade GitHub CI integration for DeepSeek Harness.
+#
+# Runs `dsh --profile headless` with the dsh-github CI surface composed on top,
+# to review pull requests, investigate CI failures, or generate reports. The
+# plugin publishes the status-check gate and writes structured JSON + Markdown
+# reports; this action exposes them as outputs and enforces the blocking gate.
+#
+# Shell contract: every step uses only bash builtins, node, npm, and the dsh
+# CLI — no curl, gh, jq, or third-party CLI tools. Secrets travel only through
+# environment variables and the plugin's per-operation token resolution; they
+# are never logged or interpolated into prompts.
+name: 'dsh-github — DeepSeek Harness GitHub CI'
+description: 'Run dsh headless to review PRs, investigate CI failures, or generate reports, with inline review comments, a status-check gate, and structured JSON/Markdown outputs'
+author: 'PerryLink'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'purple'
+
+inputs:
+  task:
+    description: 'CI task: review (analyze + comments + status check), fix-ci (investigate CI failures and post a fix plan), or report (generate a repository/PR report).'
+    required: false
+    default: 'review'
+  pr:
+    description: 'Pull request number. Defaults to the current pull_request event number; required for review and fix-ci.'
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  owner-repo:
+    description: 'Repository as owner/repo. Defaults to github.repository.'
+    required: false
+    default: ${{ github.repository }}
+  task-prompt:
+    description: 'Complete replacement for the per-mode default headless task text (advanced).'
+    required: false
+  model:
+    description: 'DeepSeek model id for the headless session.'
+    required: false
+    default: 'deepseek-v4-flash'
+  engine:
+    description: "Review engine: 'static' (deterministic analyzer, zero review tokens) or 'model' (the agent authors the review body)."
+    required: false
+    default: 'static'
+  deepseek-api-key:
+    description: 'DeepSeek API key. Always pass a secret, never a literal.'
+    required: true
+  github-token:
+    description: 'GitHub token for the review pipeline. Use the auto-expiring job token with the minimal permissions shown in the README.'
+    required: false
+    default: ${{ github.token }}
+  check-name:
+    description: 'Name of the status check published on the PR head commit.'
+    required: false
+    default: 'dsh-github-review'
+  blocking:
+    description: "When the verdict is needs-changes: 'true' fails the check (and this step), 'false' publishes a neutral (non-blocking) conclusion."
+    required: false
+    default: 'true'
+  fail-on:
+    description: "Lowest finding severity that flips the verdict to needs-changes: 'error' or 'warning'."
+    required: false
+    default: 'error'
+  label-filters:
+    description: 'Comma-separated labels; a PR must carry at least one to be reviewed. Empty matches all PRs.'
+    required: false
+  path-filters:
+    description: 'Comma-separated path globs (e.g. src/**,*.md); a PR must touch at least one matching path. Empty matches all PRs.'
+    required: false
+  max-diff-chars:
+    description: 'Character cap for the PR diff read into the review.'
+    required: false
+    default: '8000'
+  post-comments:
+    description: "Whether the pipeline posts the inline review comments ('true'/'false')."
+    required: false
+    default: 'true'
+  post-check:
+    description: "Whether the pipeline publishes the status check ('true'/'false')."
+    required: false
+    default: 'true'
+  request-timeout-ms:
+    description: 'Per GitHub API request timeout in milliseconds (plugin-side).'
+    required: false
+    default: '30000'
+  node-version:
+    description: 'Node.js version for actions/setup-node.'
+    required: false
+    default: '22'
+  dsh-version:
+    description: '@deepseek-ai/dsh version to install.'
+    required: false
+    default: 'latest'
+  plugin-version:
+    description: '@perrylink/dsh-github version to install.'
+    required: false
+    default: 'latest'
+  output-dir:
+    description: 'Directory for dsh-github-ci-result.json and dsh-github-ci-summary.md.'
+    required: false
+    default: ${{ runner.temp }}/dsh-github
+
+outputs:
+  verdict:
+    description: "Review verdict: pass | needs-changes | skipped | error."
+    value: ${{ steps.post.outputs.verdict }}
+  report-json:
+    description: 'Path of the structured JSON report.'
+    value: ${{ steps.post.outputs.report-json }}
+  report-markdown:
+    description: 'Path of the Markdown summary.'
+    value: ${{ steps.post.outputs.report-markdown }}
+  check-url:
+    description: 'URL of the published status check (when published).'
+    value: ${{ steps.post.outputs.check-url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install dsh and dsh-github
+      shell: bash
+      env:
+        DSH_HOME: ${{ runner.temp }}/dsh-home
+        DSH_PROFILE_DIR: ${{ runner.temp }}/dsh-home/profiles/headless
+      run: |
+        npm install --global --no-audit --no-fund "@deepseek-ai/dsh@${{ inputs.dsh-version }}"
+        mkdir -p "$DSH_PROFILE_DIR"
+        printf '{"private": true}\n' > "$DSH_PROFILE_DIR/package.json"
+        npm install --prefix "$DSH_PROFILE_DIR" --legacy-peer-deps --package-lock=false --no-save --no-audit --no-fund "@perrylink/dsh-github@${{ inputs.plugin-version }}"
+
+    - name: Generate the dsh profile overlay and task
+      id: prepare
+      shell: bash
+      run: node "${{ github.action_path }}/scripts/action-patch.mjs"
+
+    - name: Run dsh headless
+      id: run
+      shell: bash
+      env:
+        DSH_HOME: ${{ runner.temp }}/dsh-home
+        DEEPSEEK_API_KEY: ${{ inputs.deepseek-api-key }}
+        DSH_GITHUB_TOKEN: ${{ inputs.github-token }}
+        DSH_GITHUB_CI_DRIVER: '1'
+        DSH_GITHUB_CI_OUTPUT_DIR: ${{ inputs.output-dir }}
+        DSH_TELEMETRY_DISABLED: '1'
+      run: |
+        mkdir -p "${{ inputs.output-dir }}"
+        set +e
+        dsh --profile headless --patch "${{ inputs.output-dir }}/dsh-github-ci.cordis.yml" "$(cat "${{ inputs.output-dir }}/task.txt")" \
+          > "${{ inputs.output-dir }}/dsh-github-stdout.log" 2> "${{ inputs.output-dir }}/dsh-github-stderr.log"
+        echo "$?" > "${{ inputs.output-dir }}/dsh-github-exit.txt"
+        cat "${{ inputs.output-dir }}/dsh-github-stdout.log"
+
+    - name: Publish outputs and enforce the gate
+      id: post
+      shell: bash
+      run: node "${{ github.action_path }}/scripts/action-post.mjs"

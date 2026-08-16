@@ -144,9 +144,11 @@ Validado pelo Schemastery no momento do carregamento (falha em alto e bom som). 
 | `maxRetries` | `3` | Tentativas de nova tentativa em 429 por requisição |
 | `retryBaseMs` | `500` | Base do backoff de nova tentativa (dobra a cada tentativa) |
 | `retryMaxWaitMs` | `60000` | Teto do backoff de nova tentativa |
+| `requestTimeoutMs` | `30000` | Timeout rígido por requisição; aborta o fetch ao exceder |
 | `apiBaseUrl` | `https://api.github.com` | URL base da API REST do GitHub (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | Allowlist de ações de gravação; qualquer outra coisa é negada antes da aprovação |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | Allowlist de ações de gravação; qualquer outra coisa é negada antes da aprovação |
 | `workspaceDir` | process cwd | Diretório de trabalho para inspeção somente leitura do git |
+| `ci` | `{ enabled: false, … }` | Seção de integração CI: bot de revisão por polling, gate de status-check e a ferramenta de execução única `ci_run` (contém todas as chaves `ci.*`) |
 
 ## 🛠 Ferramentas
 
@@ -223,7 +225,7 @@ Validado pelo Schemastery no momento do carregamento (falha em alto e bom som). 
 - **Analisador estático por padrão** — regras determinísticas (`src/review.ts`), zero tokens, reproduzível. `reviewMode: "model"` delega o diff limitado a um subagente de uso único pela seam `subagents` do host para uma revisão por LLM (consome tokens; requer a seam e um provedor registrado).
 - **Jobs e registros são locais ao processo** — o relatório de revisão vive na memória do plugin, indexado pelo id do job, acompanhando o tempo de vida do registro de jobs do host; o mapa de registros é limitado por `maxReviewRecords` (os registros concluídos mais antigos são removidos primeiro).
 - **As dist-tags `latest` do npm estão desatualizadas** — o plugin declara faixas de peer `^0.1.0-rc.5` para resolver contra o fechamento de perfil que o `dsh-base` fornece, e fixa `0.1.0-rc.6` para desenvolvimento. Nunca instale por meio de um `npm i @deepseek-ai/dsh-tools` simples.
-- **CI / GitHub Action** (`dsh-github-action`, loop headless revisão→comentário no espírito do claude-code-action / codex-action) é um repositório complementar v2 planejado.
+- **CI / GitHub Action** — incluído neste repositório (v0.6.0): uma ação composta (`action.yml`) que revisa PRs, corrige CI e escreve o relatório; um bot de revisão por polling com comentários inline idempotentes; e um gate de status-check. Toda gravação permanece sujeita a aprovação.
 
 ## 🧪 Desenvolvimento
 

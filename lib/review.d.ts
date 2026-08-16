@@ -56,6 +56,8 @@ export declare function parseDiffStats(diff: string, maxChars: number): DiffFile
  * @returns findings (capped), one-line summary, and Markdown post body.
  */
 export declare function analyzeDiff(diff: string, maxChars: number, options?: AnalyzerOptions): ReviewReport;
+/** Make a diff-derived file name safe to interpolate into Markdown. */
+export declare function sanitizeFileName(file: string): string;
 /** Markdown comment body grouped by file, ready for a PR issue comment. */
 export declare function formatPostBody(findings: readonly Finding[], truncated: boolean): string;
 //# sourceMappingURL=review.d.ts.map

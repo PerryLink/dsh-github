@@ -146,9 +146,11 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 | `maxRetries` | `3` | 429 retry attempts per request |
 | `retryBaseMs` | `500` | Retry backoff base (doubles per attempt) |
 | `retryMaxWaitMs` | `60000` | Retry backoff ceiling |
+| `requestTimeoutMs` | `30000` | Hard per-request timeout; aborts the fetch when exceeded |
 | `apiBaseUrl` | `https://api.github.com` | GitHub REST base URL (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close']` | Write-action whitelist; anything else is denied before approval |
+| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | Write-action whitelist; anything else is denied before approval |
 | `workspaceDir` | process cwd | Working directory for read-only git inspection |
+| `ci` | `{ enabled: false, … }` | CI integration section: polling review bot, status-check gate, and the one-shot `ci_run` tool (all `ci.*` keys live inside it) |
 
 ## 🛠 Tools
 
@@ -225,7 +227,7 @@ Schemastery-validated at load time (fail loud). Override any key in the profile'
 - **Static analyzer by default** — deterministic rules (`src/review.ts`), zero tokens, reproducible. `reviewMode: "model"` delegates the capped diff to a one-shot subagent through the host's `subagents` seam for an LLM review (costs tokens; requires the seam and a registered provider).
 - **Jobs and records are process-local** — the review report lives in plugin memory keyed by job id, matching the host job registry's lifetime; the record map is capped by `maxReviewRecords` (oldest settled records evict first).
 - **npm `latest` dist-tags are stale** — the plugin declares `^0.1.0-rc.5` peer ranges so it resolves against the profile closure that `dsh-base` provides, and pins `0.1.0-rc.6` for development. Never install by bare `npm i @deepseek-ai/dsh-tools`.
-- **CI / GitHub Action** (`dsh-github-action`, headless review→comment loop in the spirit of claude-code-action / codex-action) is a planned v2 companion repository.
+- **CI / GitHub Action** — ships in this repository (v0.6.0): a composite action (`action.yml`) that reviews PRs, fixes CI, and writes the report; a polling review bot with idempotent inline comments; and a status-check gate. Every write stays approval-gated.
 
 ## 🧪 Development
 

@@ -574,3 +574,64 @@ export function ghFileResult(_args: GhFileArgs, result: ToolResult): ToolResultV
     }],
   }
 }
+
+/** Narrow structural view of ci_run arguments. */
+export interface CiRunArgs {
+  task: 'review' | 'analyze' | 'publish'
+  pr: string
+  ownerRepo?: string
+  maxDiffChars?: number
+  body?: string
+  findings?: Array<{ file: string; line?: number | null; severity: 'info' | 'warning' | 'error'; rule: string; message: string }>
+  postComments?: boolean
+  postCheck?: boolean
+}
+
+/** Narrow structural view of the ci_run canonical value. */
+export interface CiRunValueView {
+  status: 'ok'
+  repo: string
+  pr: number
+  headSha: string
+  verdict: 'pass' | 'needs-changes' | 'skipped'
+  engine: 'static' | 'model'
+  findings: Array<{ file: string; line: number | null; severity: string; rule: string; message: string }>
+  summary: string
+  truncated: boolean
+  alreadyReviewed: boolean
+  diffText?: string
+  checkRun?: { id: number; url: string; conclusion: string }
+  review?: { url: string; inlineComments: number }
+  files?: { json: string; markdown: string }
+  rateLimit: RateLimitValueView
+}
+
+/** Pending card for ci_run. */
+export function ciRunCall(args: CiRunArgs): ToolCallView {
+  return {
+    card: 'generic',
+    title: `CI ${args.task}: ${args.pr}`,
+    rawInput: {
+      task: args.task,
+      pr: args.pr,
+      ...args.ownerRepo !== undefined ? { ownerRepo: args.ownerRepo } : {},
+      ...args.maxDiffChars !== undefined ? { maxDiffChars: args.maxDiffChars } : {},
+      ...args.body !== undefined ? { bodyChars: args.body.length } : {},
+      ...args.findings !== undefined ? { findings: args.findings.length } : {},
+    },
+  }
+}
+
+/** Completed card for ci_run: verdict plus the check link. */
+export function ciRunResult(_args: CiRunArgs, result: ToolResult): ToolResultView | undefined {
+  const value = result.meta as CiRunValueView | GithubErrorValue | undefined
+  if (value === undefined) return undefined
+  if (value.status === 'error') {
+    return { card: 'generic', title: 'CI run failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
+  }
+  const lines = [`PR #${value.pr} in ${value.repo}: verdict ${value.verdict} (${value.findings.length} finding(s))${value.alreadyReviewed ? ' · already reviewed at this head commit' : ''}`]
+  if (value.checkRun !== undefined) lines.push(`check: ${value.checkRun.url} (${value.checkRun.conclusion})`)
+  if (value.review !== undefined && value.review.url.length > 0) lines.push(`review: ${value.review.url} (${value.review.inlineComments} inline comment(s))`)
+  if (value.files !== undefined) lines.push(`reports: ${value.files.json} · ${value.files.markdown}`)
+  return { card: 'generic', title: `CI review verdict: ${value.verdict}`, content: [{ type: 'text', text: lines.join('\n') }] }
+}

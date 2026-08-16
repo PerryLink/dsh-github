@@ -38,6 +38,8 @@ interface ClientOptions {
     maxRetries: number;
     retryBaseMs: number;
     retryMaxWaitMs: number;
+    /** Hard per-request deadline; aborts the fetch when exceeded. */
+    requestTimeoutMs: number;
     fetchImpl: typeof fetch;
 }
 /**
@@ -59,7 +61,7 @@ export declare class GithubClient {
         text: string;
         rateLimit: RateLimitInfo;
     }>;
-    /** Fetch with Authorization, 429/403-retry, and signal handling. */
+    /** Fetch with Authorization, timeout, and retry (429/403 rate limits always; reads also on network errors and 5xx). */
     private request;
 }
 /** Build a client from config; resolves the base URL once. */

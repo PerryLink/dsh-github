@@ -14,7 +14,7 @@ import { type GitRunner } from './git.ts';
 import { type GhRunner, type TokenResolution } from './credential.ts';
 import type { SubagentsService } from './types.ts';
 import type { ReviewReport } from './review.ts';
-import type { Config } from './config.ts';
+import { type Config } from './config.ts';
 /** Result of resolving which repository a call targets. */
 export type RepoResolution = {
     ok: true;
@@ -67,6 +67,8 @@ export interface GithubState {
     workspaceDir: string;
     /** Hostname of the configured REST API base, for origin-URL matching. */
     apiHost: string;
+    /** True while this process is the composite action's CI driver (`DSH_GITHUB_CI_DRIVER=1`). */
+    isCiDriver: boolean;
     /** Register one review-job record, evicting settled records past the cap. */
     rememberRecord(id: string, record: ReviewJobRecord): void;
 }

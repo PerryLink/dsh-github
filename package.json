@@ -1,7 +1,7 @@
 {
   "name": "@perrylink/dsh-github",
-  "version": "0.5.0",
-  "description": "GitHub integration for DeepSeek Harness: create, merge, and update pull requests, review PRs with background jobs, read issues, repos, and files — every write gated by human approval",
+  "version": "0.6.0",
+  "description": "Official-grade GitHub CI for DeepSeek Harness: composite action (review PRs / fix CI / report), polling PR review bot with idempotent inline comments, a status-check gate, and approval-gated PR/issue/repo/file tools",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -13,6 +13,8 @@
   },
   "files": [
     "lib",
+    "action.yml",
+    "scripts",
     "cordis.patch.yml",
     "README.md",
     "README.zh-CN.md",
@@ -34,8 +36,10 @@
     "dsh-plugin",
     "deepseek-harness",
     "github",
+    "github-actions",
     "pull-request",
     "code-review",
+    "ci",
     "issue-tracker"
   ],
   "license": "Apache-2.0",

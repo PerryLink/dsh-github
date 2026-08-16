@@ -1,5 +1,68 @@
 import { type GithubState, type RateLimitValue } from './state.ts';
 import { type GithubErrorValue } from './present.ts';
+export declare const RATE_LIMIT_SCHEMA: {
+    readonly type: "object";
+    readonly additionalProperties: false;
+    readonly properties: {
+        readonly remaining: {
+            readonly oneOf: readonly [{
+                readonly type: "number";
+            }, {
+                readonly type: "null";
+            }];
+        };
+        readonly resetAt: {
+            readonly oneOf: readonly [{
+                readonly type: "number";
+            }, {
+                readonly type: "null";
+            }];
+        };
+    };
+    readonly required: true;
+};
+export declare const ERROR_SCHEMA: {
+    readonly type: "object";
+    readonly additionalProperties: false;
+    readonly properties: {
+        readonly status: {
+            readonly type: "string";
+            readonly required: true;
+            readonly const: "error";
+        };
+        readonly code: {
+            readonly type: "string";
+            readonly required: true;
+        };
+        readonly message: {
+            readonly type: "string";
+            readonly required: true;
+        };
+        readonly guidance: {
+            readonly type: "string";
+        };
+        readonly rateLimit: {
+            readonly type: "object";
+            readonly additionalProperties: false;
+            readonly properties: {
+                readonly remaining: {
+                    readonly oneOf: readonly [{
+                        readonly type: "number";
+                    }, {
+                        readonly type: "null";
+                    }];
+                };
+                readonly resetAt: {
+                    readonly oneOf: readonly [{
+                        readonly type: "number";
+                    }, {
+                        readonly type: "null";
+                    }];
+                };
+            };
+        };
+    };
+};
 /** Domain error canonical value, used by every tool. */
 export declare function errorValue(code: string, message: string, guidance?: string, rateLimit?: RateLimitValue): GithubErrorValue;
 /** `pr_create`: create a pull request (write; approval-gated upstream). */

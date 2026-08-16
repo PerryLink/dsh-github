@@ -49,12 +49,17 @@ interface ClientOptions {
   maxRetries: number
   retryBaseMs: number
   retryMaxWaitMs: number
+  /** Hard per-request deadline; aborts the fetch when exceeded. */
+  requestTimeoutMs: number
   fetchImpl: typeof fetch
 }
 
 const JSON_ACCEPT = 'application/vnd.github+json'
 const API_VERSION = '2022-11-28'
 const USER_AGENT = 'dsh-github'
+
+/** Methods safe to retry on network failures and 5xx responses (reads only; writes stay idempotent). */
+const SAFE_RETRY_METHODS = new Set(['GET', 'HEAD'])
 
 function rateLimitFromHeaders(headers: Headers): RateLimitInfo {
   const remaining = headers.get('x-ratelimit-remaining')
@@ -156,10 +161,12 @@ export class GithubClient {
     return { text: await response.text(), rateLimit }
   }
 
-  /** Fetch with Authorization, 429/403-retry, and signal handling. */
+  /** Fetch with Authorization, timeout, and retry (429/403 rate limits always; reads also on network errors and 5xx). */
   private async request(method: string, path: string, options: GithubRequestOptions): Promise<Response> {
     let attempt = 0
     for (;;) {
+      const timeoutSignal = AbortSignal.timeout(this.options.requestTimeoutMs)
+      const signal = options.signal === undefined ? timeoutSignal : AbortSignal.any([options.signal, timeoutSignal])
       let response: Response
       try {
         response = await this.options.fetchImpl(new URL(path, this.options.apiBaseUrl), {
@@ -172,17 +179,26 @@ export class GithubClient {
             ...options.body !== undefined ? { 'Content-Type': 'application/json' } : {},
           },
           ...options.body !== undefined ? { body: JSON.stringify(options.body) } : {},
-          signal: options.signal,
+          signal,
         })
       } catch (error) {
         if (options.signal?.aborted) throw options.signal.reason instanceof Error ? options.signal.reason : new Error('aborted')
+        // A deadline exceeded or a transport failure is retryable for safe
+        // (read) methods only; a caller abort above always fails fast.
+        if (SAFE_RETRY_METHODS.has(method) && attempt < this.options.maxRetries) {
+          await sleep(Math.min(this.options.retryBaseMs * 2 ** attempt, this.options.retryMaxWaitMs), options.signal)
+          attempt += 1
+          continue
+        }
         throw error
       }
-      // Retry primary (429) and secondary (403 + Retry-After) rate limits only;
-      // a 403 without Retry-After is a permission denial and must fail fast.
+      // Retry primary (429) and secondary (403 + Retry-After) rate limits for
+      // every method, plus transient 5xx responses for safe read methods; a
+      // 403 without Retry-After is a permission denial and must fail fast.
       const retryable =
         response.status === 429
         || (response.status === 403 && response.headers.get('retry-after') !== null)
+        || (SAFE_RETRY_METHODS.has(method) && (response.status === 502 || response.status === 503 || response.status === 504))
       if (!retryable || attempt >= this.options.maxRetries) return response
       await sleep(retryDelayMs(response.headers, attempt, this.options), options.signal)
       attempt += 1
@@ -197,6 +213,7 @@ export function clientOptionsFromConfig(config: Config, fetchImpl?: typeof fetch
     maxRetries: config.maxRetries,
     retryBaseMs: config.retryBaseMs,
     retryMaxWaitMs: config.retryMaxWaitMs,
+    requestTimeoutMs: config.requestTimeoutMs,
     fetchImpl: fetchImpl ?? globalThis.fetch.bind(globalThis),
   }
 }

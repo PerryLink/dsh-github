@@ -342,4 +342,59 @@ export interface FileValue {
 export declare function ghFileCall(args: GhFileArgs): ToolCallView;
 /** Completed card for gh_file: first lines plus size facts. */
 export declare function ghFileResult(_args: GhFileArgs, result: ToolResult): ToolResultView | undefined;
+/** Narrow structural view of ci_run arguments. */
+export interface CiRunArgs {
+    task: 'review' | 'analyze' | 'publish';
+    pr: string;
+    ownerRepo?: string;
+    maxDiffChars?: number;
+    body?: string;
+    findings?: Array<{
+        file: string;
+        line?: number | null;
+        severity: 'info' | 'warning' | 'error';
+        rule: string;
+        message: string;
+    }>;
+    postComments?: boolean;
+    postCheck?: boolean;
+}
+/** Narrow structural view of the ci_run canonical value. */
+export interface CiRunValueView {
+    status: 'ok';
+    repo: string;
+    pr: number;
+    headSha: string;
+    verdict: 'pass' | 'needs-changes' | 'skipped';
+    engine: 'static' | 'model';
+    findings: Array<{
+        file: string;
+        line: number | null;
+        severity: string;
+        rule: string;
+        message: string;
+    }>;
+    summary: string;
+    truncated: boolean;
+    alreadyReviewed: boolean;
+    diffText?: string;
+    checkRun?: {
+        id: number;
+        url: string;
+        conclusion: string;
+    };
+    review?: {
+        url: string;
+        inlineComments: number;
+    };
+    files?: {
+        json: string;
+        markdown: string;
+    };
+    rateLimit: RateLimitValueView;
+}
+/** Pending card for ci_run. */
+export declare function ciRunCall(args: CiRunArgs): ToolCallView;
+/** Completed card for ci_run: verdict plus the check link. */
+export declare function ciRunResult(_args: CiRunArgs, result: ToolResult): ToolResultView | undefined;
 //# sourceMappingURL=present.d.ts.map

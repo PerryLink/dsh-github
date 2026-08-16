@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-16
+
+### Added
+
+- **CI integration surface**: a composite GitHub Action (`action.yml`) that reviews PRs, fixes CI, and writes the report; a polling review bot with idempotent inline comments and a status-check gate published per PR head commit; and the one-shot `ci_run` tool plus the `/ci` command family.
+- `ci` config section: master switch, review engine (`static`/`model`), CI-driver auto-approve list, status-check name and blocking behavior, fail-on severity, poll interval, label/path filters, sensitive-path and test-existence rules, change-size caps, concurrency cap, comment posting, and report directory.
+- `ci.run` write action joins the `allowedActions` default list.
+- `requestTimeoutMs` config: hard per-request timeout that aborts the fetch when exceeded.
+
+### Changed
+
+- The README "planned v2 companion repository" note is replaced: the CI / GitHub Action surface now ships in this repository.
+
 ## [0.5.0] - 2026-08-15
 
 ### Added
