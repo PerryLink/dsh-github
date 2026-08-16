@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { loadPlugin, makeServices, MockAgent, stubFetch, jsonResponse, TOKEN } from './helpers.ts'
 
 const PULL_PAYLOAD = {
@@ -195,5 +198,47 @@ describe('token non-leakage (S2)', () => {
     expect(postedBody).toBeDefined()
     expect(postedBody).not.toContain(TOKEN)
     expect(postedBody).toContain('todo-marker')
+  })
+
+  it('keeps the token out of CI runs, cards, review bodies, and report files', async () => {
+    const reportDir = mkdtempSync(join(tmpdir(), 'dsh-github-sec-'))
+    const SHA = 'abc123'
+    try {
+      const services = makeServices()
+      services.credentials.values.set('GITHUB_TOKEN', TOKEN)
+      await loadPlugin(services, {
+        config: { defaultOwnerRepo: 'o/r', ci: { enabled: true, pollIntervalMs: 0, reportDir } },
+        runGit: async () => { throw new Error('unused') },
+        fetchImpl: stubFetch([
+          { match: (m: string, u: URL, i?: RequestInit) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7' && accept(i) !== 'application/vnd.github.diff', respond: () => jsonResponse(200, PULL_PAYLOAD) },
+          { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7', respond: () => new Response(DIFF, { status: 200, headers: { 'Content-Type': 'text/plain' } }) },
+          { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7/files', respond: () => jsonResponse(200, [{ filename: 'src/a.ts', additions: 1, deletions: 0 }]) },
+          { match: (m: string, u: URL) => m === 'GET' && u.pathname === `/repos/o/r/commits/${SHA}/check-runs`, respond: () => jsonResponse(200, { total_count: 0, check_runs: [] }) },
+          { match: (m: string, u: URL) => m === 'GET' && u.pathname === '/repos/o/r/pulls/7/reviews', respond: () => jsonResponse(200, []) },
+          { match: (m: string, u: URL) => m === 'POST' && u.pathname === '/repos/o/r/pulls/7/reviews', respond: () => jsonResponse(200, { id: 9, html_url: 'https://github.com/o/r/pull/7#pullrequestreview-9' }) },
+          { match: (m: string, u: URL) => m === 'POST' && u.pathname === `/repos/o/r/commits/${SHA}/check-runs`, respond: () => jsonResponse(201, { id: 5, html_url: 'https://example/checks/5' }) },
+          { match: () => true, respond: () => jsonResponse(404, { message: 'nope' }) },
+        ]),
+      })
+      const agent = new MockAgent()
+      const value = await services.tools.run('ci_run', { task: 'review', pr: 'o/r#7' }, agent)
+      const def = services.tools.get('ci_run')
+      const surfaces = [
+        JSON.stringify(value),
+        JSON.stringify(def.output.render({ task: 'review', pr: 'o/r#7' }, value)),
+        JSON.stringify(def.presentCall?.({ task: 'review', pr: 'o/r#7' }) ?? null),
+        JSON.stringify(def.presentResult?.({ task: 'review', pr: 'o/r#7' }, { content: [], isError: false, meta: value }) ?? null),
+        readFileSync(join(reportDir, 'dsh-github-ci-result.json'), 'utf8'),
+        readFileSync(join(reportDir, 'dsh-github-ci-summary.md'), 'utf8'),
+      ]
+      for (const text of surfaces) {
+        expect(text).not.toContain(TOKEN)
+        expect(text.toLowerCase()).not.toContain(TOKEN.toLowerCase())
+      }
+      const command = await services.commands.run('ci', 'run o/r#7', agent)
+      expect(JSON.stringify(command)).not.toContain(TOKEN)
+    } finally {
+      rmSync(reportDir, { recursive: true, force: true })
+    }
   })
 })

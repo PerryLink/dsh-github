@@ -32,14 +32,14 @@ const RATE_LIMIT_PROPERTIES = {
   resetAt: { oneOf: [{ type: 'number' }, { type: 'null' }] },
 } as const
 
-const RATE_LIMIT_SCHEMA = {
+export const RATE_LIMIT_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: RATE_LIMIT_PROPERTIES,
   required: true,
 } as const
 
-const ERROR_SCHEMA = {
+export const ERROR_SCHEMA = {
   type: 'object',
   additionalProperties: false,
   properties: {

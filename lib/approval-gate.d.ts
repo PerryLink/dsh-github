@@ -17,6 +17,11 @@ import type { GithubState } from './state.ts';
 /**
  * Register the approval gate. Registration is an effect: disposing the plugin
  * fiber removes the listener.
+ *
+ * Unattended CI runs (`DSH_GITHUB_CI_DRIVER=1`) auto-allow exactly the
+ * actions listed in `ci.autoApprove` — the composite action composes that
+ * allowlist for the write the pipeline needs. Interactive sessions always
+ * ask, and actions missing from `allowedActions` stay denied everywhere.
  * @param ctx - plugin context; the listener lives on the shared tools pipeline.
  * @param state - plugin state used to enrich approval reasons.
  * @returns the effect disposer.

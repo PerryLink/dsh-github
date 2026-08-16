@@ -19,7 +19,7 @@ describe('Config schema', () => {
     expect(resolved.reviewJobTimeoutMs).toBe(600_000)
     expect(resolved.maxRetries).toBe(3)
     expect(resolved.apiBaseUrl).toBe('https://api.github.com')
-    expect(resolved.allowedActions).toEqual(['pr.create', 'review.post', 'issue.create', 'issue.comment', 'issue.close', 'pr.merge', 'pr.update'])
+    expect(resolved.allowedActions).toEqual(['pr.create', 'review.post', 'issue.create', 'issue.comment', 'issue.close', 'pr.merge', 'pr.update', 'ci.run'])
     expect(resolved.defaultOwnerRepo).toBeUndefined()
     expect(resolved.workspaceDir).toBeUndefined()
   })

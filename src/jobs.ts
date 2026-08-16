@@ -192,8 +192,9 @@ function runReviewWork(state: GithubState, record: ReviewJobRecord, input: Requi
 /** Review prompt for the one-shot subagent (model review). */
 function modelReviewPrompt(record: ReviewJobRecord, diffText: string, truncated: boolean): string {
   return [
-    `Review the following GitHub pull request diff for PR #${record.pr} in ${record.repo}.`,
-    'You are a careful code reviewer. Analyze correctness, security, style, and maintainability.',
+    'You are a careful software engineer reviewing a GitHub pull request.',
+    `Review the diff for PR #${record.pr} in ${record.repo}.`,
+    'Analyze correctness, security, style, and maintainability.',
     'Write the review as GitHub-flavored Markdown suitable for posting as a PR comment:',
     '- a short overall verdict first,',
     '- then concrete findings grouped by file with line numbers where possible.',

@@ -25,6 +25,7 @@ const ACTION_BY_TOOL: Record<string, GithubAction> = {
   issue_open: 'issue.create',
   issue_comment: 'issue.comment',
   issue_close: 'issue.close',
+  ci_run: 'ci.run',
 }
 
 /** Tools the gate intercepts; everything else delegates via next(). */
@@ -95,12 +96,22 @@ function askReason(toolName: string, args: Record<string, unknown>, state: Githu
     const number = typeof args.issueNumber === 'number' ? ` #${args.issueNumber}` : ''
     return `close GitHub issue${number}`
   }
+  if (toolName === 'ci_run') {
+    const target = typeof args.pr === 'string' ? ` ${args.pr}` : ''
+    const task = typeof args.task === 'string' ? args.task : 'review'
+    return `run CI ${task} for GitHub pull request${target} (posts review comments and a status check)`
+  }
   return 'perform a GitHub write action'
 }
 
 /**
  * Register the approval gate. Registration is an effect: disposing the plugin
  * fiber removes the listener.
+ *
+ * Unattended CI runs (`DSH_GITHUB_CI_DRIVER=1`) auto-allow exactly the
+ * actions listed in `ci.autoApprove` — the composite action composes that
+ * allowlist for the write the pipeline needs. Interactive sessions always
+ * ask, and actions missing from `allowedActions` stay denied everywhere.
  * @param ctx - plugin context; the listener lives on the shared tools pipeline.
  * @param state - plugin state used to enrich approval reasons.
  * @returns the effect disposer.
@@ -111,6 +122,9 @@ export function registerApprovalGate(ctx: Context, state: GithubState): () => vo
     const action = ACTION_BY_TOOL[exec.name]
     if (action === undefined || !state.config.allowedActions.includes(action)) {
       return { kind: 'deny', reason: `dsh-github: action "${action ?? exec.name}" is not in allowedActions` }
+    }
+    if (state.isCiDriver && state.config.ci.autoApprove.includes(action)) {
+      return { kind: 'allow' }
     }
     return { kind: 'ask', reason: `dsh-github: ${askReason(exec.name, argumentsAsRecord(exec), state)}` }
   })

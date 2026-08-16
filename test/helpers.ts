@@ -222,13 +222,13 @@ export function textResponse(status: number, body: string, headers: Record<strin
 /** A tiny fetch stub dispatching on (method, pathname, init headers). */
 export function stubFetch(routes: Array<{
   match: (method: string, url: URL, init?: RequestInit) => boolean
-  respond: () => Response
+  respond: (init?: RequestInit) => Response
 }>): typeof fetch {
   return (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input : input.url)
     const method = init?.method ?? 'GET'
     for (const route of routes) {
-      if (route.match(method, url, init)) return route.respond()
+      if (route.match(method, url, init)) return route.respond(init)
     }
     return jsonResponse(404, { message: `no stub for ${method} ${url.pathname}` })
   }) as typeof fetch

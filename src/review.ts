@@ -174,7 +174,7 @@ function countSeverity(findings: readonly Finding[], severity: FindingSeverity):
 }
 
 /** Make a diff-derived file name safe to interpolate into Markdown. */
-function sanitizeFileName(file: string): string {
+export function sanitizeFileName(file: string): string {
   return file
     .replace(/\\/g, '\\\\')
     .replace(/`/g, '\\`')
