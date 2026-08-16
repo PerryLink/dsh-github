@@ -19,6 +19,8 @@
   <img src="https://img.shields.io/badge/dsh-dsh--plugin-4D6BFE" alt="dsh-plugin">
   <img src="https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen" alt="Node: ^22.19 || >=24">
   <img src="https://github.com/PerryLink/dsh-github/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/v/@perrylink/dsh-github" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/dm/@perrylink/dsh-github" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/documents-EN%2FZH%2FES%2FPT%2FHI-8257D0" alt="Documents: EN/ZH/ES/PT/HI">
 </p>
 
@@ -267,6 +269,10 @@ scripts/prepare.mjs   self-contained git-install build
 Tópicos recomendados do repositório GitHub (defina-os nas configurações do repositório — eles alimentam a [página de tópicos `dsh-plugin`](https://github.com/topics/dsh-plugin) e os marketplaces de plugins DSH):
 
 `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
+
+## Contribuidores
+
+Obrigado a todos que reportaram problemas, revisaram ou contribuíram código. O primeiro ciclo de revisão comunitária está documentado nos PRs mesclados (#1–#3, 2026-08-16).
 
 ## Licença
 

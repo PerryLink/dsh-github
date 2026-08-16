@@ -18,6 +18,8 @@
   <img src="https://img.shields.io/badge/dsh-dsh--plugin-4D6BFE" alt="dsh-plugin">
   <img src="https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen" alt="Node: ^22.19 || >=24">
   <img src="https://github.com/PerryLink/dsh-github/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/v/@perrylink/dsh-github" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/dm/@perrylink/dsh-github" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/documents-EN%2FZH%2FES%2FPT%2FHI-8257D0" alt="Documents: EN/ZH/ES/PT/HI">
 </p>
 
@@ -266,6 +268,10 @@ scripts/prepare.mjs   git 安装用的自包含构建
 推荐的 GitHub 仓库 Topics（在仓库设置里添加——它们驱动 [`dsh-plugin` 话题页](https://github.com/topics/dsh-plugin) 与各 DSH 插件市场）：
 
 `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
+
+## 贡献者
+
+感谢所有报告问题、参与评审或贡献代码的朋友。本仓库首轮社区评审记录在其已合并的 PR（#1–#3，2026-08-16）中。
 
 ## 许可证
 

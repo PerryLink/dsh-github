@@ -19,6 +19,8 @@
   <img src="https://img.shields.io/badge/dsh-dsh--plugin-4D6BFE" alt="dsh-plugin">
   <img src="https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen" alt="Node: ^22.19 || >=24">
   <img src="https://github.com/PerryLink/dsh-github/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/v/@perrylink/dsh-github" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/dm/@perrylink/dsh-github" alt="npm downloads"></a>
   <img src="https://img.shields.io/badge/documents-EN%2FZH%2FES%2FPT%2FHI-8257D0" alt="Documents: EN/ZH/ES/PT/HI">
 </p>
 
@@ -267,6 +269,10 @@ scripts/prepare.mjs   self-contained git-install build
 अनुशंसित GitHub repository topics (उन्हें repo settings में सेट करें — वे [`dsh-plugin` topic page](https://github.com/topics/dsh-plugin) और DSH plugin marketplaces को शक्ति देते हैं):
 
 `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
+
+## योगदानकर्ता
+
+समस्याएँ रिपोर्ट करने, समीक्षा करने या कोड योगदान देने वाले सभी का धन्यवाद। पहला सामुदायिक समीक्षा चक्र मर्ज किए गए PR (#1–#3, 2026-08-16) में दर्ज है।
 
 ## लाइसेंस
 
