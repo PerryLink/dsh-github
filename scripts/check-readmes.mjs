@@ -21,6 +21,8 @@ const FILES = ['README.md', 'README.zh-CN.md', 'README.es.md', 'README.pt.md', '
 /** GitHub-slugger-compatible slug for one heading line (without the `## `). */
 function slug(heading) {
   return heading
+    .replace(/\r/g, '')
+    .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[.,:;!?()'"·—•*]/g, '')
