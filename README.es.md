@@ -240,6 +240,8 @@ pnpm run check:readmes   # cross-checks TOC anchors, tools, and config keys in a
 
 Las pruebas simulan la API de GitHub, la CLI `gh` y git mediante runners inyectados — sin red, sin credenciales reales. `test/security.test.ts` verifica que la cadena del token nunca aparece en ninguna salida visible para el modelo o para el humano. `test/e2e.test.ts` contiene pruebas de humo optativas de la API real que se omiten automáticamente salvo que `DSH_GITHUB_E2E_TOKEN` esté definido (solo endpoints de solo lectura).
 
+Para ejercitar la acción compuesta localmente, ejecuta `node scripts/local-test.mjs --owner-repo you/repo --pr 42` (consulta `--help` para todas las opciones). El simulador fija explícitamente `DSH_HOME`, `DSH_PROFILE_DIR`, `RUNNER_TEMP` y el directorio de salida dentro de un sandbox nuevo del directorio temporal del sistema para cada paso — tu dsh home real nunca se lee ni se escribe, incluso si existe un `DSH_HOME` de ámbito máquina — y reproduce los pasos install → prepare → run headless → post de `action.yml`. `action-patch.mjs` y `action-post.mjs` se niegan a ejecutarse fuera de un runner de GitHub Actions, de modo que la acción no puede escribir overlays de perfil ni informes en ubicaciones locales desconocidas.
+
 ## 🗂 Estructura del repositorio
 
 ```

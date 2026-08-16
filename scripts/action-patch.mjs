@@ -12,6 +12,20 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+// Local-machine protection: the composite action resolves every path from the
+// runner environment (RUNNER_TEMP for the output directory, GITHUB_WORKSPACE
+// for the sandbox root). Outside a GitHub Actions runner those variables do
+// not exist, and every fallback would silently write the profile overlay and
+// task into the current working directory while a locally spawned `dsh`
+// inherits the developer's real DSH_HOME. Refuse to run instead of guessing.
+const runnerTemp = (process.env.RUNNER_TEMP ?? '').trim()
+const workspace = (process.env.GITHUB_WORKSPACE ?? '').trim()
+if (runnerTemp === '' || workspace === '') {
+  console.error('dsh-github: refusing to run outside a GitHub Actions runner — both RUNNER_TEMP and GITHUB_WORKSPACE must be set.')
+  console.error('dsh-github: to exercise the action locally, use `node scripts/local-test.mjs`; it pins DSH_HOME, DSH_PROFILE_DIR, and the output directory under the system temp directory.')
+  process.exit(1)
+}
+
 const env = (name) => process.env[name] ?? ''
 const boolOf = (value, fallback) => value.trim() === '' ? fallback : value.trim() === 'true' || value.trim() === '1'
 const listOf = (value) => value.split(',').map(item => item.trim()).filter(item => item.length > 0)
