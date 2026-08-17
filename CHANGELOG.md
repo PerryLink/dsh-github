@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-08-17
+
+### Fixed
+
+- The bundle patch row now names the package exactly as published (`@perrylink/dsh-github`). The previous bare name made the row unresolvable in a clean profile, so the plugin failed to load with `ERR_MODULE_NOT_FOUND`.
+
 ## [0.6.1] - 2026-08-16
 
 ### Added
