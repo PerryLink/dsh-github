@@ -3,7 +3,7 @@
 # by replacing this row's config (the whole row is replaced, never deep-merged).
 - insert:
     - id: dsh-github
-      name: dsh-github
+      name: '@perrylink/dsh-github'
       config:
         tokenSource: auto
         autoCommit: false
