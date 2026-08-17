@@ -1,132 +1,90 @@
-<h1 align="center">dsh-github</h1>
+<div align="center">
 
-<p align="center">
-  <b>Traga o GitHub para o DeepSeek Harness.</b><br/>
-  Crie pull requests · revise PRs com comentários inline ou de resumo · gerencie issues · pesquise — toda gravação exige aprovação humana e o token nunca é registrado em log.
-</p>
+# dsh-github
 
-<p align="center">
-  <a href="README.md">English</a> ·
-  <a href="README.zh-CN.md">中文</a> ·
-  <a href="README.es.md">Español</a> ·
-  Português ·
-  <a href="README.hi.md">हिन्दी</a>
-</p>
+**PRs, revisões, issues e CI do GitHub para o DeepSeek Harness — toda gravação aprovada por um humano e o token nunca registrado em log.**
 
-<p align="center">
-  <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0">
-  <img src="https://img.shields.io/badge/dsh-0.1.0--rc.6-4D6BFE" alt="dsh: 0.1.0-rc.6">
-  <img src="https://img.shields.io/badge/dsh-dsh--plugin-4D6BFE" alt="dsh-plugin">
-  <img src="https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen" alt="Node: ^22.19 || >=24">
-  <img src="https://github.com/PerryLink/dsh-github/actions/workflows/ci.yml/badge.svg" alt="CI">
-  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/v/@perrylink/dsh-github" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/@perrylink/dsh-github"><img src="https://img.shields.io/npm/dm/@perrylink/dsh-github" alt="npm downloads"></a>
-  <img src="https://img.shields.io/badge/documents-EN%2FZH%2FES%2FPT%2FHI-8257D0" alt="Documents: EN/ZH/ES/PT/HI">
-</p>
+*Crie, revise, mescle e pesquise no GitHub a partir do agente, com uma ação composta de CI, um bot de revisão por polling e uma barreira de status-check.*
 
----
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![DSH plugin](https://img.shields.io/badge/dsh-plugin-✅-green)](https://github.com/topics/dsh-plugin)
+[![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen.svg)](#)
+[![CI](https://img.shields.io/github/actions/workflow/status/PerryLink/dsh-github/ci.yml?branch=main&label=CI)](https://github.com/PerryLink/dsh-github/actions)
+[![Version](https://img.shields.io/github/v/tag/PerryLink/dsh-github?label=version)](https://github.com/PerryLink/dsh-github/releases)
+[![npm version](https://img.shields.io/npm/v/%40perrylink%2Fdsh-github)](https://www.npmjs.com/package/@perrylink/dsh-github)
+[![npm downloads](https://img.shields.io/npm/dm/%40perrylink%2Fdsh-github)](https://www.npmjs.com/package/@perrylink/dsh-github)
 
-**dsh-github** é um plugin de bundle para o [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) — o harness de agentes "tudo é um plugin". Ele preenche a lacuna do GitHub entre o dsh e ferramentas como o [Claude Code](https://github.com/anthropics/claude-code) (`gh claude` / [claude-code-action](https://github.com/anthropics/claude-code-action)) e o [Codex](https://github.com/openai/codex) (`@codex review` / Autofix CI): seu agente pode **ler um PR, revisar um PR, abrir um PR, mesclar e atualizar PRs, ler metadados de repositórios e arquivos, comentar e fechar issues, e pesquisar** — enquanto um humano aprova toda gravação e o token permanece em segredo.
+[English](README.md) · [简体中文](README.zh.md) · [Español](README.es.md) · [Português](README.pt.md) · [हिन्दी](README.hi.md)
 
-- 🛠 **12 ferramentas** — `pr_create` · `pr_merge` · `pr_update` · `gh_review` · `review_post` · `gh_issue` · `issue_open` · `issue_comment` · `issue_close` · `gh_search` · `gh_repo` · `gh_file`, todas com JSON canônico via `defineTool`
-- ⌨️ **3 famílias de comandos** — `/pr create` · `/review` (start/stop/post) · `/issue open`
-- 🔀 **Ciclo de vida completo do PR** — criar → revisar → atualizar (título/corpo/estado/rama base) → mesclar (merge/squash/rebase, exclusão opcional da rama head)
-- 📝 **Revisões inline** — `review_post` publica um único comentário de resumo ou comentários de revisão ancorados por linha no commit head do PR
-- 🔒 **Gravações com aprovação obrigatória** — toda gravação no GitHub passa por `ctx.approval` (padrão `ask`, falha fechada); os motivos de aprovação pré-visualizam títulos, tamanhos de corpo e substituições de comentários
-- 🗝 **Sigilo do token** — camada de credenciais → ambiente → CLI `gh`, resolvido por operação, nunca em logs, eventos, renderizações ou erros
-- ⏱ **Jobs de revisão em segundo plano** — `/review` roda em `ctx.jobs` com a própria superfície `job_list` / `job_output` / `job_kill` do host, e reporta o status de CI e a contagem de comentários junto com os achados
-- 🤖 **Opção de revisão por modelo** — `reviewMode: "model"` delega o diff limitado a um subagente de uso único pela seam `subagents` do host; o modo `static` padrão permanece determinístico e sem gasto de tokens
-- 🚦 **Backoff de 429 + exibição de cota** — o modelo vê o limite de taxa restante em todo resultado, incluindo falhas; os erros de busca por seção são exibidos em vez de engolidos
-- 🌐 **Documentação em 5 idiomas** — English · 中文 · Español · Português · हिन्दी
+</div>
 
 ---
 
 ## 📚 Índice
 
-- [Início rápido](#🚀-início-rápido)
-- [Funcionalidades](#✨-funcionalidades)
-- [Instalação](#📦-instalação)
-- [Configuração](#⚙️-configuração)
-- [Ferramentas](#🛠-ferramentas)
-- [Comandos](#⌨️-comandos)
-- [Arquitetura](#🏗-arquitetura)
-- [Limites de segurança](#🔒-limites-de-segurança)
-- [Limitações conhecidas](#⚠️-limitações-conhecidas)
-- [Desenvolvimento](#🧪-desenvolvimento)
-- [Estrutura do repositório](#🗂-estrutura-do-repositório)
-- [Tópicos](#🏷-tópicos)
+- [Compatibilidade](#compatibilidade)
+- [O que você obtém](#o-que-você-obtém)
+- [Início rápido](#início-rápido)
+- [Instalação e desinstalação](#instalação-e-desinstalação)
+- [Configuração](#configuração)
+- [Ferramentas e superfícies](#ferramentas-e-superfícies)
+- [Arquitetura](#arquitetura)
+- [Permissões e dados](#permissões-e-dados)
+- [Limites de segurança](#limites-de-segurança)
+- [Limitações conhecidas](#limitações-conhecidas)
+- [Desenvolvimento](#desenvolvimento)
+- [Estrutura do repositório](#estrutura-do-repositório)
+- [Tópicos](#tópicos)
 - [Contribuidores](#contribuidores)
+- [Família de plugins DSH da PerryLink](#família-de-plugins-dsh-da-perrylink)
 - [Licença](#licença)
 
-## 🚀 Início rápido
+## Compatibilidade
+
+| Superfície | Status |
+|---|---|
+| Harness | DeepSeek Harness `0.1.0-rc.6` (compatibilidade declarada para `0.1.0-rc.5`–`0.1.0-rc.6`) |
+| Node | `^22.19.0 \|\| >=24.0.0` |
+| Plataformas | Todas (plugin host; rede de saída para o GitHub) |
+| Modelo | Qualquer (a revisão estática é determinística; `reviewMode: "model"` é opcional) |
+
+## O que você obtém
+
+O `dsh-github` preenche a lacuna do GitHub entre o `dsh` e ferramentas como o Claude Code e o Codex: seu agente pode ler, revisar, abrir, atualizar e mesclar pull requests, ler metadados de repositórios e arquivos, comentar e fechar issues, e pesquisar — enquanto um humano aprova toda gravação e o token permanece em segredo.
+
+- **12 ferramentas** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, todas com JSON canônico via `defineTool`.
+- **3 famílias de comandos** — `/pr create`, `/review` (start/stop/post), `/issue open`.
+- **Ciclo de vida completo do PR** — criar → revisar → atualizar (título/corpo/estado/rama base) → mesclar (merge/squash/rebase, exclusão opcional da rama head).
+- **Revisões inline** — `review_post` publica um único comentário de resumo ou comentários de revisão ancorados por linha no commit head do PR.
+- **Gravações com aprovação** — toda gravação no GitHub passa por `ctx.approval` (padrão `ask`, falha fechada); os motivos de aprovação pré-visualizam títulos, tamanhos de corpo e substituições de comentários.
+- **Sigilo do token** — camada de credenciais → ambiente → CLI `gh`, resolvido por operação, nunca em logs, eventos, renderizações ou erros.
+- **Jobs de revisão em segundo plano** — `/review` roda em `ctx.jobs` com a própria superfície `job_list` / `job_output` / `job_kill` do host.
+- **Resiliência** — nova tentativa em 429 com backoff `Retry-After`/`x-ratelimit-reset`; as ferramentas de leitura são seguras para concorrência; todas as chamadas respeitam o cancelamento.
+- **Superfície de CI** — a ferramenta de execução única `ci_run`, um bot de revisão por polling e uma barreira de status-check (ação composta `action.yml`).
+
+## Início rápido
 
 ```sh
-# 1. instalar (registro npm — o mais simples; ou use o canal tarball abaixo)
-dsh plugin --profile <name> add @perrylink/dsh-github
-#    canal tarball (sem necessidade de registro):
-#    pnpm pack → dsh-github-<version>.tgz
-#    dsh plugin --profile <name> add ./dsh-github-<version>.tgz
+# 1. instale o bundle no seu perfil
+dsh plugin --profile web add "github:PerryLink/dsh-github#main"
 
-# 2. configure a GitHub token (recommended: the credentials seam)
-#    $DSH_HOME/.credentials.yaml
-#    GITHUB_TOKEN: <your token>
+# ou do npm (versões publicadas)
+dsh plugin --profile web add @perrylink/dsh-github
 
-# 3. use it — in the dsh web UI or headless
-#    /pr create "add dark mode"      → agent drafts & opens the PR (approval required)
-#    /review 42                      → background review job, read it with job_output
-#    /review post github-review-1    → publish the review comment (approval required)
-#    /issue open "crash on startup"  → agent opens the issue (approval required)
+# 2. reinicie e verifique a linha
+dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 ```
 
-Verifique: `dsh --profile <name> --dump-config` deve mostrar a seção `# == dsh-github` sem **nenhuma linha FAILED**.
+## Instalação e desinstalação
 
-## ✨ Funcionalidades
+- **canal git** (último `main`): `dsh plugin --profile web add "github:PerryLink/dsh-github#main"` — o script `prepare` compila apenas com dependências de produção.
+- **canal npm** (versões publicadas): `dsh plugin --profile web add @perrylink/dsh-github`.
+- **canal tarball**: `pnpm pack` neste repositório e depois `dsh plugin --profile web add ./dsh-github-<version>.tgz`.
+- **desinstalar**: `dsh plugin --profile web remove dsh-github` (ou remova a linha do patch de perfil).
 
-| Área | O que você obtém |
-|---|---|
-| **Criar PRs** | `/pr create [title]` lê o estado do git (branch, arquivos alterados, commits à frente) e entrega um rascunho ao agente; `pr_create` abre o PR e retorna sua URL |
-| **Atualizar PRs** | `pr_update` edita título, corpo, estado ou rama de destino — com aprovação, como toda outra gravação |
-| **Mesclar PRs** | `pr_merge` mescla com `merge`/`squash`/`rebase`, título/mensagem de commit opcionais e exclusão da rama head após a mesclagem |
-| **Revisar PRs** | `gh_review` resume metadados, diff limitado (texto completo no valor canônico, trecho limitado na renderização), comentários, status de CI e achados estáticos — as falhas de busca por seção são reportadas como `diff.error` / `comments.error` / `ci.error` |
-| **Publicar revisões** | `review_post` publica um comentário agregado no nível da issue (`mode: "summary"`, padrão) ou comentários de revisão ancorados por linha no commit head do PR (`mode: "inline"`); uma substituição de `body` permite que o modelo refine o comentário primeiro — após a aprovação humana |
-| **Revisões em segundo plano** | `/review <pr>` busca metadados, o diff limitado, as verificações de CI e os comentários existentes em um job de `ctx.jobs`; a saída de conclusão traz o resumo dos achados, o status de CI e a contagem de comentários; `reviewMode: "model"` delega o diff a um subagente de uso único em vez do analisador estático |
-| **Ler repositórios** | `gh_repo` lê os metadados do repositório: descrição, rama padrão, visibilidade, estrelas, forks, issues abertas, linguagem, licença, tópicos |
-| **Ler arquivos** | `gh_file` lê um arquivo em uma rama/tag/commit com decodificação base64 e um limite configurável; diretórios reportam um erro estruturado |
-| **Ler issues** | `gh_issue` lista / obtém / comenta; os pull requests nas listagens são marcados como `kind: "pr"` |
-| **Gerenciar issues** | `issue_open` cria, `issue_comment` comenta (também funciona em PRs), `issue_close` fecha com um motivo de estado opcional — todos com aprovação obrigatória |
-| **Pesquisar** | `gh_search` consulta issues e pull requests com a sintaxe de busca do GitHub, exibindo a cota de busca separada |
-| **Aprovação** | `tools/pre-execute` consulta `ctx.approval` para toda gravação; a allowlist `allowedActions` nega antes de perguntar |
-| **Segurança do segredo** | O token é lido por operação e enviado apenas no cabeçalho Authorization; um teste dedicado garante que ele nunca aparece em nenhuma saída visível |
-| **Resiliência** | Nova tentativa em 429 com backoff `Retry-After`/`x-ratelimit-reset`; as ferramentas de leitura são seguras para concorrência; todas as chamadas respeitam o cancelamento |
-| **Observabilidade** | Visível ao modelo ⇔ registrado: tudo o que o modelo vê flui pelos próprios eventos de sessão do host (`tool/result`, `user/message`, `command/run`, `approval/asked`…) |
+## Configuração
 
-## 📦 Instalação
-
-Quatro canais documentados — escolha um.
-
-| Canal | Comando | Observações |
-|---|---|---|
-| **npm registry** | `dsh plugin --profile <name> add @perrylink/dsh-github` | Publicado no npm — o canal mais simples |
-| **tarball npm** | `dsh plugin --profile <name> add ./dsh-github-<version>.tgz` | Envia com `lib/` compilado — sem permissão de build |
-| **fonte git** | `dsh plugin --profile <name> add "github:PerryLink/dsh-github#<sha>"` | Requer `prepare` + `allowBuilds` (veja abaixo); fixe o commit |
-| **link local** | `pnpm link --dir .` e depois `dsh plugin add @perrylink/dsh-github` | Desenvolvimento |
-
-> O pacote npm é publicado sob o escopo `@perrylink` porque o nome sem escopo `dsh-github` pertence a um projeto alheio no registro. O nome de módulo do plugin permanece `dsh-github`.
-
-Instalações via git: o pnpm ≥10 recusa o `prepare` de uma dependência git até que ela seja incluída na allowlist — o `dsh` imprime a chave exata; copie-a para o `pnpm-workspace.yaml` do perfil:
-
-```yaml
-allowBuilds:
-  '@perrylink/dsh-github': true
-```
-
-O script `prepare` (`scripts/prepare.mjs`) é autocontido: ele compila com TypeScript quando um compilador é resolvível, caso contrário recorre aos **artefatos `lib/` commitados** e falha em alto e bom som se não houver nenhum dos dois.
-
-**Desinstalar:** `dsh plugin --profile <name> remove @perrylink/dsh-github`.
-
-## ⚙️ Configuração
-
-Validado pelo Schemastery no momento do carregamento (falha em alto e bom som). Sobrescreva qualquer chave no `cordis.patch.yml` do perfil (toda a configuração da linha é substituída, nunca mesclada profundamente).
+Todos os ajustes são campos `Config` do Schemastery (modificáveis a partir do cordis.yml). Uma substituição direcionada por id troca toda a linha — redeclare cada chave de que você precisa. O `cordis.patch.yml` documenta cada chave em linha.
 
 | Chave | Padrão | Significado |
 |---|---|---|
@@ -151,101 +109,73 @@ Validado pelo Schemastery no momento do carregamento (falha em alto e bom som). 
 | `apiBaseUrl` | `https://api.github.com` | URL base da API REST do GitHub (GitHub Enterprise) |
 | `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | Allowlist de ações de gravação; qualquer outra coisa é negada antes da aprovação |
 | `workspaceDir` | process cwd | Diretório de trabalho para inspeção somente leitura do git |
-| `ci` | `{ enabled: false, … }` | Seção de integração CI: bot de revisão por polling, gate de status-check e a ferramenta de execução única `ci_run` (contém todas as chaves `ci.*`) |
+| `ci` | `{ enabled: false, … }` | Seção de integração CI: bot de revisão por polling, barreira de status-check e a ferramenta de execução única `ci_run` (contém todas as chaves `ci.*`) |
 
-## 🛠 Ferramentas
+## Ferramentas e superfícies
 
-| Ferramenta | Tipo | Parâmetros | Retorna |
-|---|---|---|---|
-| `pr_create` | gravação | `title*`, `body?`, `base?`, `head?`, `draft?`, `ownerRepo?` | `{status:'created', url, number, title, state, draft, base, head, rateLimit}` ou erro estruturado |
-| `pr_merge` | gravação | `pr*` (number / `#n` / `o/r#n` / URL), `mergeMethod?`, `commitTitle?`, `commitMessage?`, `deleteBranch?` | `{status:'merged', merged, sha?, message, url, branchDeleted, branchDeleteNote?, rateLimit}` ou erro estruturado |
-| `pr_update` | gravação | `pr*` (number / `#n` / `o/r#n` / URL), `title?`, `body?`, `state?` (`open`/`closed`), `base?` | `{status:'updated', url, number, title, state, base, rateLimit}` ou erro estruturado |
-| `gh_review` | leitura | `pr*` (number / `#n` / `o/r#n` / URL), `fields?`, `maxDiffChars?` | metadados, diff limitado (texto completo `diff.text` + trecho limitado `diff.excerpt` + estatísticas por arquivo), comentários, CI, achados estáticos, campos de `error` por seção, limite de taxa |
-| `gh_repo` | leitura | `ownerRepo?` | `{repo, description, defaultBranch, visibility, stars, forks, openIssues, language, license, topics, url, updatedAt, rateLimit}` ou erro estruturado |
-| `gh_file` | leitura | `ownerRepo?`, `path*`, `ref?`, `maxChars?` | `{repo, path, ref, size, truncated, content, sha, url, rateLimit}` ou erro estruturado |
-| `gh_issue` | leitura | `action*` (`list`/`get`/`comments`), `ownerRepo?`, `issueNumber?`, `state?`, `limit?` | itens normalizados (cada um marcado `kind: issue/pr/comment`) + limite de taxa |
-| `review_post` | gravação | `jobId*`, `mode?` (`summary`/`inline`), `body?` | `{status:'posted', mode, url, commentId?, reviewId?, findings, rateLimit}` ou erro estruturado |
-| `issue_open` | gravação | `title*`, `body?`, `labels?`, `ownerRepo?` | `{status:'created', url, number, title, rateLimit}` ou erro estruturado |
-| `issue_comment` | gravação | `issueNumber*`, `body*`, `ownerRepo?` | `{status:'commented', url, commentId, issueNumber, rateLimit}` ou erro estruturado |
-| `issue_close` | gravação | `issueNumber*`, `ownerRepo?`, `stateReason?` (`completed`/`not_planned`) | `{status:'closed', url, number, title, rateLimit}` ou erro estruturado |
-| `gh_search` | leitura | `q*`, `sort?`, `order?`, `perPage?` | `{query, total, items[{number,title,state,kind,author,url,repo,comments,createdAt}], rateLimit}` ou erro estruturado |
+| Superfície | Tipo | Observações |
+|---|---|---|
+| `pr_create` | ferramenta | Cria uma pull request (gravação; com aprovação) |
+| `pr_merge` | ferramenta | Mescla uma PR (merge/squash/rebase, exclusão opcional da rama head) |
+| `pr_update` | ferramenta | Atualiza uma PR (título/corpo/estado/rama base) |
+| `gh_review` | ferramenta | Lê uma PR: metadados, diff limitado, comentários, CI, achados estáticos |
+| `review_post` | ferramenta | Publica um comentário de revisão (resumo ou inline ancorado por linha) |
+| `gh_issue` | ferramenta | Lista / obtém / comenta issues (PRs marcados `kind: "pr"`) |
+| `issue_open` | ferramenta | Cria um issue |
+| `issue_comment` | ferramenta | Comenta um issue ou PR |
+| `issue_close` | ferramenta | Fecha um issue (motivo de estado opcional) |
+| `gh_search` | ferramenta | Pesquisa issues e PRs (cota de busca separada) |
+| `gh_repo` | ferramenta | Lê os metadados do repositório |
+| `gh_file` | ferramenta | Lê um arquivo em uma rama/tag/commit |
+| `/pr create` | comando | Lê o estado do git e enfileira uma instrução `pr_create` |
+| `/review` | comando | Inicia / para / publica um job de revisão em segundo plano |
+| `/issue open` | comando | Enfileira uma instrução `issue_open` |
+| `ci_run` | ferramenta | Revisão CI de execução única conduzida pela ação composta / driver CI |
+| bot de revisão | superfície | Bot de revisão por polling com comentários inline idempotentes (`ci.*`) |
+| barreira de status-check | superfície | Publica o veredito `success` / `needs-changes` por commit head de PR (`action.yml`) |
 
-`execute` retorna apenas o JSON canônico declarado por `output.schema`. Falhas de token ausente e da API do GitHub são variantes de erro estruturado que carregam fatos do limite de taxa; falhas de infraestrutura lançam exceção (→ `isError`). `exec.signal` é respeitado em todos os lugares.
-
-## ⌨️ Comandos
-
-| Comando | Efeito |
-|---|---|
-| `/pr create [title]` | Lê o estado do git e enfileira uma instrução `pr_create` para o modelo (corpo rascunhado, padrões, sem commit/push a menos que `autoCommit`). Criar o PR solicita aprovação. |
-| `/review <pr>` | Inicia um job de revisão em segundo plano; imprime o id do job. A conclusão é anunciada pelo host; leia-a com `job_output`. |
-| `/review <pr> --max-diff <n> --no-ci --no-comments` | Substituições por job: limite de diff e quais seções suplementares o job busca. |
-| `/review stop <jobId>` | Cancela o job (controle local, sem gravação no GitHub). |
-| `/review post <jobId>` | Enfileira uma instrução `review_post` para o modelo (resumo ou inline); publicar solicita aprovação. |
-| `/issue open <title>` | Enfileira uma instrução `issue_open` para o modelo; criar solicita aprovação. |
-
-## 🏗 Arquitetura
-
-```
-                    ┌───────────────────────────────────────────────┐
-                    │                   dsh-github                  │
-                    │                                               │
- humanos ─── /pr ────┼──► git reader (read-only) ──► agent.followup  │
-         /review ───┼──► ctx.jobs.start("github-review") ──► job    │
-         /issue ────┼──► agent.followup                              │
-                    │                                               │
- modelo ─── pr_create / pr_merge / pr_update / gh_review /           │
-           review_post / gh_issue / issue_open / issue_comment /    │
-           issue_close / gh_search / gh_repo / gh_file              │
-           (defineTool, canonical JSON only)                        │
-                    │                                               │
-                    └───────┬───────────────┬───────────────┬───────┘
-                            │               │               │
-                  tools/pre-execute     credential        GitHub REST
-                  approval gate        resolution        client (fetch,
-                  (ask | deny)      (seam → env →       429 retry,
-                                    gh CLI, per-op)     rate-limit)
-```
+## Arquitetura
 
 - **Camada de credenciais.** `tokenSource: auto` resolve por operação na ordem camada de credenciais (referência `GITHUB_TOKEN`) → variável de ambiente → token da CLI `gh`. O valor é uma variável local entregue ao cliente REST; ele nunca entra em valores canônicos, renderizações, cards, saídas de comandos, avisos injetados, saídas de jobs, motivos de aprovação ou mensagens de erro.
-- **Aprovação.** Todas as gravações passam pelas ferramentas do modelo. Um listener waterfall `tools/pre-execute` retorna `ask` para as sete ferramentas de gravação, de modo que o registro pergunta ao humano por meio de `ctx.approval` (o host registra o par de auditoria `approval/asked` + `approval/decided`) e falha fechado sem um respondedor. Os motivos de aprovação pré-visualizam o que será publicado (títulos, tamanhos de corpo, métodos de mesclagem e a primeira linha de um corpo de revisão substituído). Comandos nunca gravam diretamente: os handlers de comando rodam sem um turno aberto, então a camada de aprovação é estruturalmente fechada para eles — um comando de gravação coleta contexto somente leitura e então acorda o agente (`followup` quando ocioso, `inject` quando ocupado) para que o modelo execute a ferramenta com aprovação dentro de um turno.
-- **Revisão em segundo plano.** `/review <pr>` inicia um job `github-review` em `ctx.jobs` (label, owner, timeout, cancelável). O job resolve o token por operação, busca os metadados do PR (capturando o SHA do commit head para a publicação inline), o diff limitado e — a menos que desativado — as execuções de verificação de CI e os comentários de revisão existentes, e então executa um analisador determinístico de múltiplos arquivos (`src/review.ts`: segredos hardcoded, chaves de API do Google, atribuições de credenciais, artefatos de debug, eval, marcadores TODO, linhas longas, mudanças grandes demais) — zero tokens gastos, totalmente testável. Com `reviewMode: "model"`, o job entrega o diff limitado a um subagente de uso único pela seam `subagents` do host (o agente proprietário é o pai) e armazena a saída Markdown do filho como o relatório publicável; uma seam ou provedor ausente falha em alto e bom som. As falhas de busca de seções suplementares são anotadas na saída sem fazer o job falhar. Os avisos de conclusão chegam à sessão de origem por meio do consumidor `dsh-tool-jobs` do host; o modelo lê o relatório por meio da ferramenta existente `job_output` e o publica com `review_post` — aprovação necessária.
-- **Visível ao modelo ⇔ registrado.** O plugin não acrescenta **nenhum tipo de evento de sessão personalizado**. Tipos de evento fora do repositório não estão em `KNOWN_SESSION_EVENT_TYPES` do host, então um evento obrigatório desconhecido tornaria o log da sessão ilegível após a remoção do plugin (o host deliberadamente adia uma superfície de registro para plugins externos). Todo conteúdo visível ao modelo, portanto, flui por superfícies registradas pelo host: valores canônicos de `tool/result`, avisos `user/message` via `agent.inject`/`agent.followup`, o par de ciclo de vida `command/run` + `command/done` e o par de auditoria `approval/asked` + `approval/decided`.
-- **Presenters puros.** `presentCall`/`presentResult` são funções puras de `args` (+ o `result.meta` persistido), idênticas no streaming ao vivo e na reprodução do log. A criação de PR mostra um card genérico com a URL do PR.
+- **Barreira de aprovação.** Todas as gravações passam pelas ferramentas do modelo. Um listener waterfall `tools/pre-execute` retorna `ask` para as ferramentas de gravação, de modo que o registro pergunta ao humano por meio de `ctx.approval` (o host registra o par de auditoria `approval/asked` + `approval/decided`) e falha fechado sem um respondedor. Comandos nunca gravam diretamente: um comando de gravação coleta contexto somente leitura e então acorda o agente para que o modelo execute a ferramenta com aprovação dentro de um turno.
+- **Job de revisão em segundo plano.** `/review <pr>` inicia um job `github-review` em `ctx.jobs`; o job busca metadados (capturando o SHA do commit head para a publicação inline), o diff limitado, as verificações de CI e os comentários existentes, e então executa o analisador determinístico de múltiplos arquivos (`src/review.ts`). Com `reviewMode: "model"`, o job entrega o diff limitado a um subagente de uso único pela seam `subagents` do host. A conclusão chega à sessão por meio do consumidor `dsh-tool-jobs` do host; o modelo a lê com `job_output` e a publica com `review_post`.
+- **Ação composta de CI / bot de revisão / barreira de status-check.** O repositório inclui uma ação composta (`action.yml`) que revisa PRs, corrige CI e escreve o relatório; um bot de revisão por polling publica comentários inline idempotentes; e uma barreira de status-check publica o veredito por commit head de PR. A ferramenta de execução única `ci_run` conduz a execução headless. Toda gravação permanece sujeita a aprovação.
 
-## 🔒 Limites de segurança
+## Permissões e dados
 
-- O token é lido por operação da fonte configurada (camada de credenciais, ambiente ou CLI `gh`) e enviado apenas no cabeçalho Authorization do cliente REST. Ele nunca é registrado, nunca é renderizado, nunca é injetado, nunca é anexado ao log da sessão e nunca aparece nas mensagens de erro.
-- Toda gravação no GitHub exige `allowed-once` de `ctx.approval` (política padrão `ask`); `rejected`, `cancelled` e `unavailable` falham todos de forma fechada.
-- `/pr create` nunca faz commit ou push por conta própria; com `autoCommit: true`, o modelo realiza essas gravações pela própria barreira de aprovação da ferramenta bash. O dsh-github **não** gerencia a identidade do git (trabalho do dsh-git-identity) nem worktrees (trabalho do dsh-worktree).
-- O job de revisão não realiza gravações: ele lê um diff e armazena um relatório na memória do processo; apenas `review_post` publica, após aprovação.
-- Os comentários publicados interpolam nomes de arquivo derivados do diff, que são conteúdo de repositório não confiável: `formatPostBody` escapa as crases e escapa em HTML os nomes de arquivo para que uma PR hostil não possa injetar Markdown no comentário de revisão.
-- O conteúdo de arquivos lido por `gh_file` e os corpos de issues/PRs, os comentários e os resultados de busca lidos do GitHub são conteúdo externo não confiável que entra no contexto do modelo — a mesma contrapartida inerente à busca na web; o plugin os marca como conteúdo externo em suas renderizações.
-- Limites de taxa: os 429 são repetidos com backoff e a cota restante é exibida ao modelo em todo resultado, incluindo falhas.
+- **Permissões**: as gravações usam a camada de aprovação oficial; nada é reimplementado nem contornado. O plugin declara `network:outbound` e `filesystem:write` em seu manifesto de workshop.
+- **Dados**: o relatório de revisão vive na memória do processo, indexado pelo id do job; nada durável é gravado em disco.
+- **Log de sessão**: o plugin não adiciona tipos de evento de sessão personalizados; todo conteúdo visível ao modelo flui por superfícies registradas pelo host (`tool/result`, `user/message`, `command/run`, `approval/asked`…).
 
-## ⚠️ Limitações conhecidas
+## Limites de segurança
+
+- **Aprovação, não aplicação.** As gravações apenas produzem decisões `ask`/deny na camada oficial; o sandbox e os sistemas de aprovação continuam sendo a autoridade de aplicação.
+- **Falha fechada.** A ausência de respondedor de aprovação degrada para a decisão mais estrita — nunca para uma passagem silenciosa.
+- **O token nunca sai do processo.** É lido por operação e enviado apenas no cabeçalho Authorization; nunca é registrado, renderizado, injetado nem aparece em erros.
+- **Sem gravações fora da aprovação.** `/pr create` nunca faz commit ou push por conta própria; com `autoCommit: true`, o modelo realiza essas gravações pela própria barreira de aprovação da ferramenta bash. O job de revisão não realiza gravações; apenas `review_post` publica, após aprovação.
+- **Conteúdo não confiável é escapado e marcado.** `formatPostBody` escapa as crases e em HTML os nomes de arquivo derivados do diff, e o conteúdo externo do GitHub (arquivos, corpos, comentários, resultados de busca) é marcado como externo nas renderizações.
+- **Trabalho limitado e limites de taxa.** Os 429 são repetidos com backoff; a cota restante é exibida em todo resultado, incluindo falhas.
+
+## Limitações conhecidas
 
 - **Sem eventos de sessão personalizados** — deliberado (veja Arquitetura); as trilhas de auditoria dependem do próprio vocabulário de eventos do host.
-- **Analisador estático por padrão** — regras determinísticas (`src/review.ts`), zero tokens, reproduzível. `reviewMode: "model"` delega o diff limitado a um subagente de uso único pela seam `subagents` do host para uma revisão por LLM (consome tokens; requer a seam e um provedor registrado).
-- **Jobs e registros são locais ao processo** — o relatório de revisão vive na memória do plugin, indexado pelo id do job, acompanhando o tempo de vida do registro de jobs do host; o mapa de registros é limitado por `maxReviewRecords` (os registros concluídos mais antigos são removidos primeiro).
-- **As dist-tags `latest` do npm estão desatualizadas** — o plugin declara faixas de peer `^0.1.0-rc.5` para resolver contra o fechamento de perfil que o `dsh-base` fornece, e fixa `0.1.0-rc.6` para desenvolvimento. Nunca instale por meio de um `npm i @deepseek-ai/dsh-tools` simples.
-- **CI / GitHub Action** — incluído neste repositório (v0.6.0): uma ação composta (`action.yml`) que revisa PRs, corrige CI e escreve o relatório; um bot de revisão por polling com comentários inline idempotentes; e um gate de status-check. Toda gravação permanece sujeita a aprovação.
+- **Analisador estático por padrão** — regras determinísticas (`src/review.ts`), zero tokens, reproduzível. `reviewMode: "model"` consome tokens e requer a seam `subagents` e um provedor registrado.
+- **Jobs e registros são locais ao processo** — o relatório de revisão vive na memória do plugin, indexado pelo id do job; o mapa de registros é limitado por `maxReviewRecords` (os registros concluídos mais antigos são removidos primeiro).
+- **As dist-tags `latest` do npm estão desatualizadas** — instale por meio do fechamento de perfil que o `dsh-base` fornece; nunca com um simples `npm i @deepseek-ai/dsh-tools`.
 
-## 🧪 Desenvolvimento
+## Desenvolvimento
 
 ```sh
-pnpm install
-pnpm test          # vitest: config, credentials, 429/retry, tools, commands, jobs, approval gate, token non-leakage
-pnpm typecheck
-pnpm build         # tsc → lib/ (noEmitOnError)
-pnpm pack          # installable tarball
-pnpm run check:readmes   # cross-checks TOC anchors, tools, and config keys in all 5 READMEs
+pnpm install             # node ^22.19 || >=24
+pnpm run build           # tsc --noEmitOnError → lib/
+pnpm run prepare         # build autocontido para instalação via git (scripts/prepare.mjs)
+pnpm run prepublishOnly  # compilar + testar antes de publicar
+pnpm test                # vitest run
+pnpm run typecheck       # tsc --noEmit
+pnpm run check:readmes   # cruza âncoras de TOC, ferramentas e chaves de configuração nos 5 READMEs
 ```
 
-Os testes simulam a API do GitHub, a CLI `gh` e o git por meio de runners injetados — sem rede, sem credenciais reais. `test/security.test.ts` garante que a string do token nunca aparece em nenhuma saída visível ao modelo ou ao humano. `test/e2e.test.ts` contém testes de fumaça optativos da API real que se pulam automaticamente a menos que `DSH_GITHUB_E2E_TOKEN` esteja definido (apenas endpoints somente leitura).
-
-Para exercitar a ação composta localmente, execute `node scripts/local-test.mjs --owner-repo you/repo --pr 42` (veja `--help` para todas as opções). O simulador fixa explicitamente `DSH_HOME`, `DSH_PROFILE_DIR`, `RUNNER_TEMP` e o diretório de saída em um sandbox novo do diretório temporário do sistema para cada etapa — seu dsh home real nunca é lido nem gravado, mesmo que exista um `DSH_HOME` de escopo de máquina — e reproduz os passos install → prepare → execução headless → post do `action.yml`. `action-patch.mjs` e `action-post.mjs` se recusam a executar fora de um runner do GitHub Actions, de modo que a ação não pode gravar overlays de perfil nem relatórios em locais desconhecidos.
-
-## 🗂 Estrutura do repositório
+## Estrutura do repositório
 
 ```
 src/index.ts          plugin entry (name/inject/apply, applyWithDeps for tests)
@@ -265,16 +195,36 @@ cordis.patch.yml      bundle patch (one insert row)
 scripts/prepare.mjs   self-contained git-install build
 ```
 
-## 🏷 Tópicos
-
-Tópicos recomendados do repositório GitHub (defina-os nas configurações do repositório — eles alimentam a [página de tópicos `dsh-plugin`](https://github.com/topics/dsh-plugin) e os marketplaces de plugins DSH):
+## Tópicos
 
 `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
 
 ## Contribuidores
 
-Obrigado a todos que reportaram problemas, revisaram ou contribuíram código. O primeiro ciclo de revisão comunitária está documentado nos PRs mesclados (#1–#3, 2026-08-16).
+- [@PerryLink](https://github.com/PerryLink) — criador e mantenedor: a superfície de ferramentas do GitHub, a barreira de aprovação, os jobs de revisão em segundo plano, a ação composta de CI, o bot de revisão, a barreira de status-check e a documentação em cinco idiomas.
+
+## Família de plugins DSH da PerryLink
+
+Este projeto é um dos [15 plugins do DeepSeek Harness](https://github.com/PerryLink) mantidos por [PerryLink](https://github.com/PerryLink). Se este lhe ajuda, os outros provavelmente também ajudarão:
+
+| Plugin | Descrição |
+|---|---|
+| [dsh-mcp-panel](https://github.com/PerryLink/dsh-mcp-panel) | Painel MCP de somente leitura em tempo de execução: comando /mcp + aba de ajustes com status, ferramentas e erros |
+| [dsh-doublecheck](https://github.com/PerryLink/dsh-doublecheck) | Guardião de disciplina de engenharia: interrogatório de requisitos, portões de testes, revisão adversária |
+| [dsh-background-agents](https://github.com/PerryLink/dsh-background-agents) | Agentes filhos em segundo plano duráveis com barra lateral web, mensagens e interrupção |
+| [dsh-lsp-actions](https://github.com/PerryLink/dsh-lsp-actions) | Diagnósticos, formatação, conclusão, ações de código e renomeação LSP sobre servidores de linguagem |
+| [dsh-output-styles](https://github.com/PerryLink/dsh-output-styles) | Troca de estilo em tempo de execução equivalente ao outputStyles do Claude Code |
+| [dsh-checkpoint-rewind](https://github.com/PerryLink/dsh-checkpoint-rewind) | Equivalente ao /rewind do Claude Code: instantâneos, bifurcações de sessão, restauração de uso único |
+| [dsh-permission-rules](https://github.com/PerryLink/dsh-permission-rules) | Regras de permissão declarativas allow/deny/ask estilo Claude Code com auditoria |
+| [dsh-auto-review](https://github.com/PerryLink/dsh-auto-review) | Auto-revisão por segundo modelo na cadeia de aprovação, falha fechada por padrão |
+| [dsh-memento](https://github.com/PerryLink/dsh-memento) | Memória entre sessões com aprovação: seam ctx.memory + SQLite + ferramenta de memória |
+| [dsh-skill-pack-security](https://github.com/PerryLink/dsh-skill-pack-security) | Pacote de habilidades de auditoria de segurança: varredura de segredos, revisão de dependências e cadeia de suprimentos |
+| [dsh-session-pin](https://github.com/PerryLink/dsh-session-pin) | Fixa sessões na barra lateral web com ordenação durável |
+| [dsh-composer-history](https://github.com/PerryLink/dsh-composer-history) | Histórico de entrada estilo terminal para o compositor web: setas, busca Ctrl+R |
+| **[dsh-github](https://github.com/PerryLink/dsh-github)** | Integração de PR/issues do GitHub para DSH, toda gravação com aprovação |
+| [dsh-plugin-guide](https://github.com/PerryLink/dsh-plugin-guide) | Base de conhecimento de desenvolvimento de plugins como habilidade de agente sob demanda |
+| [dsh-claude-move](https://github.com/PerryLink/dsh-claude-move) | Migra sessões, memória, habilidades e CLAUDE.md do Claude Code para o DSH |
 
 ## Licença
 
-[Apache License 2.0](LICENSE)
+[Apache License 2.0](LICENSE) © 2026 dsh-github contributors
