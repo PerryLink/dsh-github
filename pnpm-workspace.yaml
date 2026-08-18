@@ -4,3 +4,9 @@
 # deepseek-harness checkout.
 packages:
   - .
+
+# esbuild (devDependency of vitest) ships a postinstall build script; pnpm 11
+# exits non-zero on unapproved builds, so the dev build is allowlisted here —
+# the runtime plugin itself needs no native builds.
+allowBuilds:
+  esbuild: true
