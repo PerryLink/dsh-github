@@ -20,6 +20,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm run test:coverage
+      - run: pnpm run lint
       - run: pnpm build
+      - run: pnpm run verify:self-contained
+      - run: pnpm run verify:artifacts
       - run: pnpm pack
       - run: pnpm run check:readmes

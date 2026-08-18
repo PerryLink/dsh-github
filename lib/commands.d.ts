@@ -1,5 +1,5 @@
-import type { CommandDefinition, CommandsService, JobRegistry } from './types.ts';
-import type { GithubState } from './state.ts';
+import type { CommandDefinition, CommandsService, JobRegistry } from './types.js';
+import type { GithubState } from './state.js';
 /** Register the /pr command family. */
 export declare function registerPrCommand(commands: CommandsService, state: GithubState): () => void;
 /** Register the /review command family. */

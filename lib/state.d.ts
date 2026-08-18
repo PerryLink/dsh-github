@@ -9,12 +9,12 @@
  * @module dsh-github/state
  */
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials';
-import { GithubClient, type RateLimitInfo } from './github.ts';
-import { type GitRunner } from './git.ts';
-import { type GhRunner, type TokenResolution } from './credential.ts';
-import type { SubagentsService } from './types.ts';
-import type { ReviewReport } from './review.ts';
-import { type Config } from './config.ts';
+import { GithubClient, type RateLimitInfo } from './github.js';
+import { type GitRunner } from './git.js';
+import { type GhRunner, type TokenResolution } from './credential.js';
+import type { SubagentsService } from './types.js';
+import type { ReviewReport } from './review.js';
+import { type Config } from './config.js';
 /** Result of resolving which repository a call targets. */
 export type RepoResolution = {
     ok: true;

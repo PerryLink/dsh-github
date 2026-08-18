@@ -22,6 +22,15 @@ if (existsSync(tsc)) {
   if (result.status !== 0) {
     process.exit(typeof result.status === 'number' ? result.status : 1)
   }
+  // TS 5.9 does not rewrite `.ts` specifiers in declaration emit; fix them so
+  // NodeNext declaration consumers can resolve lib.
+  const fix = spawnSync(process.execPath, [join(root, 'scripts', 'fix-dts.mjs')], {
+    cwd: root,
+    stdio: 'inherit',
+  })
+  if (fix.status !== 0) {
+    process.exit(typeof fix.status === 'number' ? fix.status : 1)
+  }
   process.exit(0)
 }
 

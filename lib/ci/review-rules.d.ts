@@ -9,8 +9,8 @@
  * identical output.
  * @module dsh-github/ci/review-rules
  */
-import type { Finding } from '../review.ts';
-import type { CiConfig } from '../config.ts';
+import type { Finding } from '../review.js';
+import type { CiConfig } from '../config.js';
 /** One changed file's stats, as reported by the PR files endpoint. */
 export interface ChangedFileStat {
     path: string;

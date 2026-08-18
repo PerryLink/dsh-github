@@ -26,9 +26,9 @@
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis';
-import { type GitRunner } from './git.ts';
-import { type GhRunner } from './credential.ts';
-import { Config, type Config as PluginConfig } from './config.ts';
+import { type GitRunner } from './git.js';
+import { type GhRunner } from './credential.js';
+import { Config, type Config as PluginConfig } from './config.js';
 export declare const name = "dsh-github";
 /** Services this plugin requires; all exist in any profile built on dsh-base. */
 export declare const inject: string[];

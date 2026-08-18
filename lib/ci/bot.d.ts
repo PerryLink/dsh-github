@@ -17,8 +17,8 @@
  * @module dsh-github/ci/bot
  */
 import type { Context } from '@deepseek-ai/cordis';
-import type { CommandsService } from '../types.ts';
-import type { GithubState } from '../state.ts';
+import type { CommandsService } from '../types.js';
+import type { GithubState } from '../state.js';
 /** Live bot status surfaced by `/ci status`. */
 export interface CiBotStatus {
     polling: boolean;

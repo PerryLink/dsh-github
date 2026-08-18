@@ -7,7 +7,7 @@
  * request bodies, error messages, and returned values never contain it.
  * @module dsh-github/github
  */
-import type { Config } from './config.ts';
+import type { Config } from './config.js';
 /** GitHub rate-limit facts, surfaced to the model on every read result. */
 export interface RateLimitInfo {
     remaining: number | null;

@@ -13,7 +13,7 @@
  * @module dsh-github/approval-gate
  */
 import type { Context } from '@deepseek-ai/cordis';
-import type { GithubState } from './state.ts';
+import type { GithubState } from './state.js';
 /**
  * Register the approval gate. Registration is an effect: disposing the plugin
  * fiber removes the listener.

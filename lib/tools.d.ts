@@ -1,5 +1,5 @@
-import { type GithubState, type RateLimitValue } from './state.ts';
-import { type GithubErrorValue } from './present.ts';
+import { type GithubState, type RateLimitValue } from './state.js';
+import { type GithubErrorValue } from './present.js';
 export declare const RATE_LIMIT_SCHEMA: {
     readonly type: "object";
     readonly additionalProperties: false;

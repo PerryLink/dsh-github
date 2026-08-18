@@ -1,5 +1,5 @@
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials';
-import type { TokenSource } from './config.ts';
+import type { TokenSource } from './config.js';
 /** A resolved non-empty token and the source layer that supplied it. */
 export interface ResolvedToken {
     value: string;

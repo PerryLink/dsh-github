@@ -1,5 +1,5 @@
-import type { Finding } from '../review.ts';
-import { type GithubState, type RateLimitValue } from '../state.ts';
+import type { Finding } from '../review.js';
+import { type GithubState, type RateLimitValue } from '../state.js';
 /** The gate verdict: pass, needs changes, or skipped by the filters. */
 export type CiVerdict = 'pass' | 'needs-changes' | 'skipped';
 /** Tasks the pipeline (and the `ci_run` tool) understands. */

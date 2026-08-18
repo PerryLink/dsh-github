@@ -1,5 +1,5 @@
-import type { GithubAgent, GithubJobId, JobRegistry } from './types.ts';
-import type { GithubState } from './state.ts';
+import type { GithubAgent, GithubJobId, JobRegistry } from './types.js';
+import type { GithubState } from './state.js';
 /** Producer kind — also the `<kind>-N` id prefix; the host treats it as opaque. */
 export declare const REVIEW_JOB_KIND = "github-review";
 export interface StartReviewJobInput {
