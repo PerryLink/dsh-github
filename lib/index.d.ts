@@ -26,6 +26,7 @@
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis';
+import z from '@deepseek-ai/schemastery';
 import { type GitRunner } from './git.js';
 import { type GhRunner } from './credential.js';
 import { Config, type Config as PluginConfig } from './config.js';
@@ -34,6 +35,25 @@ export declare const name = "dsh-github";
 export declare const inject: string[];
 export { Config };
 export type { Config as PluginConfig };
+/**
+ * User-settings namespace owned by this plugin. The card in the "Plugins"
+ * settings section edits this namespace; the GitHub token itself travels
+ * through the credentials seam (never a settings field), addressed by
+ * {@link GithubSettingsSchema.tokenRef}.
+ */
+export declare const GITHUB_SETTINGS_NAMESPACE: import("@deepseek-ai/dsh-settings").SettingsNamespace;
+/**
+ * Settings surface for the browser configuration card. Only the fields that
+ * make sense to edit from the settings page are exposed here; every other
+ * tunable stays a cordis.yml entry config field.
+ */
+export declare const GithubSettingsSchema: z<Schemastery.ObjectS<{
+    tokenRef: z<string, string>;
+    tokenSource: z<"auto" | "credentials" | "env" | "gh", "auto" | "credentials" | "env" | "gh">;
+}>, Schemastery.ObjectT<{
+    tokenRef: z<string, string>;
+    tokenSource: z<"auto" | "credentials" | "env" | "gh", "auto" | "credentials" | "env" | "gh">;
+}>>;
 /** Environment-dependent runners, injectable for tests. */
 export interface PluginDeps {
     runGit?: GitRunner;
@@ -53,7 +73,8 @@ export interface PluginDeps {
  */
 export declare function applyWithDeps(ctx: Context, config: PluginConfig, deps?: PluginDeps): void;
 /**
- * Apply the plugin: register tools, commands, and the write-approval gate.
+ * Apply the plugin: register tools, commands, the write-approval gate, and the
+ * user-settings namespace backing the browser configuration card.
  * @param ctx - plugin context; the injected services are ready at this point.
  * @param config - validated Schemastery configuration (defaults applied).
  */
