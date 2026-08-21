@@ -43,7 +43,7 @@
 
 | सतह | स्थिति |
 |---|---|
-| Harness | DeepSeek Harness `0.1.0-rc.6` (`0.1.0-rc.5`–`0.1.0-rc.6` के लिए compat घोषित) |
+| Harness | DeepSeek Harness `0.1.0-rc.8` (`0.1.0-rc.8` के लिए compat घोषित) |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | सभी (host plugin; GitHub की ओर outbound network) |
 | Model | कोई भी (static review deterministic है; `reviewMode: "model"` वैकल्पिक है) |

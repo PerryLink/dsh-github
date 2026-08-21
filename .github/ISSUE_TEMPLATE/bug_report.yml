@@ -20,7 +20,7 @@ body:
     attributes:
       label: DeepSeek Harness version
       description: The harness version or install channel (`dsh --version`, or the checkout SHA if built from source).
-      placeholder: '0.1.0-rc.6 / git SHA'
+      placeholder: '0.1.0-rc.8 / git SHA'
     validations:
       required: true
   - type: input

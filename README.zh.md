@@ -43,7 +43,7 @@
 
 | 界面 | 状态 |
 |---|---|
-| Harness | DeepSeek Harness `0.1.0-rc.6`（兼容声明覆盖 `0.1.0-rc.5`–`0.1.0-rc.6`） |
+| Harness | DeepSeek Harness `0.1.0-rc.8`（兼容声明覆盖 `0.1.0-rc.8`） |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | 全部（host 插件；出站网络访问 GitHub） |
 | Model | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |

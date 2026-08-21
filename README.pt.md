@@ -43,7 +43,7 @@
 
 | Superfície | Status |
 |---|---|
-| Harness | DeepSeek Harness `0.1.0-rc.6` (compatibilidade declarada para `0.1.0-rc.5`–`0.1.0-rc.6`) |
+| Harness | DeepSeek Harness `0.1.0-rc.8` (compatibilidade declarada para `0.1.0-rc.8`) |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Plataformas | Todas (plugin host; rede de saída para o GitHub) |
 | Modelo | Qualquer (a revisão estática é determinística; `reviewMode: "model"` é opcional) |
