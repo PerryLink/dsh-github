@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2026-08-21
+
+### Changed
+
+- DSH dev/peer dependencies pinned to `0.1.0-rc.8` (`@deepseek-ai/dsh-credentials`, `@deepseek-ai/dsh-llm`, `@deepseek-ai/dsh-session`, `@deepseek-ai/dsh-tools`); the peer ranges are widened to `>=0.1.0-rc.8 <0.2.0`.
+- Compat declaration updated to DeepSeek Harness `0.1.0-rc.8` (READMEs, `dshWorkshop.compatibility`, and the compat workflow).
+
 ## [0.6.2] - 2026-08-17
 
 ### Fixed
