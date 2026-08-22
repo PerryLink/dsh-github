@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const actionYml = readFileSync(join(fileURLToPath(new URL('..', import.meta.url)), 'action.yml'), 'utf8')
+const actionYml = readFileSync(join(fileURLToPath(new URL('..', import.meta.url)), 'action.yml'), 'utf8').replace(/\r\n/g, '\n')
 
 const REQUIRED_INPUTS = [
   'task', 'pr', 'owner-repo', 'task-prompt', 'model', 'engine', 'deepseek-api-key',
