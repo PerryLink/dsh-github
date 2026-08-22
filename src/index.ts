@@ -26,6 +26,8 @@
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+import z from '@deepseek-ai/schemastery'
 import { createState } from './state.ts'
 import { runGitCli, type GitRunner } from './git.ts'
 import { runGhCli, type GhRunner } from './credential.ts'
@@ -48,6 +50,26 @@ export const inject = ['tools', 'commands', 'jobs', 'approval', 'credentials']
 
 export { Config }
 export type { Config as PluginConfig }
+
+/**
+ * User-settings namespace owned by this plugin. The card in the "Plugins"
+ * settings section edits this namespace; the GitHub token itself travels
+ * through the credentials seam (never a settings field), addressed by
+ * {@link GithubSettingsSchema.tokenRef}.
+ */
+export const GITHUB_SETTINGS_NAMESPACE = settingsNamespace('dsh-github')
+
+/**
+ * Settings surface for the browser configuration card. Only the fields that
+ * make sense to edit from the settings page are exposed here; every other
+ * tunable stays a cordis.yml entry config field.
+ */
+export const GithubSettingsSchema = z.object({
+  tokenRef: z.string().pattern(/^[A-Za-z_][A-Za-z0-9_]*$/).default('GITHUB_TOKEN')
+    .description('Credential reference / environment variable name holding the token.'),
+  tokenSource: z.union(['auto', 'credentials', 'env', 'gh']).default('auto')
+    .description('Token lookup source: auto tries credentials → env → gh in order.'),
+})
 
 /** Environment-dependent runners, injectable for tests. */
 export interface PluginDeps {
@@ -94,10 +116,18 @@ export function applyWithDeps(ctx: Context, config: PluginConfig, deps: PluginDe
 }
 
 /**
- * Apply the plugin: register tools, commands, and the write-approval gate.
+ * Apply the plugin: register tools, commands, the write-approval gate, and the
+ * user-settings namespace backing the browser configuration card.
  * @param ctx - plugin context; the injected services are ready at this point.
  * @param config - validated Schemastery configuration (defaults applied).
  */
 export function apply(ctx: Context, config: PluginConfig) {
   applyWithDeps(ctx, config)
+  // Optional settings service (present in any profile built on dsh-base):
+  // register the namespace the "Plugins" settings card edits. The token
+  // literal itself never rides this namespace — it goes through the
+  // credentials seam, resolved per operation.
+  ctx.inject(['settings'], (settingsCtx) => {
+    settingsCtx.settings.register(GITHUB_SETTINGS_NAMESPACE, GithubSettingsSchema)
+  })
 }
