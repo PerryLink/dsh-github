@@ -309,6 +309,7 @@ describe('ci_run tool (pipeline)', () => {
     const services = makeServices()
     await loadPlugin(services, {
       config: { defaultOwnerRepo: 'o/r', ci: { enabled: true, pollIntervalMs: 0, reportDir } },
+      runGh: async () => { throw new Error('gh unused') },
       fetchImpl: stubFetch([]),
     })
     const value = await services.tools.run('ci_run', { task: 'review', pr: 'o/r#7' }) as Record<string, unknown>
