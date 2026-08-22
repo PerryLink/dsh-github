@@ -1,6 +1,7 @@
 <div align="center">
 
 # dsh-github
+[![Gitee](https://img.shields.io/badge/Gitee-mirror-c71d23?logo=gitee)](https://gitee.com/perrylink/dsh-github)
 
 **GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated by human approval, token never logged.**
 
