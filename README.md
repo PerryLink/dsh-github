@@ -44,7 +44,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `0.1.0-rc.8` (compat declared for `0.1.0-rc.8`) |
+| Harness | DeepSeek Harness `0.1.1-rc.2` (compat declared for `0.1.1-rc.2`) |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |
