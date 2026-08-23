@@ -202,6 +202,8 @@ scripts/prepare.mjs   self-contained git-install build
 ## योगदानकर्ता
 
 - [@PerryLink](https://github.com/PerryLink) — निर्माता और maintainer: GitHub tool surface, approval gate, background review jobs, CI composite action, review bot, status-check gate और पाँच-भाषा docs।
+- [@AraragiEro](https://github.com/AraragiEro) — Plugins settings पेज में GitHub token settings card (#6)।
+- [@alexchenzl](https://github.com/alexchenzl) — DSH Directory पर plugin को सूचीबद्ध करने का निमंत्रण (#5)।
 
 ## PerryLink DSH प्लगइन परिवार
 
