@@ -53,7 +53,7 @@
 
 `dsh-github` fills the GitHub gap between `dsh` and tools like Claude Code and Codex: your agent can read, review, open, update, and merge pull requests, read repository metadata and files, comment on and close issues, and search — while a human approves every write and the token stays secret.
 
-- **12 tools** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, all canonical JSON via `defineTool`.
+- **14 tools** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, all canonical JSON via `defineTool`.
 - **3 command families** — `/pr create`, `/review` (start/stop/post), `/issue open`.
 - **Full PR lifecycle** — create → review → update (title/body/state/base) → merge (merge/squash/rebase, optional head-branch delete).
 - **Inline reviews** — `review_post` posts one summary comment or line-anchored review comments against the PR head commit.
@@ -128,6 +128,8 @@ All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id
 | `gh_search` | tool | Search issues and PRs (separate search quota) |
 | `gh_repo` | tool | Read repository metadata |
 | `gh_file` | tool | Read one file at a branch/tag/commit |
+| `gh_repo_search` | tool | GraphQL repository search (separate search quota) |
+| `gh_checks` | tool | GraphQL PR status checks (check runs + commit statuses) |
 | `/pr create` | command | Read git state and queue a `pr_create` instruction |
 | `/review` | command | Start / stop / post a background review job |
 | `/issue open` | command | Queue an `issue_open` instruction |
@@ -188,7 +190,7 @@ src/git.ts            read-only git inspection + origin parsing for any API host
 src/review.ts         deterministic diff analyzer + sanitized comment drafting
 src/jobs.ts           github-review background job producer (metadata + diff + CI + comments)
 src/approval-gate.ts  tools/pre-execute ask/deny gate with write previews
-src/tools.ts          the twelve model-facing tools
+src/tools.ts          the fourteen model-facing tools
 src/commands.ts       /pr, /review, /issue
 src/present.ts        pure UI-card presenters
 test/                 vitest suite + mock host scaffolding + opt-in e2e smoke

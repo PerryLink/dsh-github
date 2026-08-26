@@ -42,9 +42,9 @@ async function loaded(routes = DEFAULT_ROUTES, config: Record<string, unknown> =
 }
 
 describe('tool registration', () => {
-  it('registers all twelve tools', async () => {
+  it('registers all fourteen tools', async () => {
     const services = await loaded()
-    for (const name of ['pr_create', 'pr_merge', 'pr_update', 'gh_review', 'review_post', 'gh_issue', 'issue_open', 'issue_comment', 'issue_close', 'gh_search', 'gh_repo', 'gh_file']) {
+    for (const name of ['pr_create', 'pr_merge', 'pr_update', 'gh_review', 'review_post', 'gh_issue', 'issue_open', 'issue_comment', 'issue_close', 'gh_search', 'gh_repo', 'gh_file', 'gh_repo_search', 'gh_checks']) {
       expect(services.tools.get(name).name).toBe(name)
     }
   })

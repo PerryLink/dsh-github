@@ -52,7 +52,7 @@
 
 O `dsh-github` preenche a lacuna do GitHub entre o `dsh` e ferramentas como o Claude Code e o Codex: seu agente pode ler, revisar, abrir, atualizar e mesclar pull requests, ler metadados de repositórios e arquivos, comentar e fechar issues, e pesquisar — enquanto um humano aprova toda gravação e o token permanece em segredo.
 
-- **12 ferramentas** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, todas com JSON canônico via `defineTool`.
+- **14 ferramentas** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, todas com JSON canônico via `defineTool`.
 - **3 famílias de comandos** — `/pr create`, `/review` (start/stop/post), `/issue open`.
 - **Ciclo de vida completo do PR** — criar → revisar → atualizar (título/corpo/estado/rama base) → mesclar (merge/squash/rebase, exclusão opcional da rama head).
 - **Revisões inline** — `review_post` publica um único comentário de resumo ou comentários de revisão ancorados por linha no commit head do PR.
@@ -127,6 +127,8 @@ Todos os ajustes são campos `Config` do Schemastery (modificáveis a partir do 
 | `gh_search` | ferramenta | Pesquisa issues e PRs (cota de busca separada) |
 | `gh_repo` | ferramenta | Lê os metadados do repositório |
 | `gh_file` | ferramenta | Lê um arquivo em uma rama/tag/commit |
+| `gh_repo_search` | ferramenta | Busca GraphQL de repositórios (cota de busca separada) |
+| `gh_checks` | ferramenta | Checks de status GraphQL de um PR (check runs + commit statuses) |
 | `/pr create` | comando | Lê o estado do git e enfileira uma instrução `pr_create` |
 | `/review` | comando | Inicia / para / publica um job de revisão em segundo plano |
 | `/issue open` | comando | Enfileira uma instrução `issue_open` |

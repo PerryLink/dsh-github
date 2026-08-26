@@ -89,4 +89,8 @@ export declare function prUpdateTool(state: GithubState): import("@deepseek-ai/d
 export declare function ghRepoTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
 /** `gh_file`: read one file from a repository (read; concurrency-safe). */
 export declare function ghFileTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `gh_repo_search`: GraphQL repository search (read; separate search quota). */
+export declare function ghRepoSearchTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
+/** `gh_checks`: GraphQL PR status-check rollup (read; batched GraphQL contexts). */
+export declare function ghChecksTool(state: GithubState): import("@deepseek-ai/dsh-tools").ToolDefinition;
 //# sourceMappingURL=tools.d.ts.map

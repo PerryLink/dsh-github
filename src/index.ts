@@ -35,7 +35,7 @@ import type { SubagentsService } from './types.ts'
 import {
   prCreateTool, prMergeTool, prUpdateTool, ghReviewTool, reviewPostTool,
   ghIssueTool, issueOpenTool, issueCommentTool, issueCloseTool, ghSearchTool,
-  ghRepoTool, ghFileTool,
+  ghRepoTool, ghFileTool, ghRepoSearchTool, ghChecksTool,
 } from './tools.ts'
 import { registerApprovalGate } from './approval-gate.ts'
 import { registerCommands } from './commands.ts'
@@ -104,6 +104,8 @@ export function applyWithDeps(ctx: Context, config: PluginConfig, deps: PluginDe
   ctx.tools.register(ghSearchTool(state))
   ctx.tools.register(ghRepoTool(state))
   ctx.tools.register(ghFileTool(state))
+  ctx.tools.register(ghRepoSearchTool(state))
+  ctx.tools.register(ghChecksTool(state))
   if (config.ci.enabled) {
     ctx.tools.register(ciRunTool(state))
   }

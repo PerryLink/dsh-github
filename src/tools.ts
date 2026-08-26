@@ -1387,3 +1387,261 @@ export function ghFileTool(state: GithubState) {
     },
   })
 }
+
+// ── GraphQL tools (search + PR checks) ──────────────────────────────────────
+
+/** Split an `owner/repo` pair into its two parts (assumes the repo already validated). */
+function ownerNameOf(repo: string): { owner: string; name: string } {
+  const index = repo.indexOf('/')
+  return { owner: repo.slice(0, index), name: repo.slice(index + 1) }
+}
+
+/** GraphQL `search(type: REPOSITORY)` result node. */
+interface RepoSearchNode {
+  nameWithOwner: string
+  description: string | null
+  stargazerCount: number
+  url: string
+  primaryLanguage: { name: string } | null
+}
+
+/** `gh_repo_search` canonical value. */
+interface RepoSearchValue {
+  query: string
+  total: number
+  items: Array<{
+    repo: string
+    description: string
+    stars: number
+    language: string
+    url: string
+  }>
+  rateLimit: RateLimitValue
+}
+
+/** `gh_repo_search`: GraphQL repository search (read; separate search quota). */
+export function ghRepoSearchTool(state: GithubState) {
+  return defineTool({
+    name: 'gh_repo_search',
+    description: 'Search GitHub repositories by name, description, or README (GitHub search syntax, e.g. '
+      + '"dsh-plugin in:name,description"). Backed by the GraphQL search API; read-only and concurrency-safe. '
+      + 'Uses the separate search quota.',
+    parameters: {
+      q: { type: 'string', required: true, description: 'Repository search query in GitHub search syntax.' },
+      perPage: { type: 'integer', description: 'Max results. Defaults to 20, capped at 50.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            query: { type: 'string', required: true },
+            total: { type: 'integer', required: true },
+            items: {
+              type: 'array',
+              required: true,
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  repo: { type: 'string', required: true },
+                  description: { type: 'string', required: true },
+                  stars: { type: 'integer', required: true },
+                  language: { type: 'string', required: true },
+                  url: { type: 'string', required: true },
+                },
+              },
+            },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if ('status' in value) {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        if (value.items.length === 0) return [{ type: 'text', text: `no repositories for "${value.query}"` }]
+        return [{
+          type: 'text',
+          text: value.items.map(item => `${item.repo} ★${item.stars} [${item.language}] — ${item.description || '(no description)'}\n${item.url}`).join('\n\n'),
+        }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => true,
+    async execute(args, exec) {
+      const q = args.q.trim()
+      if (q.length === 0) return errorValue('invalid-args', 'q must not be empty')
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      const perPage = Math.min(Math.max(args.perPage ?? 20, 1), 50)
+      const document = 'query($q: String!, $n: Int!) { search(query: $q, type: REPOSITORY, first: $n) { repositoryCount edges { node { ... on Repository { nameWithOwner description stargazerCount url primaryLanguage { name } } } } } }'
+      try {
+        const response = await state.graphqlClient(token.token.value).query<{ search: { repositoryCount: number; edges: Array<{ node: RepoSearchNode }> } }>(
+          document, { q, n: perPage }, exec.signal,
+        )
+        const search = response.data.search
+        const value: RepoSearchValue = {
+          query: q,
+          total: search.repositoryCount,
+          items: search.edges.map(edge => ({
+            repo: edge.node.nameWithOwner,
+            description: edge.node.description ?? '',
+            stars: edge.node.stargazerCount,
+            language: edge.node.primaryLanguage?.name ?? '',
+            url: edge.node.url,
+          })),
+          rateLimit: rateLimitValue(response.rateLimit),
+        }
+        return value
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}
+
+/** One normalized check context (CheckRun or StatusContext). */
+interface CheckItemValue {
+  name: string
+  state: string
+  conclusion?: string
+  url?: string
+}
+
+/** `gh_checks` canonical value. */
+interface ChecksValue {
+  repo: string
+  number: number
+  title: string
+  state: string
+  rollup: string
+  items: CheckItemValue[]
+  rateLimit: RateLimitValue
+}
+
+/** `gh_checks`: GraphQL PR status-check rollup (read; batched GraphQL contexts). */
+export function ghChecksTool(state: GithubState) {
+  return defineTool({
+    name: 'gh_checks',
+    description: 'Read a pull request\'s CI status checks (check runs and commit statuses) via the GraphQL API. '
+      + 'Returns the rollup state and one entry per check with its status/conclusion and URL. Read-only and '
+      + 'concurrency-safe. `pr` accepts a number, "#number", "owner/repo#number", or a pull-request URL.',
+    parameters: {
+      pr: { type: 'string', required: true, description: 'PR number, #number, owner/repo#number, or pull URL.' },
+    },
+    output: {
+      schema: {
+        oneOf: [{
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            repo: { type: 'string', required: true },
+            number: { type: 'integer', required: true },
+            title: { type: 'string', required: true },
+            state: { type: 'string', required: true },
+            rollup: { type: 'string', required: true },
+            items: {
+              type: 'array',
+              required: true,
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  name: { type: 'string', required: true },
+                  state: { type: 'string', required: true },
+                  conclusion: { type: 'string' },
+                  url: { type: 'string' },
+                },
+              },
+            },
+            rateLimit: RATE_LIMIT_SCHEMA,
+          },
+        }, ERROR_SCHEMA],
+      },
+      render: (_args, value) => {
+        if ('status' in value) {
+          return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
+        }
+        const lines = [`${value.repo}#${value.number} "${value.title}" — rollup ${value.rollup} (${value.state})`]
+        if (value.items.length === 0) lines.push('(no checks reported)')
+        for (const item of value.items) {
+          lines.push(`- ${item.name}: ${item.state}${item.conclusion !== null ? ` / ${item.conclusion}` : ''}${item.url !== null ? ` — ${item.url}` : ''}`)
+        }
+        return [{ type: 'text', text: lines.join('\n') }]
+      },
+      presentationMeta: identityMeta,
+    },
+    isConcurrencySafe: () => true,
+    async execute(args, exec) {
+      const ref = state.parsePrRef(args.pr)
+      if (ref === null) return errorValue('invalid-pr', `"${args.pr}" is not a PR reference`, 'Use a number, "#number", "owner/repo#number", or a pull URL.')
+      const repoResult = ref.repo !== undefined ? { ok: true as const, repo: ref.repo } : await state.resolveRepo(undefined, exec.signal)
+      if (!repoResult.ok) return errorValue(repoResult.code, repoResult.message, repoResult.guidance)
+      const token = await state.resolveToken(exec.signal)
+      if (!token.ok) return errorValue(token.error.code, token.error.message, token.error.guidance)
+      const { owner, name } = ownerNameOf(repoResult.repo)
+      const document = [
+        'query($owner: String!, $name: String!, $number: Int!) {',
+        '  repository(owner: $owner, name: $name) {',
+        '    pullRequest(number: $number) {',
+        '      number title state',
+        '      commits(last: 1) {',
+        '        nodes {',
+        '          commit {',
+        '            statusCheckRollup {',
+        '              state',
+        '              contexts(first: 100) {',
+        '                nodes {',
+        '                  __typename',
+        '                  ... on CheckRun { name status conclusion detailsUrl }',
+        '                  ... on StatusContext { context state description targetUrl }',
+        '                }',
+        '              }',
+        '            }',
+        '          }',
+        '        }',
+        '      }',
+        '    }',
+        '  }',
+        '}',
+      ].join('\n')
+      try {
+        const response = await state.graphqlClient(token.token.value).query<{
+          repository: {
+            pullRequest: null | {
+              number: number
+              title: string
+              state: string
+              commits: { nodes: Array<{ commit: { statusCheckRollup: null | { state: string; contexts: { nodes: Array<{ __typename: string; name?: string; status?: string; state?: string; conclusion?: string | null; detailsUrl?: string | null; context?: string; description?: string | null; targetUrl?: string | null }> } } } }> }
+            }
+          }
+        }>(document, { owner, name, number: ref.number }, exec.signal)
+        const pr = response.data.repository.pullRequest
+        if (pr === null) return errorValue('not-found', `pull request #${ref.number} not found in ${repoResult.repo}`)
+        const rollup = pr.commits.nodes[0]?.commit.statusCheckRollup
+        const value: ChecksValue = {
+          repo: repoResult.repo,
+          number: pr.number,
+          title: pr.title,
+          state: pr.state,
+          rollup: rollup?.state ?? 'UNKNOWN',
+          items: (rollup?.contexts.nodes ?? []).map(node => {
+            const url = node.detailsUrl ?? node.targetUrl
+            return {
+              name: node.name ?? node.context ?? 'unknown',
+              state: node.status ?? node.state ?? 'unknown',
+              ...(node.conclusion == null ? {} : { conclusion: node.conclusion }),
+              ...(url == null ? {} : { url }),
+            }
+          }),
+          rateLimit: rateLimitValue(response.rateLimit),
+        }
+        return value
+      } catch (error) {
+        return githubErrorValue(error)
+      }
+    },
+  })
+}

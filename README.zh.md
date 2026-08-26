@@ -52,7 +52,7 @@
 
 `dsh-github` 填补了 `dsh` 与 Claude Code、Codex 等工具之间的 GitHub 集成空白：你的 agent 能读取、审查、打开、更新与合并 pull request，读取仓库元数据与文件，评论与关闭 issue，以及搜索 —— 同时每个写操作都由人类审批，token 全程保密。
 
-- **12 个工具** —— `pr_create`、`pr_merge`、`pr_update`、`gh_review`、`review_post`、`gh_issue`、`issue_open`、`issue_comment`、`issue_close`、`gh_search`、`gh_repo`、`gh_file`，全部经 `defineTool` 返回规范 JSON。
+- **14 个工具** —— `pr_create`、`pr_merge`、`pr_update`、`gh_review`、`review_post`、`gh_issue`、`issue_open`、`issue_comment`、`issue_close`、`gh_search`、`gh_repo`、`gh_file`、`gh_repo_search`、`gh_checks`，全部经 `defineTool` 返回规范 JSON。
 - **3 族命令** —— `/pr create`、`/review`（启动/停止/发布）、`/issue open`。
 - **完整 PR 生命周期** —— 创建 → 审查 → 更新（标题/正文/状态/目标分支）→ 合并（merge/squash/rebase，可选合并后删源分支）。
 - **行级审查** —— `review_post` 可发布单条汇总评论，或按行锚定 PR head commit 的行级审查评论。
@@ -127,6 +127,8 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 | `gh_search` | 工具 | 搜索 issue 与 PR（独立搜索配额） |
 | `gh_repo` | 工具 | 读取仓库元数据 |
 | `gh_file` | 工具 | 按分支/tag/commit 读取单个文件 |
+| `gh_repo_search` | 工具 | GraphQL 仓库搜索（独立搜索配额） |
+| `gh_checks` | 工具 | GraphQL PR 状态检查（check runs + commit statuses） |
 | `/pr create` | 命令 | 读取 git 状态并排队一条 `pr_create` 指令 |
 | `/review` | 命令 | 启动 / 停止 / 发布后台审查 job |
 | `/issue open` | 命令 | 排队一条 `issue_open` 指令 |

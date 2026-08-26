@@ -109,60 +109,20 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * Authenticated GitHub REST client with rate-limit retry.
- *
- * Retries 429 (primary limit) and 403-with-Retry-After (secondary limit /
- * abuse detection) honoring Retry-After / x-ratelimit-reset and the caller's
- * signal; other non-2xx responses surface as {@link GithubError} carrying the
- * status and current rate-limit facts. Errors never contain the token.
+ * Shared authenticated transport over the GitHub API. It owns the
+ * Authorization header, the per-request timeout, and the 429/403 rate-limit
+ * retry loop; the REST and GraphQL clients both delegate here, so they share
+ * one token, one timeout, and one backoff policy. Errors never contain the
+ * token.
  */
-export class GithubClient {
-  private readonly token: string
-  private readonly options: ClientOptions
-
-  constructor(token: string, options: ClientOptions) {
-    this.token = token
-    this.options = options
-  }
-
-  /** One JSON request with retry; `GithubError` on any non-2xx status. */
-  async requestJson<T>(method: string, path: string, options: GithubRequestOptions = {}): Promise<GithubJsonResponse<T>> {
-    const response = await this.request(method, path, { ...options, accept: options.accept ?? JSON_ACCEPT })
-    const rateLimit = rateLimitFromHeaders(response.headers)
-    if (!response.ok) {
-      let message = `GitHub API ${response.status} for ${method} ${path}`
-      try {
-        const parsed = await response.json() as { message?: unknown }
-        if (typeof parsed.message === 'string' && parsed.message.length > 0) message = parsed.message
-      } catch {
-        // Non-JSON error body: keep the status-based message.
-      }
-      throw new GithubError(response.status, message, rateLimit)
-    }
-    if (response.status === 204) return { status: response.status, data: undefined as T, rateLimit }
-    const data = await response.json() as T
-    return { status: response.status, data, rateLimit }
-  }
-
-  /** One text request (the diff media type) with retry. */
-  async requestText(method: string, path: string, options: GithubRequestOptions = {}): Promise<{ text: string; rateLimit: RateLimitInfo }> {
-    const response = await this.request(method, path, { ...options, accept: 'application/vnd.github.diff' })
-    const rateLimit = rateLimitFromHeaders(response.headers)
-    if (!response.ok) {
-      let message = `GitHub API ${response.status} for ${method} ${path}`
-      try {
-        const parsed = await response.json() as { message?: unknown }
-        if (typeof parsed.message === 'string' && parsed.message.length > 0) message = parsed.message
-      } catch {
-        // Non-JSON error body: keep the status-based message.
-      }
-      throw new GithubError(response.status, message, rateLimit)
-    }
-    return { text: await response.text(), rateLimit }
-  }
+export class GithubTransport {
+  constructor(
+    private readonly token: string,
+    private readonly options: ClientOptions,
+  ) {}
 
   /** Fetch with Authorization, timeout, and retry (429/403 rate limits always; reads also on network errors and 5xx). */
-  private async request(method: string, path: string, options: GithubRequestOptions): Promise<Response> {
+  async request(method: string, path: string, options: GithubRequestOptions): Promise<Response> {
     let attempt = 0
     for (;;) {
       const timeoutSignal = AbortSignal.timeout(this.options.requestTimeoutMs)
@@ -203,6 +163,121 @@ export class GithubClient {
       await sleep(retryDelayMs(response.headers, attempt, this.options), options.signal)
       attempt += 1
     }
+  }
+}
+
+/**
+ * Authenticated GitHub REST client: JSON/text requests with the shared
+ * transport's 429/403 backoff-retry and rate-limit surfacing.
+ */
+export class GithubClient {
+  private readonly transport: GithubTransport
+
+  constructor(token: string, options: ClientOptions) {
+    this.transport = new GithubTransport(token, options)
+  }
+
+  /** One JSON request with retry; `GithubError` on any non-2xx status. */
+  async requestJson<T>(method: string, path: string, options: GithubRequestOptions = {}): Promise<GithubJsonResponse<T>> {
+    const response = await this.transport.request(method, path, { ...options, accept: options.accept ?? JSON_ACCEPT })
+    const rateLimit = rateLimitFromHeaders(response.headers)
+    if (!response.ok) {
+      let message = `GitHub API ${response.status} for ${method} ${path}`
+      try {
+        const parsed = await response.json() as { message?: unknown }
+        if (typeof parsed.message === 'string' && parsed.message.length > 0) message = parsed.message
+      } catch {
+        // Non-JSON error body: keep the status-based message.
+      }
+      throw new GithubError(response.status, message, rateLimit)
+    }
+    if (response.status === 204) return { status: response.status, data: undefined as T, rateLimit }
+    const data = await response.json() as T
+    return { status: response.status, data, rateLimit }
+  }
+
+  /** One text request (the diff media type) with retry. */
+  async requestText(method: string, path: string, options: GithubRequestOptions = {}): Promise<{ text: string; rateLimit: RateLimitInfo }> {
+    const response = await this.transport.request(method, path, { ...options, accept: 'application/vnd.github.diff' })
+    const rateLimit = rateLimitFromHeaders(response.headers)
+    if (!response.ok) {
+      let message = `GitHub API ${response.status} for ${method} ${path}`
+      try {
+        const parsed = await response.json() as { message?: unknown }
+        if (typeof parsed.message === 'string' && parsed.message.length > 0) message = parsed.message
+      } catch {
+        // Non-JSON error body: keep the status-based message.
+      }
+      throw new GithubError(response.status, message, rateLimit)
+    }
+    return { text: await response.text(), rateLimit }
+  }
+}
+
+/** Successful GraphQL response with its rate-limit facts. */
+export interface GithubGraphqlResponse<T> {
+  data: T
+  rateLimit: RateLimitInfo
+}
+
+/**
+ * Authenticated GitHub GraphQL client over the shared transport. One POST to
+ * `/graphql` carries a document; `query` sends a single document and `batch`
+ * merges several aliased sub-queries into one request, sharing the transport's
+ * token, timeout, and 429 backoff with the REST client.
+ */
+export class GithubGraphqlClient {
+  private readonly transport: GithubTransport
+
+  constructor(token: string, options: ClientOptions) {
+    this.transport = new GithubTransport(token, options)
+  }
+
+  /**
+   * Run one GraphQL document. A non-2xx response or a GraphQL `errors` payload
+   * fails loud as a {@link GithubError}; the token never appears in messages.
+   * @param document - the GraphQL query/mutation document.
+   * @param variables - optional variables.
+   * @param signal - optional abort signal.
+   * @returns the `data` plus rate-limit facts.
+   */
+  async query<T>(document: string, variables: Record<string, unknown> = {}, signal?: AbortSignal): Promise<GithubGraphqlResponse<T>> {
+    const response = await this.transport.request('POST', '/graphql', { body: { query: document, variables }, accept: JSON_ACCEPT, signal })
+    const rateLimit = rateLimitFromHeaders(response.headers)
+    if (!response.ok) {
+      let message = `GitHub API ${response.status} for POST /graphql`
+      try {
+        const parsed = await response.json() as { message?: unknown }
+        if (typeof parsed.message === 'string' && parsed.message.length > 0) message = parsed.message
+      } catch {
+        // Non-JSON error body: keep the status-based message.
+      }
+      throw new GithubError(response.status, message, rateLimit)
+    }
+    const payload = await response.json() as { data?: T; errors?: Array<{ message?: unknown }> }
+    const firstError = payload.errors?.find(error => typeof error.message === 'string' && error.message.length > 0)?.message
+    if (typeof firstError === 'string') {
+      throw new GithubError(200, `GraphQL error: ${firstError}`, rateLimit)
+    }
+    if (payload.data === undefined || payload.data === null) {
+      throw new GithubError(200, 'GraphQL query returned no data', rateLimit)
+    }
+    return { data: payload.data, rateLimit }
+  }
+
+  /**
+   * Batch several sub-queries into ONE GraphQL request using aliases. Each
+   * value is a single top-level field selection (e.g.
+   * `repository(owner:"o", name:"r") { id }`); the document sent is
+   * `query { <alias>: <field> … }` and the result maps each alias to its data.
+   * @param aliases - `alias → top-level field selection`.
+   * @param variables - optional shared variables.
+   * @param signal - optional abort signal.
+   * @returns `{ <alias>: data, … }` plus rate-limit facts.
+   */
+  async batch<T>(aliases: Record<string, string>, variables: Record<string, unknown> = {}, signal?: AbortSignal): Promise<GithubGraphqlResponse<Record<string, T>>> {
+    const fields = Object.entries(aliases).map(([alias, field]) => `${alias}: ${field}`).join('\n')
+    return this.query<Record<string, T>>(`query { ${fields} }`, variables, signal)
   }
 }
 

@@ -9,7 +9,7 @@
  * @module dsh-github/state
  */
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
-import { GithubClient, clientOptionsFromConfig, type RateLimitInfo } from './github.ts'
+import { GithubClient, GithubGraphqlClient, clientOptionsFromConfig, type RateLimitInfo } from './github.ts'
 import { repoFromRemoteUrl, type GitRunner } from './git.ts'
 import { resolveToken, type GhRunner, type TokenResolution } from './credential.ts'
 import type { SubagentsService } from './types.ts'
@@ -55,6 +55,8 @@ export interface GithubState {
   resolveToken(signal?: AbortSignal): Promise<TokenResolution>
   /** Builds an authenticated client for one operation. */
   client(token: string): GithubClient
+  /** Builds an authenticated GraphQL client for one operation. */
+  graphqlClient(token: string): GithubGraphqlClient
   /** Resolves `owner/repo` from an explicit value, config, or git origin. */
   resolveRepo(ownerRepo: string | undefined, signal?: AbortSignal): Promise<RepoResolution>
   /** Parses `123`, `#123`, `owner/repo#123`, or a pull-request URL. */
@@ -101,6 +103,7 @@ export function createState(ctx: { credentials: CredentialProvider; subagents?: 
     isCiDriver: process.env.DSH_GITHUB_CI_DRIVER === '1',
     resolveToken: (signal?: AbortSignal) => resolveToken(ctx.credentials, normalizedConfig.tokenSource, normalizedConfig.tokenRef, runGh, signal),
     client: (token: string) => new GithubClient(token, clientOptions),
+    graphqlClient: (token: string) => new GithubGraphqlClient(token, clientOptions),
     resolveRepo: (ownerRepo: string | undefined, signal?: AbortSignal) => resolveRepo(state, ownerRepo, signal),
     parsePrRef: parsePrRef,
     rememberRecord: (id, record) => {

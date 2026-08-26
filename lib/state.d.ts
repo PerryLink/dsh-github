@@ -9,7 +9,7 @@
  * @module dsh-github/state
  */
 import type { CredentialProvider } from '@deepseek-ai/dsh-credentials';
-import { GithubClient, type RateLimitInfo } from './github.js';
+import { GithubClient, GithubGraphqlClient, type RateLimitInfo } from './github.js';
 import { type GitRunner } from './git.js';
 import { type GhRunner, type TokenResolution } from './credential.js';
 import type { SubagentsService } from './types.js';
@@ -59,6 +59,8 @@ export interface GithubState {
     resolveToken(signal?: AbortSignal): Promise<TokenResolution>;
     /** Builds an authenticated client for one operation. */
     client(token: string): GithubClient;
+    /** Builds an authenticated GraphQL client for one operation. */
+    graphqlClient(token: string): GithubGraphqlClient;
     /** Resolves `owner/repo` from an explicit value, config, or git origin. */
     resolveRepo(ownerRepo: string | undefined, signal?: AbortSignal): Promise<RepoResolution>;
     /** Parses `123`, `#123`, `owner/repo#123`, or a pull-request URL. */

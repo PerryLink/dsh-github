@@ -52,7 +52,7 @@
 
 `dsh-github` `dsh` और Claude Code व Codex जैसे टूल्स के बीच की GitHub कमी को पूरा करता है: आपका एजेंट pull requests पढ़, समीक्षा (review), खोल, update और merge कर सकता है, repository metadata और files पढ़ सकता है, issues पर comment और close कर सकता है, और खोज सकता है — जबकि हर write को एक मानव अनुमोदित (approve) करता है और token गुप्त रहता है।
 
-- **12 टूल्स** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, सभी `defineTool` के ज़रिए canonical JSON।
+- **14 टूल्स** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, सभी `defineTool` के ज़रिए canonical JSON।
 - **3 कमांड परिवार** — `/pr create`, `/review` (start/stop/post), `/issue open`।
 - **पूरा PR lifecycle** — बनाएँ → समीक्षा करें → update करें (title/body/state/base) → merge करें (merge/squash/rebase, वैकल्पिक head-branch deletion)।
 - **Inline reviews** — `review_post` PR head commit के विरुद्ध एक summary comment या line-anchored review comments प्रकाशित करता है।
@@ -127,6 +127,8 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 | `gh_search` | tool | issues और PRs खोजता है (अलग search quota) |
 | `gh_repo` | tool | repository metadata पढ़ता है |
 | `gh_file` | tool | किसी branch/tag/commit पर एक file पढ़ता है |
+| `gh_repo_search` | tool | GraphQL repository खोज (अलग search quota) |
+| `gh_checks` | tool | GraphQL PR status checks (check runs + commit statuses) |
 | `/pr create` | command | git स्थिति पढ़ता है और एक `pr_create` instruction queue करता है |
 | `/review` | command | एक background review job start / stop / post करता है |
 | `/issue open` | command | एक `issue_open` instruction queue करता है |
