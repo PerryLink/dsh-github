@@ -24,8 +24,88 @@ import { createElement, useState, type ReactNode } from 'react'
 import {
   Button, IconChevronDownOutline14, IconLoadingOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
-import type { SettingsScope, SettingsScopeSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+
+/**
+ * The settings-namespace scope contract the card consumes, declared locally:
+ * the owning package differs across host lines (the removed
+ * `dsh-client-runtime` on `0.1.1-rc.2`, `dsh-client-ui-settings` on
+ * `0.1.2-alpha.1`), and the runtime contract is structural. Mirrors the
+ * owning seam's `SettingsScope`/`SettingsScopeSnapshot` faces.
+ */
+
+/** Client-side sync state of one settings namespace. */
+export interface SettingsScopeSnapshot<T> {
+  /** `loading` until the first accepted section, `ready` while one stands, `unavailable` otherwise. */
+  status: 'loading' | 'ready' | 'unavailable'
+  /** Last accepted schema-resolved section; undefined before the first acceptance. */
+  value: T | undefined
+  /** Composition layer the Host resolved the value over, when the owning plugin declared one. */
+  base: unknown
+  /** Raw user layer as stored, when one exists. */
+  user: unknown
+  /** Namespace revision fencing the next write; undefined before the first Host view. */
+  revision: number | undefined
+  /** Whether the Host document accepts writes; memory mode never does. */
+  writable: boolean
+  /** `host` syncs with the Host document; `memory` keeps a remote browser process-local. */
+  mode: 'host' | 'memory'
+}
+
+/** Reactive owner handle over one namespace's durable section. */
+export interface SettingsScope<T> {
+  /** @returns the current sync snapshot (stable reference until the next change). */
+  getSnapshot(): SettingsScopeSnapshot<T>
+  /**
+   * Observe snapshot replacements.
+   * @param listener - invoked after each snapshot change.
+   * @returns the disposer removing this listener.
+   */
+  subscribe(listener: () => void): () => void
+}
+
+/**
+ * Minimal writable snapshot store the card's slot hooks consume. Declared and
+ * implemented locally: its previous home `dsh-client-store` is not on the
+ * published `0.1.1-rc.2` line, and the card only needs the bare observable
+ * contract plus whole-value replacement (no drafts, no persistence) — the
+ * framework synthesizes the selector hook from `getSnapshot`/`subscribe`.
+ */
+export interface SnapshotStore<T> {
+  /** @returns the current snapshot reference. */
+  getSnapshot(): T
+  /**
+   * Subscribe to snapshot replacements.
+   * @param listener - invoked after each change.
+   * @returns the disposer removing this listener.
+   */
+  subscribe(listener: () => void): () => void
+  /**
+   * Replace the state wholesale.
+   * @param next - next state.
+   */
+  set(next: T): void
+}
+
+/**
+ * Create the minimal card store.
+ * @param init - initial state.
+ * @returns the store.
+ */
+export function createSnapshotStore<T>(init: T): SnapshotStore<T> {
+  let state = init
+  const listeners = new Set<() => void>()
+  return {
+    getSnapshot: () => state,
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    set: (next) => {
+      state = next
+      for (const listener of [...listeners]) listener()
+    },
+  }
+}
 
 /** Namespace of the GitHub capability. Spelled here rather than imported: a client package must not depend on a Host package. */
 export const GITHUB_NS = 'dsh-github'
