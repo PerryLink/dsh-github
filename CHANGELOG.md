@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Migrate the browser half off the removed `dsh-client-runtime`: the settings
+  scope and the snapshot store are local structural contracts (the store's
+  previous home `dsh-client-store` is not on the published `0.1.1-rc.2` line),
+  the client context is the plain cordis `Context`, and the `dsh.client.inject`
+  list now names `dsh-client-ui-settings` — the package that provides the
+  `settingsScope` service on both host lines. The committed `lib/client.js`
+  bundle no longer requires `@deepseek-ai/dsh-client-runtime/client`.
+
 ## [0.7.0] - 2026-08-26
 
 ### Added
