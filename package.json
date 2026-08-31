@@ -142,7 +142,7 @@
       "optional": true
     }
   },
-  "devDependencies": {
+  "devDependencies": {"@deepseek-ai/dsh-attachment": "0.1.2-alpha.2", 
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/cordis-plugin-loader": "1.0.2",
     "@deepseek-ai/dsh-credentials": "0.1.2-alpha.2",
