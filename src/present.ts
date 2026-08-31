@@ -2,13 +2,13 @@
  * Pure UI-card presenters for the dsh-github tools.
  *
  * Presenters run on live streaming AND on session-log replay, so they must be
- * pure functions of their arguments — no I/O, no clock, no random, no plugin
+ * pure functions of their arguments 鈥?no I/O, no clock, no random, no plugin
  * state. The canonical value reaches `presentResult` through the persisted
  * `result.meta` populated by each tool's pure `presentationMeta` projection.
  * @module dsh-github/present
  */
 import type { ToolCallView, ToolResult, ToolResultView } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-session'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 /** Rate-limit facts shared by every canonical value. */
 export interface RateLimitValueView {
@@ -72,7 +72,7 @@ export function prCreateResult(_args: PrCreateArgs, result: ToolResult): ToolRes
   return {
     card: 'generic',
     title: `Created pull request #${value.number}`,
-    content: [{ type: 'text', text: `${value.url}\n${value.base} ← ${value.head}${value.draft ? ' (draft)' : ''}` }],
+    content: [{ type: 'text', text: `${value.url}\n${value.base} 鈫?${value.head}${value.draft ? ' (draft)' : ''}` }],
   }
 }
 
@@ -277,11 +277,11 @@ export function ghReviewResult(_args: GhReviewArgs, result: ToolResult): ToolRes
   }
   return {
     card: 'generic',
-    title: `PR #${value.number} — ${value.title}`,
+    title: `PR #${value.number} 鈥?${value.title}`,
     content: [{
       type: 'text',
-      text: `${value.repo} · ${value.state} · ${value.base} ← ${value.head}\n`
-        + `+${value.additions} −${value.deletions} · ${value.comments.items?.length ?? 0} comment(s) · ${value.findings?.length ?? 0} finding(s)\n`
+      text: `${value.repo} 路 ${value.state} 路 ${value.base} 鈫?${value.head}\n`
+        + `+${value.additions} 鈭?{value.deletions} 路 ${value.comments.items?.length ?? 0} comment(s) 路 ${value.findings?.length ?? 0} finding(s)\n`
         + `CI: ${value.ci.summary}`,
     }],
   }
@@ -332,7 +332,7 @@ export function ghIssueResult(_args: GhIssueArgs, result: ToolResult): ToolResul
   }
   return {
     card: 'generic',
-    title: `Issues (${value.action}) — ${value.repo}`,
+    title: `Issues (${value.action}) 鈥?${value.repo}`,
     content: [{ type: 'text', text: (value.items ?? []).map(item => `#${item.number} ${item.title} [${item.kind}/${item.state}]`).join('\n') || '(no issues)' }],
   }
 }
@@ -379,7 +379,7 @@ export function ghSearchResult(_args: SearchArgs, result: ToolResult): ToolResul
   }
   return {
     card: 'generic',
-    title: `Search results — ${value.total} total`,
+    title: `Search results 鈥?${value.total} total`,
     content: [{ type: 'text', text: value.items.map(item => `#${item.number} ${item.title} [${item.kind}/${item.state}] ${item.repo}`).join('\n') || '(no results)' }],
   }
 }
@@ -524,8 +524,8 @@ export function ghRepoResult(_args: GhRepoArgs, result: ToolResult): ToolResultV
     content: [{
       type: 'text',
       text: `${value.description}\n`
-        + `${value.defaultBranch} · ${value.language ?? 'unknown language'} · ${value.license}\n`
-        + `⭐ ${value.stars} · 🍴 ${value.forks} · issues ${value.openIssues} · ${value.visibility}\n`
+        + `${value.defaultBranch} 路 ${value.language ?? 'unknown language'} 路 ${value.license}\n`
+        + `猸?${value.stars} 路 馃嵈 ${value.forks} 路 issues ${value.openIssues} 路 ${value.visibility}\n`
         + `${value.url}`,
     }],
   }
@@ -570,7 +570,7 @@ export function ghFileResult(_args: GhFileArgs, result: ToolResult): ToolResultV
     title: `${value.repo}/${value.path} @ ${value.ref}`,
     content: [{
       type: 'text',
-      text: `${value.size} bytes${value.truncated ? ' (truncated)' : ''} · ${value.sha.slice(0, 7)}\n${preview}${value.content.length > preview.length ? '\n…' : ''}`,
+      text: `${value.size} bytes${value.truncated ? ' (truncated)' : ''} 路 ${value.sha.slice(0, 7)}\n${preview}${value.content.length > preview.length ? '\n鈥? : ''}`,
     }],
   }
 }
@@ -629,9 +629,9 @@ export function ciRunResult(_args: CiRunArgs, result: ToolResult): ToolResultVie
   if (value.status === 'error') {
     return { card: 'generic', title: 'CI run failed', content: [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }] }
   }
-  const lines = [`PR #${value.pr} in ${value.repo}: verdict ${value.verdict} (${value.findings.length} finding(s))${value.alreadyReviewed ? ' · already reviewed at this head commit' : ''}`]
+  const lines = [`PR #${value.pr} in ${value.repo}: verdict ${value.verdict} (${value.findings.length} finding(s))${value.alreadyReviewed ? ' 路 already reviewed at this head commit' : ''}`]
   if (value.checkRun !== undefined) lines.push(`check: ${value.checkRun.url} (${value.checkRun.conclusion})`)
   if (value.review !== undefined && value.review.url.length > 0) lines.push(`review: ${value.review.url} (${value.review.inlineComments} inline comment(s))`)
-  if (value.files !== undefined) lines.push(`reports: ${value.files.json} · ${value.files.markdown}`)
+  if (value.files !== undefined) lines.push(`reports: ${value.files.json} 路 ${value.files.markdown}`)
   return { card: 'generic', title: `CI review verdict: ${value.verdict}`, content: [{ type: 'text', text: lines.join('\n') }] }
 }
