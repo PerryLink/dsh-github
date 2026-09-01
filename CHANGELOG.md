@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-09-01
+
+### Fixed
+
+- Host half: drop the removed `settingsNamespace` import from
+  `@deepseek-ai/dsh-settings` (absent from the published `0.1.2-alpha.2`
+  line onward) and register the settings namespace with the `'dsh-github'`
+  literal, which the settings service brands internally.
+- Browser half: route the credential card off the retired `connection.api`
+  face (absent on the alpha client) onto the `remote.credentials` Remote
+  namespace (`describe`/`set`); `inject` now names `remote.credentials`,
+  and the rebuilt `lib/client.js` carries the new wire calls. The
+  `credentials/reference-updated` listener stays on `remote.$on`.
+
+### Changed
+
+- Dev pins bumped to `0.1.2-alpha.3` (`@deepseek-ai/dsh-util-values`,
+  `dsh-attachment`, `dsh-credentials`, `dsh-llm`, `dsh-session`,
+  `dsh-settings`, `dsh-tools`), `@deepseek-ai/schemastery` to `^3.18.2`,
+  and the `@deepseek-ai/cordis` peer to `^4.0.2`; the peer ranges stay
+  `>=0.1.0-rc.8 <0.2.0` (and their rc.2/UI companions) — no tightening.
+- Compat declared for `0.1.2-alpha.3`: five-language READMEs,
+  `dshWorkshop.compatibility`, and the compat workflow (CLI/base/headless).
+
 ## [0.7.1] - 2026-08-30
 
 ### Changed
