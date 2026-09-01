@@ -178,12 +178,34 @@ export interface GithubCardState {
   ref: string
 }
 
-/** The credentials-domain wire face the card uses. */
+/** Source and writability facts for one credential reference (never the value). */
+interface CredentialView {
+  /** Whether resolving the reference would currently return a value. */
+  configured: boolean
+  /** Source layer currently supplying the value; absent while unconfigured. */
+  source?: string
+  /** Whether the active provider can write this reference. */
+  writable: boolean
+}
+
+/**
+ * The credentials-domain wire face the card uses: the host `credentials` Remote
+ * namespace (`remote.credentials`). The token literal crosses the wire on
+ * `set` only — no read path returns it.
+ */
 export interface CredentialsApi {
-  describe(request: { refs: string[] }): Promise<{
-    result: { ok: boolean; value: { credentials: Record<string, { configured?: boolean; writable?: boolean } | undefined> } }
-  }>
-  set(request: { ref: string; value: string }): Promise<unknown>
+  /**
+   * Ask the credentials domain about references; one view per requested name,
+   * keyed by that name.
+   */
+  describe(refs: string[]): Promise<
+    | { readonly ok: true; readonly value: Record<string, CredentialView> }
+    | { readonly ok: false; readonly error: { readonly code: string; readonly message: string } }
+  >
+  /**
+   * Store one non-empty value under a reference.
+   */
+  set(ref: string, value: string): Promise<unknown>
 }
 
 /** The section's settings value shape (subset of the Host schema). */
@@ -250,12 +272,12 @@ export class GithubCardController {
     }
     let response
     try {
-      response = await this.api.describe({ refs: [ref] })
+      response = await this.api.describe([ref])
     } catch {
       return
     }
-    if (!response.result.ok || ref !== this.refOf()) return
-    const view = response.result.value.credentials[ref]
+    if (!response.ok || ref !== this.refOf()) return
+    const view = response.value[ref]
     const next = { ref, configured: view?.configured ?? false, writable: view?.writable ?? true }
     if (next.configured === this.credential.configured && next.writable === this.credential.writable) return
     this.credential = next
@@ -286,7 +308,7 @@ export class GithubCardController {
     this.failed = false
     this.publish()
     try {
-      await this.api.set({ ref: this.refOf(), value: text })
+      await this.api.set(this.refOf(), text)
     } catch {
       // handled below by re-reading the configured state
     }
@@ -434,7 +456,7 @@ export function GithubCard(props: GithubCardProps): ReactNode {
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'dsh-github'
 /** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope']
+export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'remote.credentials']
 
 export interface ClientContextLike {
   get(service: string): unknown
@@ -443,7 +465,10 @@ export interface ClientContextLike {
     bind(namespace: string): (key: keyof GithubCardLocale) => string
     register(namespace: string, dictionaries: Record<string, GithubCardLocale>): void
   }
-  remote: { $on(event: string, listener: (ref: string) => void): unknown }
+  remote: {
+    $on(event: string, listener: (ref: string) => void): unknown
+    credentials: CredentialsApi
+  }
   settingsScope: { bind<T>(spec: { namespace: string }): SettingsScope<T> }
   slots: {
     inject(slot: string, factory: () => unknown): unknown
@@ -453,10 +478,12 @@ export interface ClientContextLike {
 
 /** Mount the GitHub configuration card into the plugins settings section. */
 export function apply(ctx: ClientContextLike): void {
-  const connection = ctx.get('connection') as { api: CredentialsApi }
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-github: card dictionaries')
-  const github = new GithubCardController(ctx.settingsScope.bind<GithubSettingsSection>({ namespace: NS }), connection.api)
+  const github = new GithubCardController(
+    ctx.settingsScope.bind<GithubSettingsSection>({ namespace: NS }),
+    ctx.remote.credentials,
+  )
   ctx.effect(
     () => ctx.remote.$on('credentials/reference-updated', (ref) => github.refreshCredential(ref)),
     'dsh-github: credential invalidations',
