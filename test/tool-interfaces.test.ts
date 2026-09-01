@@ -7,7 +7,7 @@
  */
 
 import { Context, type Fiber } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
 import { applyWithDeps, Config, type PluginConfig } from '../src/index.ts'
@@ -75,7 +75,7 @@ describe('gh_repo tool three interfaces', () => {
 
       // 2+3. One execution yields the canonical value AND the rendered content.
       const result = await ctx.tools.execute({
-        callId: CallId('dsh-github-three-interfaces'),
+        callId: ToolCallId('dsh-github-three-interfaces'),
         name: 'gh_repo',
         arguments: { ownerRepo: 'o/r' },
         signal: new AbortController().signal,
@@ -134,7 +134,7 @@ describe('gh_repo tool three interfaces', () => {
     }, config)
     try {
       const result = await ctx.tools.execute({
-        callId: CallId('dsh-github-three-interfaces-error'),
+        callId: ToolCallId('dsh-github-three-interfaces-error'),
         name: 'gh_repo',
         arguments: { ownerRepo: 'o/r' },
         signal: new AbortController().signal,
