@@ -8,7 +8,7 @@
  * @module dsh-github/present
  */
 import type { ToolCallView, ToolResult, ToolResultView } from '@deepseek-ai/dsh-tools';
-import type { JsonValue } from '@deepseek-ai/dsh-session';
+import type { JsonValue } from '@deepseek-ai/dsh-util-values';
 /** Rate-limit facts shared by every canonical value. */
 export interface RateLimitValueView {
     remaining?: number | null;
