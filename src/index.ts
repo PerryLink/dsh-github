@@ -26,7 +26,10 @@
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { settingsNamespace } from '@deepseek-ai/dsh-settings'
+// Type-only: loads the dsh-settings `Context.settings` augmentation; the
+// package removed its `settingsNamespace` runtime helper on the published
+// 0.1.2-alpha line.
+import type {} from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import { createState } from './state.ts'
 import { runGitCli, type GitRunner } from './git.ts'
@@ -55,9 +58,11 @@ export type { Config as PluginConfig }
  * User-settings namespace owned by this plugin. The card in the "Plugins"
  * settings section edits this namespace; the GitHub token itself travels
  * through the credentials seam (never a settings field), addressed by
- * {@link GithubSettingsSchema.tokenRef}.
+ * {@link GithubSettingsSchema.tokenRef}. Spelled as the literal the settings
+ * service brands internally (the `settingsNamespace` helper left the
+ * published 0.1.2-alpha line).
  */
-export const GITHUB_SETTINGS_NAMESPACE = settingsNamespace('dsh-github')
+export const GITHUB_SETTINGS_NAMESPACE = 'dsh-github'
 
 /**
  * Settings surface for the browser configuration card. Only the fields that
