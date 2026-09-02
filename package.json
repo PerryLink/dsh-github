@@ -1,6 +1,6 @@
 {
   "name": "@perrylink/dsh-github",
-  "version": "0.7.2",
+  $10.7.3",
   "description": "Official-grade GitHub CI for DeepSeek Harness: composite action (review PRs / fix CI / report), polling PR review bot with idempotent inline comments, a status-check gate, and approval-gated PR/issue/repo/file tools",
   "type": "module",
   "main": "lib/index.js",
