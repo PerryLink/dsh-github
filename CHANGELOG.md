@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-09-04
+
+### Changed
+
+- Align the devDependency pins and the workspace override table to the published dsh `0.1.2-rc.1` line, move the compat CI harness probes from `0.1.2-alpha.5` to `0.1.2-rc.1`, and re-verify the adaptation claims; no behavior change.
+
 ## [0.7.3] - 2026-09-02
 
 ### Changed

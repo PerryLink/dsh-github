@@ -47,7 +47,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `0.1.2-alpha.5` (compat declared for `0.1.2-alpha.5`) 0.1.2-alpha.5 (adapted 2026-09-02): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. |
+| Harness | DeepSeek Harness `0.1.2-rc.1` (compat declared for `0.1.2-rc.1`) 0.1.2-rc.1 (adapted 2026-09-02): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |

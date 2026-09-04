@@ -46,7 +46,7 @@
 
 | 界面 | 状态 |
 |---|---|
-| Harness | DeepSeek Harness `0.1.2-alpha.5`（兼容声明覆盖 `0.1.2-alpha.5`） 0.1.2-alpha.5（2026-09-02 已适配）：会话信封保留 ignorable 字段但仅用于存量日志读取兼容——Session.append 仍无法盖章，门控行为不变。 |
+| Harness | DeepSeek Harness `0.1.2-rc.1`（兼容声明覆盖 `0.1.2-rc.1`） 0.1.2-rc.1（2026-09-02 已适配）：会话信封保留 ignorable 字段但仅用于存量日志读取兼容——Session.append 仍无法盖章，门控行为不变。 |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | 全部（host 插件；出站网络访问 GitHub） |
 | Model | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |
