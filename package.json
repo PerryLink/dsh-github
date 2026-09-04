@@ -1,6 +1,6 @@
 {
   "name": "@perrylink/dsh-github",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Official-grade GitHub CI for DeepSeek Harness: composite action (review PRs / fix CI / report), polling PR review bot with idempotent inline comments, a status-check gate, and approval-gated PR/issue/repo/file tools",
   "type": "module",
   "main": "lib/index.js",
@@ -142,7 +142,9 @@
       "optional": true
     }
   },
-  "devDependencies": {"@deepseek-ai/dsh-util-values": "0.1.2-rc.1", "@deepseek-ai/dsh-attachment": "0.1.2-rc.1", 
+  "devDependencies": {
+    "@deepseek-ai/dsh-util-values": "0.1.2-rc.1",
+    "@deepseek-ai/dsh-attachment": "0.1.2-rc.1",
     "@deepseek-ai/cordis": "^4.0.2",
     "@deepseek-ai/cordis-plugin-loader": "^1.0.3",
     "@deepseek-ai/dsh-credentials": "0.1.2-rc.1",
