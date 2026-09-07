@@ -64,6 +64,8 @@ export type { Config as PluginConfig }
  */
 export const GITHUB_SETTINGS_NAMESPACE = 'dsh-github'
 
+// Service Definition — GithubSettingsSchema (the browser card contract) and
+// the injectable PluginDeps runner surface used by tests.
 /**
  * Settings surface for the browser configuration card. Only the fields that
  * make sense to edit from the settings page are exposed here; every other
@@ -95,8 +97,13 @@ export interface PluginDeps {
  * @param deps - optional git/gh/fetch runners.
  */
 export function applyWithDeps(ctx: Context, config: PluginConfig, deps: PluginDeps = {}) {
+  // Consumer — the tool handlers consume the credentials service, the
+  // optional subagents seam, and the git/gh runners assembled into `state`.
   const state = createState({ credentials: ctx.credentials, subagents: ctx.get('subagents') as SubagentsService | undefined }, config, deps.runGit ?? runGitCli, deps.runGh ?? runGhCli, deps.fetchImpl)
 
+  // Service Provider — registers the GitHub tools on ctx.tools; the /pr
+  // /review /issue /ci commands and the write-approval gate register through
+  // the effects below.
   ctx.tools.register(prCreateTool(state))
   ctx.tools.register(prMergeTool(state))
   ctx.tools.register(prUpdateTool(state))
