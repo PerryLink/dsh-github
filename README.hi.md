@@ -44,7 +44,7 @@
 
 | सतह | स्थिति |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.3-alpha.1` (`0.1.2-rc.1` के लिए compat घोषित) 0.1.2-rc.1 (2026-09-02 को अनुकूलित): सत्र लिफ़ाफ़ा अपना ignorable फ़ील्ड केवल संग्रहीत-लॉग पठन संगतता के लिए रखता है - Session.append अभी भी इसे स्टैम्प नहीं कर सकता, इसलिए गेट व्यवहार अपरिवर्तित है। 2026-09-06 को dsh-v0.1.3-alpha.1 master checkout के विरुद्ध सत्यापित (पूर्ण गेट श्रृंखला + profile इंस्टॉल smoke)। |
+| Harness | DeepSeek Harness `dsh-v0.1.5-alpha.1` (`0.1.2-rc.1` के लिए compat घोषित) 0.1.2-rc.1 (2026-09-09 को अनुकूलित): सत्र लिफ़ाफ़ा अपना ignorable फ़ील्ड केवल संग्रहीत-लॉग पठन संगतता के लिए रखता है - Session.append अभी भी इसे स्टैम्प नहीं कर सकता, इसलिए गेट व्यवहार अपरिवर्तित है। 2026-09-09 को dsh-v0.1.5-alpha.1 master checkout के विरुद्ध सत्यापित (पूर्ण गेट श्रृंखला + profile इंस्टॉल smoke)। |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | सभी (host plugin; GitHub की ओर outbound network) |
 | Model | कोई भी (static review deterministic है; `reviewMode: "model"` वैकल्पिक है) |
