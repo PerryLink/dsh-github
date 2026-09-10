@@ -6,6 +6,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- The monthly **Endpoint liveness** workflow never probed anything: `actions/setup-node@v5`
+  auto-enables package-manager caching from `package.json#packageManager` (pnpm here), so the
+  step failed with `Unable to locate executable file: pnpm` and the probe step was skipped on
+  every scheduled run (observed on the 2026-09-01 run). The job only runs `node`, so the
+  automatic cache is now disabled with `package-manager-cache: false` instead of installing a
+  package manager it does not use.
 ## [0.7.8] - 2026-09-10
 
 
