@@ -1,7 +1,8 @@
 // Cross-checks the documentation against the source:
 // 1. Every README's table-of-contents anchor links resolve against its own
 //    headings using GitHub-style slugs (emoji/CJK/Devanagari kept, punctuation
-//    stripped, spaces → hyphens, ASCII lowercased). The 📚-marked
+//    stripped — including `&`, which GitHub drops while keeping the surrounding
+//    hyphens — spaces → hyphens, ASCII lowercased). The 📚-marked
 //    table-of-contents heading itself is exempt from the must-be-referenced
 //    rule: it is the navigation index, not a target.
 // 2. Every tool name in src/tools.ts and every config key in src/config.ts is
@@ -25,6 +26,7 @@ function slug(heading) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')
+    .replace(/&/g, '')
     .replace(/[.,:;!?()'"·—•*]/g, '')
 }
 

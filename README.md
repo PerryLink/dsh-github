@@ -30,11 +30,11 @@
 - [Compatibility](#compatibility)
 - [What you get](#what-you-get)
 - [Quick start](#quick-start)
-- [Install & uninstall](#install-&-uninstall)
+- [Install & uninstall](#install--uninstall)
 - [Configuration](#configuration)
-- [Tools & surfaces](#tools-&-surfaces)
+- [Tools & surfaces](#tools--surfaces)
 - [Architecture](#architecture)
-- [Permissions & data](#permissions-&-data)
+- [Permissions & data](#permissions--data)
 - [Security boundaries](#security-boundaries)
 - [Known limitations](#known-limitations)
 - [Development](#development)
@@ -48,7 +48,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compat declared for `0.1.5-rc.2`) 0.1.2-rc.1 (adapted 2026-09-09): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. Verified 2026-09-11 against the dsh-v0.1.5-rc.2 master checkout (full gate chain + profile install smoke). |
+| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compat declared for `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0`; 0.1.2-rc.1 adapted 2026-09-09): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. Verified 2026-09-11 against the dsh-v0.1.5-rc.2 master checkout (full gate chain + profile install smoke). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |
@@ -57,8 +57,8 @@
 
 `dsh-github` fills the GitHub gap between `dsh` and tools like Claude Code and Codex: your agent can read, review, open, update, and merge pull requests, read repository metadata and files, comment on and close issues, and search — while a human approves every write and the token stays secret.
 
-- **14 tools** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, all canonical JSON via `defineTool`.
-- **3 command families** — `/pr create`, `/review` (start/stop/post), `/issue open`.
+- **15 tools** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, all canonical JSON via `defineTool`, plus the one-shot `ci_run` when `ci.enabled` is on.
+- **4 command families** — `/pr create`, `/review` (start/stop/post), `/issue open`, and `/ci` (`scan`/`status`/`start`/`stop`/`run <pr>`, registered under `ci.enabled`).
 - **Full PR lifecycle** — create → review → update (title/body/state/base) → merge (merge/squash/rebase, optional head-branch delete).
 - **Inline reviews** — `review_post` posts one summary comment or line-anchored review comments against the PR head commit.
 - **Approval-gated writes** — every GitHub write goes through `ctx.approval` (default `ask`, fail-closed); approval reasons preview titles, body sizes, and comment overrides.
@@ -84,8 +84,8 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 - **git channel** (latest `main`): `dsh plugin --profile web add "github:PerryLink/dsh-github#main"` — the `prepare` script builds with production dependencies only.
 - **npm channel** (published releases): `dsh plugin --profile web add @perrylink/dsh-github`.
-- **tarball channel**: `pnpm pack` in this repo, then `dsh plugin --profile web add ./dsh-github-<version>.tgz`.
-- **uninstall**: `dsh plugin --profile web remove dsh-github` (or remove the row from the profile patch).
+- **tarball channel**: `pnpm pack` in this repo, then `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
+- **uninstall**: `dsh plugin --profile web remove @perrylink/dsh-github` (or remove the row from the profile patch).
 
 ## Configuration
 
@@ -194,7 +194,7 @@ src/git.ts            read-only git inspection + origin parsing for any API host
 src/review.ts         deterministic diff analyzer + sanitized comment drafting
 src/jobs.ts           github-review background job producer (metadata + diff + CI + comments)
 src/approval-gate.ts  tools/pre-execute ask/deny gate with write previews
-src/tools.ts          the fourteen model-facing tools
+src/tools.ts          the fourteen model-facing tools (plus `ci_run` under src/ci/)
 src/commands.ts       /pr, /review, /issue
 src/present.ts        pure UI-card presenters
 test/                 vitest suite + mock host scaffolding + opt-in e2e smoke
@@ -214,7 +214,7 @@ scripts/prepare.mjs   self-contained git-install build
 
 ## PerryLink DSH Plugin Family
 
-This project is one of the [37 DeepSeek Harness plugins](https://github.com/PerryLink) maintained by [PerryLink](https://github.com/PerryLink). If this one helps you, the others likely will too:
+This project is one of the [40 DeepSeek Harness plugins](https://github.com/PerryLink) maintained by [PerryLink](https://github.com/PerryLink). If this one helps you, the others likely will too:
 
 | Plugin | One-liner |
 |---|---|
@@ -243,6 +243,7 @@ This project is one of the [37 DeepSeek Harness plugins](https://github.com/Perr
 | **[dsh-permission-rules](https://github.com/PerryLink/dsh-permission-rules)** | Claude Code-style declarative allow/deny/ask permission rules with audit | |
 | **[dsh-personal-directive](https://github.com/PerryLink/dsh-personal-directive)** | Personal directive injector with top-bar toggle (framework edition) |
 | **[dsh-plugin-guide](https://github.com/PerryLink/dsh-plugin-guide)** | Plugin-development knowledge base as an on-demand agent skill | |
+| **[dsh-plugin-doctor](https://github.com/PerryLink/dsh-plugin-doctor)** | Zero-dependency static + sandbox smoke detector for DSH plugins | |
 | **[dsh-reach](https://github.com/PerryLink/dsh-reach)** | Multi-channel approval/question bridge: WeChat/Telegram/Feishu, session console |
 | **[dsh-research-report](https://github.com/PerryLink/dsh-research-report)** | Verifiable research-report engine: content-addressed evidence ledger and sealed versions | |
 | **[dsh-score](https://github.com/PerryLink/dsh-score)** | Multi-dimensional quality scoring for DeepSeek Harness plugins. | |
@@ -253,7 +254,16 @@ This project is one of the [37 DeepSeek Harness plugins](https://github.com/Perr
 | **[dsh-test-drive](https://github.com/PerryLink/dsh-test-drive)** | Isolated install-and-smoke test drives for DeepSeek Harness plugins. | |
 | **[dsh-ticktick](https://github.com/PerryLink/dsh-ticktick)** | TickTick/Dida365 task bridge: session-header panel + 11 tools |
 | **[dsh-translate](https://github.com/PerryLink/dsh-translate)** | Vendor parameter translation and deterministic JSON repair for DeepSeek Harness. | |
-| **[dsh-wechat](https://github.com/PerryLink/dsh-wechat)** | WeChat ↔ DSH bridge (Tencent iLink bot): text/image/file/voice, approvals in chat |
+| **[dsh-wechat](https://github.com/pan17/dsh-wechat)** | WeChat ↔ DSH bridge (Tencent iLink bot): text/image/file/voice, approvals in chat |
+| **[dsh-autotier](https://github.com/PerryLink/dsh-autotier)** | Automatic strong/cheap model-tier routing with deterministic risk guards and a `/tier` command | |
+| **[dsh-catalog](https://github.com/PerryLink/dsh-catalog)** | DSH Desktop Market standard catalog source for the PerryLink family | |
+| **[dsh-cert-mcp](https://github.com/PerryLink/dsh-cert-mcp)** | Read-only MCP server exposing the certification registry: grades, snapshots and five-dimension evidence | |
+| **[dsh-kit](https://github.com/PerryLink/dsh-kit)** | One-command starter pack that installs the core family | |
+| **[dsh-plugin-certification](https://github.com/PerryLink/dsh-plugin-certification)** | Community certification registry with repro-checkable grades and badges | |
+| **[dsh-plugin-kit](https://github.com/PerryLink/dsh-plugin-kit)** | Shared zero-runtime-dependency toolkit for the PerryLink DSH plugins | |
+| **[dsh-plugin-portal](https://github.com/PerryLink/dsh-plugin-portal)** | Zero-dependency static portal rendering the whole plugin family as one page | |
+| **[dsh-plugin-upgrade-015](https://github.com/PerryLink/dsh-plugin-upgrade-015)** | Merged `0.1.3-alpha.1` → `0.1.5-rc.1` upgrade corridor card plus a zero-dependency seam scanner | |
+| **[dsh-team-rooms](https://github.com/PerryLink/dsh-team-rooms)** | Cross-session team rooms: shared message bus, task board and timeline | |
 
 ### Install from the DSH Desktop Market
 
