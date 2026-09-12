@@ -48,7 +48,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.1` (compat declared for `0.1.5-rc.1`) 0.1.2-rc.1 (adapted 2026-09-09): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. Verified 2026-09-10 against the dsh-v0.1.5-rc.1 master checkout (full gate chain + profile install smoke). |
+| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compat declared for `0.1.5-rc.2`) 0.1.2-rc.1 (adapted 2026-09-09): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. Verified 2026-09-11 against the dsh-v0.1.5-rc.2 master checkout (full gate chain + profile install smoke). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |

@@ -45,7 +45,7 @@
 
 | Superficie | Estado |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.1` (compatibilidad declarada para `0.1.5-rc.1`) 0.1.2-rc.1 (adaptado el 2026-09-09): el sobre de sesión conserva su campo ignorable solo para compatibilidad de lectura de logs almacenados - Session.append aún no puede estamparlo, por lo que el comportamiento de la puerta no cambia. Verificado el 2026-09-10 contra el checkout master de dsh-v0.1.5-rc.1 (cadena de puertas completa + smoke de instalación de profile). |
+| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compatibilidad declarada para `0.1.5-rc.2`) 0.1.2-rc.1 (adaptado el 2026-09-09): el sobre de sesión conserva su campo ignorable solo para compatibilidad de lectura de logs almacenados - Session.append aún no puede estamparlo, por lo que el comportamiento de la puerta no cambia. Verificado el 2026-09-11 contra el checkout master de dsh-v0.1.5-rc.2 (cadena de puertas completa + smoke de instalación de profile). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Plataformas | Todas (plugin host; red saliente a GitHub) |
 | Modelo | Cualquiera (la revisión estática es determinista; `reviewMode: "model"` es opcional) |
