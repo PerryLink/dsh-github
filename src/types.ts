@@ -16,6 +16,8 @@ declare module '@deepseek-ai/dsh-jobs' {
   interface JobKindMap {
     /** The plugin's background review-job producer kind (`github-review-N` ids). */
     'github-review': 'github-review'
+    /** The plugin's CI polling job kind (`github-ci-N` ids). */
+    'github-ci': 'github-ci'
   }
 }
 
@@ -90,6 +92,8 @@ export interface ApprovalRequest {
 /** Approval dispatch service subset used by dsh-github. */
 export interface ApprovalService {
   request(req: ApprovalRequest): Promise<ApprovalOutcome>
+  /** Switch one live agent's policy; the CI driver pins `'never'` (auto-grant, no escalation). */
+  setPolicy(agent: GithubAgent, policy: 'ask' | 'never'): void
 }
 
 /** Host subagent seam subset used by dsh-github's model review: the official

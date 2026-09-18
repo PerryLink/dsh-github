@@ -17,7 +17,7 @@
  * @module dsh-github/ci/bot
  */
 import type { Context } from '@deepseek-ai/cordis'
-import type { CommandInvocation, CommandResult, CommandsService } from '../types.ts'
+import type { CommandInvocation, CommandResult, CommandsService, JobOutcome } from '../types.ts'
 import type { GithubState } from '../state.ts'
 import { runCiPipeline } from './pipeline.ts'
 
@@ -141,12 +141,50 @@ export function registerCiBot(ctx: Context, commands: CommandsService, state: Gi
     }
   }
 
-  const timer = state.config.ci.pollIntervalMs > 0
-    ? setInterval(() => {
-        if (polling) void scan().catch(() => {})
-      }, state.config.ci.pollIntervalMs)
-    : undefined
-  timer?.unref?.()
+  /**
+   * One polling tick; the scan loop owns its own concurrency guard.
+   */
+  const tick = (): void => {
+    if (polling) void scan().catch(() => {})
+  }
+
+  // The polling loop runs as a registry-owned background job (`github-ci-N`)
+  // so the jobs controller can see and stop it. When no job controller serves
+  // unowned work (the composition lacks tool-jobs), the registry's start
+  // refuses, and the loop degrades to the legacy interval — logged once.
+  let pollJobId: ReturnType<Context['jobs']['start']> | undefined
+  let fallbackTimer: ReturnType<typeof setInterval> | undefined
+  let warnedFallback = false
+
+  if (state.config.ci.pollIntervalMs > 0) {
+    const intervalMs = state.config.ci.pollIntervalMs
+    try {
+      pollJobId = ctx.jobs.start({
+        kind: 'github-ci',
+        label: 'dsh-github CI bot polling',
+        run: () => {
+          const timer = setInterval(tick, intervalMs)
+          timer.unref?.()
+          let settle!: (outcome: JobOutcome) => void
+          const done = new Promise<JobOutcome>((resolve) => { settle = resolve })
+          return {
+            cancel: (reason?: string) => {
+              clearInterval(timer)
+              settle({ status: 'killed', detail: reason ?? 'polling disabled' })
+            },
+            done,
+          }
+        },
+      })
+    } catch (error) {
+      fallbackTimer = setInterval(tick, intervalMs)
+      fallbackTimer.unref?.()
+      if (!warnedFallback) {
+        warnedFallback = true
+        ctx.logger.warn(`dsh-github ci bot: no job controller serves the polling job (${error instanceof Error ? error.message : String(error)}); polling falls back to an interval. Load @deepseek-ai/dsh-tool-jobs to make the loop a visible job.`)
+      }
+    }
+  }
 
   const register = (name: string, description: string, hint: string, handler: (invocation: CommandInvocation) => CommandResult | Promise<CommandResult>): () => void =>
     commands.register({ name, description, input: { hint }, handler })
@@ -204,7 +242,8 @@ export function registerCiBot(ctx: Context, commands: CommandsService, state: Gi
   ]
 
   return () => {
-    if (timer !== undefined) clearInterval(timer)
+    if (pollJobId !== undefined) ctx.jobs.kill(pollJobId, undefined, 'dsh-github dispose')
+    if (fallbackTimer !== undefined) clearInterval(fallbackTimer)
     for (const dispose of disposers) dispose()
   }
 }

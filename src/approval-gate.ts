@@ -15,6 +15,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { GithubAction } from './config.ts'
+import type { GithubAgent } from './types.ts'
 import type { GithubState } from './state.ts'
 
 const ACTION_BY_TOOL: Record<string, GithubAction> = {
@@ -124,6 +125,11 @@ export function registerApprovalGate(ctx: Context, state: GithubState): () => vo
       return { kind: 'deny', reason: `dsh-github: action "${action ?? exec.name}" is not in allowedActions` }
     }
     if (state.isCiDriver && state.config.ci.autoApprove.includes(action)) {
+      // The CI driver bypasses the prompt through the official policy seam:
+      // pin the calling agent's policy to 'never' (auto-grant, no escalation)
+      // and allow the in-flight call. The runtime object is the host's Agent;
+      // GithubAgent is this plugin's minimal view of it.
+      if (exec.agent !== undefined) ctx.approval.setPolicy(exec.agent as unknown as GithubAgent, 'never')
       return { kind: 'allow' }
     }
     return { kind: 'ask', reason: `dsh-github: ${askReason(exec.name, argumentsAsRecord(exec), state)}` }
