@@ -34,7 +34,7 @@ const y = (value) => JSON.stringify(value)
 const task = env('INPUT_TASK').trim() || 'review'
 const pr = env('INPUT_PR').trim()
 const ownerRepo = env('INPUT_OWNER_REPO').trim()
-const model = env('INPUT_MODEL').trim() || 'deepseek-v4-flash'
+const model = env('INPUT_MODEL').trim() || 'deepseek-flash'
 const engine = env('INPUT_ENGINE').trim() === 'model' ? 'model' : 'static'
 const checkName = env('INPUT_CHECK_NAME').trim() || 'dsh-github-review'
 const blocking = boolOf(env('INPUT_BLOCKING'), true)
