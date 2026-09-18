@@ -99,7 +99,10 @@ export interface PluginDeps {
 export function applyWithDeps(ctx: Context, config: PluginConfig, deps: PluginDeps = {}) {
   // Consumer — the tool handlers consume the credentials service, the
   // optional subagents seam, and the git/gh runners assembled into `state`.
-  const state = createState({ credentials: ctx.credentials, subagents: ctx.get('subagents') as SubagentsService | undefined }, config, deps.runGit ?? runGitCli, deps.runGh ?? runGhCli, deps.fetchImpl)
+  // The subagents seam is optional at runtime although the official type
+  // declares it non-optional; the cast through unknown keeps the plugin's
+  // minimal structural face (see types.ts).
+  const state = createState({ credentials: ctx.credentials, subagents: ctx.get('subagents') as unknown as SubagentsService | undefined }, config, deps.runGit ?? runGitCli, deps.runGh ?? runGhCli, deps.fetchImpl)
 
   // Service Provider — registers the GitHub tools on ctx.tools; the /pr
   // /review /issue /ci commands and the write-approval gate register through

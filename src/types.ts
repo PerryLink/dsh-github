@@ -9,6 +9,15 @@
  * @module dsh-github/types
  */
 import type { UserMessage } from '@deepseek-ai/dsh-llm/message'
+import type { JobId, JobStart } from '@deepseek-ai/dsh-jobs'
+import type { SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
+
+declare module '@deepseek-ai/dsh-jobs' {
+  interface JobKindMap {
+    /** The plugin's background review-job producer kind (`github-review-N` ids). */
+    'github-review': 'github-review'
+  }
+}
 
 /** Minimal live-agent view: only the members dsh-github touches. */
 export interface GithubAgent {
@@ -52,52 +61,19 @@ export interface CommandsService {
   register(definition: CommandDefinition): () => void
 }
 
-/** Registry-issued background-job id; the host generates `<kind>-N` strings. */
-export type GithubJobId = string & { readonly __githubJobId: unique symbol }
+/** Registry-issued background-job id (the official branded `JobId`). */
+export type GithubJobId = JobId
 
-/** Terminal result a review-job producer supplies through its hooks. */
-export interface JobOutcome {
-  status: 'completed' | 'killed' | 'failed'
-  detail?: string
-  /** Final output for final-output-only jobs. */
-  output?: string
-}
+/** Producer declaration passed to the job registry's start (official `JobStart`). */
+export type JobStartSpec = JobStart
 
-/** Producer hooks through which the job runtime controls the work. */
-export interface JobHooks {
-  cancel(reason?: string): void
-  done: Promise<JobOutcome>
-}
-
-/** Producer declaration passed to the job registry's start. */
-export interface JobStartSpec {
-  /** Producer kind — also the id prefix; the host treats kinds as opaque. */
-  kind: string
-  /** One-line model-facing label. */
-  label: string
-  outputLimitBytes?: number
-  owner?: GithubAgent
-  run(): JobHooks
-}
-
-/** Read-only projection of one job. */
-export interface JobSnapshot {
-  id: string
-  kind: string
-  label: string
-  status: 'running' | 'stopping' | 'completed' | 'killed' | 'failed'
-  detail?: string
-  startedAt: number
-  finishedAt?: number
-  reported: boolean
-}
-
-/** Background-job registry subset used by dsh-github. */
-export interface JobRegistry {
-  start(spec: JobStartSpec): GithubJobId
-  kill(id: string, caller?: GithubAgent, reason?: string): 'requested' | 'already-finished'
-  get(id: string, caller?: GithubAgent): JobSnapshot
-}
+/** Re-export the official job seam faces the plugin consumes. */
+export type {
+  JobHooks,
+  JobOutcome,
+  JobSnapshot,
+  JobRegistry,
+} from '@deepseek-ai/dsh-jobs'
 
 /** Closed approval outcomes; `allowed-once` is the only grant. */
 export type ApprovalOutcome = 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'
@@ -116,34 +92,19 @@ export interface ApprovalService {
   request(req: ApprovalRequest): Promise<ApprovalOutcome>
 }
 
-/** Terminal result of one one-shot subagent run (model review). */
-export interface SubagentResultView {
-  readonly output: Array<{ type: string; text?: string }>
-  readonly stopReason: string
-}
-
-/** One-shot subagent run handle (model review). */
-export interface SubagentRunView {
-  readonly result: Promise<SubagentResultView>
-  dispose(): Promise<void>
-}
-
-/** Host subagent seam subset used by dsh-github's model review. */
+/** Host subagent seam subset used by dsh-github's model review: the official
+ * run/request faces, with the plugin's minimal agent view as the parent. */
 export interface SubagentsService {
   list(): string[]
-  start(name: string, request: {
-    label?: string
-    prompt: Array<{ type: 'text'; text: string }>
-    parent: GithubAgent
-    signal: AbortSignal
-  }): Promise<SubagentRunView>
+  start(
+    name: string,
+    request: Omit<SubagentStartRequest, 'parent'> & { parent: GithubAgent },
+  ): Promise<SubagentRun>
 }
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
     commands: CommandsService
-    jobs: JobRegistry
     approval: ApprovalService
-    subagents?: SubagentsService
   }
 }
