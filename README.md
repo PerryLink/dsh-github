@@ -48,7 +48,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compat declared for `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0`; 0.1.2-rc.1 adapted 2026-09-09): the session envelope keeps its ignorable field for stored-log read compatibility only - Session.append still cannot stamp it, so audit-gate behavior is unchanged. Verified 2026-09-11 against the dsh-v0.1.5-rc.2 master checkout (full gate chain + profile install smoke). |
+| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (compat declared for `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adapted 2026-09-09): the settings card now registers on the **Plugins page** (Official group, `plugins.item` slot) instead of the removed Settings→plugins tab; the CI driver auto-approves through the official `ctx.approval.setPolicy` policy seam; the review bot polls as a `ctx.jobs` background job with a timer fallback. Batch-upgraded 2026-09-18 (typecheck + typecheck:ci + 183 unit tests green). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |
@@ -89,7 +89,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Configuration
 
-All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline.
+All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the same keys are editable through the **Plugins page settings card** (Official group) — the card moved there from the Settings→plugins tab, which the `0.1.6-alpha.2` host no longer declares.
 
 | Key | Default | Meaning |
 |---|---|---|

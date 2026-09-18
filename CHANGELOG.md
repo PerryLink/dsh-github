@@ -4,6 +4,21 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Move the settings card from the Settings→plugins tab to the **Plugins page** (Official group): the `0.1.6-alpha.2` host deletes the `settings.plugin.item` slot, so the card registered there silently disappears. The card now registers on the keyed `plugins.item` slot (`id: dsh-github`, `order: 100`, `label` as a function, `locale`) and renders one component in two states — a one-line summary (description + token badge) and the full editable form (`view: 'summary' | 'page'`) — with the built `lib/client.js` rebuilt and committed.
+- Default the CI composite action model to `deepseek-flash`: the `deepseek-v4-flash` id the action, its patch script, and the local test script referenced is removed from the harness catalog, which would silently downgrade GitHub Actions users to a text-only model.
+- Drive the CI review bot's polling through `ctx.jobs.start` (kind `github-ci`) instead of `setInterval`, with a one-time-warn `setInterval` fallback when no job controller serves the agent.
+- Auto-approve CI-driver writes through the official policy seam: `ctx.approval.setPolicy(agent, 'never')` pins the calling agent instead of the previous gate-only bypass.
+- Consume the official `@deepseek-ai/dsh-jobs` (`JobId`, `JobStart`, `JobHooks`, `JobOutcome`, `JobSnapshot`, `JobRegistry`) and `@deepseek-ai/dsh-subagent` (`SubagentRun`, `SubagentStartRequest`) type faces instead of the hand-copied mirrors, and drop the plugin's own `subagents` context augmentation (the official package augments it).
+- Declare `dshWorkshop.manifestVersion: 1` and the `engines.dsh` range `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0` (the added third clause keeps the `0.1.6` alpha line accepted).
+
+### Fixed
+
+- Close the type gate over the client half: `src/client.ts` is no longer excluded from `tsconfig.json` (react dev deps and the DOM lib added), and the new `tsconfig.ci.json` + `typecheck:ci` ruler covers the published line. The `lib/client.d.ts` / `lib/client.d.ts.map` / `lib/client.js.map` build artifacts are now committed alongside `lib/client.js`.
+
 ## [0.7.10] - 2026-09-12
 
 ### Changed
