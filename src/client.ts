@@ -8,21 +8,20 @@
  * `GITHUB_TOKEN`), which is exactly where the host half resolves it — per
  * operation, no restart needed.
  *
- * The card is collapsible and mirrors the host's `PluginCard` chrome one for
- * one (same design tokens, same layout), the way the market card does: the
- * plugins tab only lays out a flex column and dispatches
- * `settings.plugin.item`, so the container is ours to draw, but drawing it
- * with the same tokens is what keeps it from looking like it wandered in from
- * another product. Buttons and the chevron come from the shared primitives.
+ * The card registers into the Plugins page's `plugins.item` list slot and
+ * renders the two views the page asks for: `summary` is the one-liner under
+ * the card's title, `page` is the form with its own save control. The page
+ * draws the title, icon, and crumb itself; buttons come from the shared
+ * primitives.
  *
  * The shipped `lib/client.js` is the __ModuleLoader__ bundle built from this
  * module (plain ESM here; the bundle wraps it in the loader factory). The
  * browser module loader executes that bundle, not this file.
  * @module @perrylink/dsh-github/client
  */
-import { createElement, useState, type ReactNode } from 'react'
+import { createElement, useState, type ChangeEvent, type ReactNode } from 'react'
 import {
-  Button, IconChevronDownOutline14, IconLoadingOutline16,
+  Button, IconLoadingOutline16,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /**
@@ -338,118 +337,100 @@ export interface GithubCardProps {
   t: (key: keyof GithubCardLocale) => string
   useGithubCard: (selector: (snapshot: GithubCardState) => GithubCardState) => GithubCardState
   submit: (value: string) => Promise<boolean>
+  /** The view the Plugins page asks for: the one-liner under the title, or the form. */
+  view: 'summary' | 'page'
 }
 
-/** One class name builder (static strings only — no bundler CSS modules here). */
-const cx = (...parts: Array<string | false | undefined>): string => parts.filter(Boolean).join(' ')
-
 /**
- * Render the GitHub card: a collapsible header naming the plugin, and — once
- * expanded — the token control and the save/discard row. Renders nothing
- * while the namespace is unavailable.
+ * Render the GitHub card. `summary` renders the one-liner the Plugins page
+ * places under the card's title (the description plus the token state badge);
+ * `page` renders the token control and the save/discard row on the plugin's
+ * own page. Renders nothing while the namespace is unavailable.
  */
 export function GithubCard(props: GithubCardProps): ReactNode {
   const { t } = props
   const state = props.useGithubCard((snapshot) => snapshot)
-  const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   if (!state.available) return null
-  const title = t('githubTitle')
+  if (props.view === 'summary') {
+    return createElement(
+      'span',
+      { className: 'ghc-summary' },
+      createElement('span', null, t('githubDescription')),
+      createElement(
+        'span',
+        { className: state.configured ? 'ghc-badge' : 'ghc-badgeMuted' },
+        state.configured ? t('tokenSet') : t('tokenUnset'),
+      ),
+    )
+  }
   const dirty = draft.trim() !== ''
   const saveLabel = state.saving ? t('saving') : t('save')
   return createElement(
-    'li',
-    { className: cx('ghc-card', open && 'ghc-cardOpen') },
+    'div',
+    { className: 'ghc-card ghc-cardPage' },
+    !state.writable
+      ? createElement('p', { className: 'ghc-readOnly', role: 'status' }, t('readOnly'))
+      : null,
     createElement(
-      'button',
-      {
-        type: 'button',
-        className: 'ghc-header',
-        'aria-expanded': open,
-        'aria-label': `${open ? 'Collapse' : 'Expand'}: ${title}`,
-        onClick: () => setOpen(!open),
-      },
+      'div',
+      { className: 'ghc-field' },
       createElement(
-        'span',
-        { className: 'ghc-headText' },
-        createElement('span', { className: 'ghc-name' }, title),
-        createElement('span', { className: 'ghc-description' }, t('githubDescription')),
+        'div',
+        { className: 'ghc-head' },
+        createElement('label', { className: 'ghc-label', htmlFor: 'plugin-config-github-token' }, t('tokenLabel')),
+        createElement(
+          'span',
+          { className: 'ghc-badges' },
+          createElement(
+            'span',
+            { className: state.configured ? 'ghc-badge' : 'ghc-badgeMuted' },
+            state.configured ? t('tokenSet') : t('tokenUnset'),
+          ),
+        ),
       ),
-      dirty ? createElement('span', { className: 'ghc-pending' }, t('unsaved')) : null,
+      createElement('input', {
+        id: 'plugin-config-github-token',
+        className: 'ghc-input',
+        type: 'password',
+        autoComplete: 'off',
+        value: draft,
+        disabled: !state.credentialWritable,
+        onChange: (event: ChangeEvent<HTMLInputElement>) => setDraft(event.target.value),
+      }),
+      createElement('p', { className: 'ghc-hint' }, t('tokenHint')),
+    ),
+    createElement(
+      'div',
+      { className: 'ghc-actions' },
+      state.failed ? createElement('p', { className: 'ghc-failed', role: 'status' }, t('saveFailed')) : null,
       createElement(
-        'span',
-        { className: cx('ghc-chevron', open && 'ghc-chevronOpen') },
-        createElement(IconChevronDownOutline14, { size: 14 }),
+        Button,
+        {
+          variant: 'ghost',
+          size: 'sm',
+          disabled: !dirty || state.saving,
+          onClick: () => setDraft(''),
+        },
+        t('discard'),
+      ),
+      createElement(
+        Button,
+        {
+          variant: 'primary',
+          size: 'sm',
+          disabled: !state.writable || !dirty || state.saving,
+          icon: state.saving
+            ? createElement('span', { className: 'ghc-spin' }, createElement(IconLoadingOutline16, { size: 16 }))
+            : undefined,
+          onClick: async () => {
+            const landed = await props.submit(draft)
+            if (landed) setDraft('')
+          },
+        },
+        saveLabel,
       ),
     ),
-    open
-      ? createElement(
-          'div',
-          { className: 'ghc-body' },
-          !state.writable
-            ? createElement('p', { className: 'ghc-readOnly', role: 'status' }, t('readOnly'))
-            : null,
-          createElement(
-            'div',
-            { className: 'ghc-field' },
-            createElement(
-              'div',
-              { className: 'ghc-head' },
-              createElement('label', { className: 'ghc-label', htmlFor: 'plugin-config-github-token' }, t('tokenLabel')),
-              createElement(
-                'span',
-                { className: 'ghc-badges' },
-                createElement(
-                  'span',
-                  { className: state.configured ? 'ghc-badge' : 'ghc-badgeMuted' },
-                  state.configured ? t('tokenSet') : t('tokenUnset'),
-                ),
-              ),
-            ),
-            createElement('input', {
-              id: 'plugin-config-github-token',
-              className: 'ghc-input',
-              type: 'password',
-              autoComplete: 'off',
-              value: draft,
-              disabled: !state.credentialWritable,
-              onChange: (event) => setDraft(event.target.value),
-            }),
-            createElement('p', { className: 'ghc-hint' }, t('tokenHint')),
-          ),
-          createElement(
-            'div',
-            { className: 'ghc-actions' },
-            state.failed ? createElement('p', { className: 'ghc-failed', role: 'status' }, t('saveFailed')) : null,
-            createElement(
-              Button,
-              {
-                variant: 'ghost',
-                size: 'sm',
-                disabled: !dirty || state.saving,
-                onClick: () => setDraft(''),
-              },
-              t('discard'),
-            ),
-            createElement(
-              Button,
-              {
-                variant: 'primary',
-                size: 'sm',
-                disabled: !state.writable || !dirty || state.saving,
-                icon: state.saving
-                  ? createElement('span', { className: 'ghc-spin' }, createElement(IconLoadingOutline16, { size: 16 }))
-                  : undefined,
-                onClick: async () => {
-                  const landed = await props.submit(draft)
-                  if (landed) setDraft('')
-                },
-              },
-              saveLabel,
-            ),
-          ),
-        )
-      : null,
   )
 }
 
@@ -476,7 +457,7 @@ export interface ClientContextLike {
   }
 }
 
-/** Mount the GitHub configuration card into the plugins settings section. */
+/** Mount the GitHub configuration card into the Plugins page's Official group. */
 export function apply(ctx: ClientContextLike): void {
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-github: card dictionaries')
@@ -488,15 +469,15 @@ export function apply(ctx: ClientContextLike): void {
     () => ctx.remote.$on('credentials/reference-updated', (ref) => github.refreshCredential(ref)),
     'dsh-github: credential invalidations',
   )
-  ctx.slots.inject('settings.plugin.item', function* () {
-    yield ctx.slots.register(
-      {
-        name: 'settings.plugin.item',
-        key: NS,
-        locale: NS,
-        inject: () => github.inject(),
-      },
-      GithubCard,
-    )
-  })
+  ctx.slots.inject('plugins.item', () => ctx.slots.register(
+    {
+      name: 'plugins.item',
+      id: NS,
+      order: 100,
+      label: () => t('githubTitle'),
+      locale: NS,
+      inject: () => github.inject(),
+    },
+    GithubCard,
+  ))
 }

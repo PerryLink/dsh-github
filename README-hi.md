@@ -46,7 +46,7 @@
 
 | सतह | स्थिति |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (`0.1.5-rc.2` के लिए compat घोषित) 0.1.2-rc.1 (2026-09-09 को अनुकूलित): सत्र लिफ़ाफ़ा अपना ignorable फ़ील्ड केवल संग्रहीत-लॉग पठन संगतता के लिए रखता है - Session.append अभी भी इसे स्टैम्प नहीं कर सकता, इसलिए गेट व्यवहार अपरिवर्तित है। 2026-09-11 को dsh-v0.1.5-rc.2 master checkout के विरुद्ध सत्यापित (पूर्ण गेट श्रृंखला + profile इंस्टॉल smoke)। |
+| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (`>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0` के लिए compat घोषित; 0.1.2-rc.1 2026-09-09 को अनुकूलित): settings card अब **Plugins पेज** (Official समूह, `plugins.item` slot) पर पंजीकृत होता है, हटाए गए Settings→plugins टैब की जगह; CI driver आधिकारिक `ctx.approval.setPolicy` नीति सीम से ऑटो-अनुमोदन करता है; review bot `ctx.jobs` पृष्ठभूमि job के रूप में टाइमर फ़ॉलबैक के साथ पोल करता है। 2026-09-18 को बैच-अपग्रेड किया गया (typecheck + typecheck:ci + 183 यूनिट टेस्ट हरे)। |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | सभी (host plugin; GitHub की ओर outbound network) |
 | Model | कोई भी (static review deterministic है; `reviewMode: "model"` वैकल्पिक है) |
@@ -87,7 +87,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## कॉन्फ़िगरेशन
 
-सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है।
+सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है। GUI में, वही keys **Plugins पेज settings card** (Official समूह) के ज़रिए संपादित होती हैं — कार्ड Settings→plugins टैब से यहाँ ले जाया गया है, क्योंकि `0.1.6-alpha.2` host उस slot को अब declare नहीं करता।
 
 | कुंजी | डिफ़ॉल्ट | अर्थ |
 |---|---|---|

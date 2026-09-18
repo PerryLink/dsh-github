@@ -36,7 +36,7 @@ inputs:
   model:
     description: 'DeepSeek model id for the headless session.'
     required: false
-    default: 'deepseek-v4-flash'
+    default: 'deepseek-flash'
   engine:
     description: "Review engine: 'static' (deterministic analyzer, zero review tokens) or 'model' (the agent authors the review body)."
     required: false

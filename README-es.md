@@ -46,7 +46,7 @@
 
 | Superficie | Estado |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2` (compatibilidad declarada para `0.1.5-rc.2`) 0.1.2-rc.1 (adaptado el 2026-09-09): el sobre de sesión conserva su campo ignorable solo para compatibilidad de lectura de logs almacenados - Session.append aún no puede estamparlo, por lo que el comportamiento de la puerta no cambia. Verificado el 2026-09-11 contra el checkout master de dsh-v0.1.5-rc.2 (cadena de puertas completa + smoke de instalación de profile). |
+| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (compatibilidad declarada para `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adaptado el 2026-09-09): la tarjeta de configuración ahora se registra en la **página Plugins** (grupo Official, slot `plugins.item`) en lugar de la pestaña eliminada Settings→plugins; el controlador de CI autoaprueba mediante la costura oficial `ctx.approval.setPolicy`; el bot de revisión sondea como tarea en segundo plano `ctx.jobs` con respaldo por temporizador. Actualizado en lote el 2026-09-18 (typecheck + typecheck:ci + 183 pruebas unitarias en verde). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Plataformas | Todas (plugin host; red saliente a GitHub) |
 | Modelo | Cualquiera (la revisión estática es determinista; `reviewMode: "model"` es opcional) |
@@ -87,7 +87,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Configuración
 
-Todos los ajustes son campos `Config` de Schemastery (modificables desde cordis.yml). Una anulación dirigida por id reemplaza toda la fila — vuelve a indicar cada clave que necesites. `cordis.patch.yml` documenta cada clave en línea.
+Todos los ajustes son campos `Config` de Schemastery (modificables desde cordis.yml). Una anulación dirigida por id reemplaza toda la fila — vuelve a indicar cada clave que necesites. `cordis.patch.yml` documenta cada clave en línea. En la GUI, esas mismas claves se editan en la **tarjeta de configuración de la página Plugins** (grupo Official) — la tarjeta se movió allí desde la pestaña Settings→plugins, que el host `0.1.6-alpha.2` ya no declara.
 
 | Clave | Por defecto | Significado |
 |---|---|---|

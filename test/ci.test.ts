@@ -350,11 +350,14 @@ describe('ci approval gate', () => {
     process.env.DSH_GITHUB_CI_DRIVER = '1'
     const allowed = await loaded(ciRoutes(), { ci: { enabled: true, pollIntervalMs: 0, reportDir, autoApprove: ['ci.run'] } })
     expect(await decide(allowed, 'ci_run', { task: 'review', pr: 'o/r#7' })).toMatchObject({ kind: 'allow' })
+    // The CI driver pins the calling agent's approval policy to 'never'.
+    expect(allowed.approval.policies).toContainEqual(expect.objectContaining({ policy: 'never' }))
     // Other writes still ask even in driver mode unless listed.
     expect(await decide(allowed, 'pr_merge', { pr: 'o/r#7' })).toMatchObject({ kind: 'ask' })
-    // Without the allowlist entry the driver asks too.
+    // Without the allowlist entry the driver asks too, and pins no policy.
     const gated = await loaded(ciRoutes(), { ci: { enabled: true, pollIntervalMs: 0, reportDir, autoApprove: [] } })
     expect(await decide(gated, 'ci_run', { task: 'review', pr: 'o/r#7' })).toMatchObject({ kind: 'ask' })
+    expect(gated.approval.policies).toHaveLength(0)
   })
 })
 

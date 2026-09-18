@@ -145,10 +145,17 @@ export class MockJobs {
 export class MockApproval {
   requests: ApprovalRequest[] = []
   nextOutcome: ApprovalOutcome = 'allowed-once'
+  /** setPolicy calls recorded by the alpha.2 approval policy seam. */
+  policies: Array<{ agent: unknown; policy: 'ask' | 'never' }> = []
 
   async request(req: ApprovalRequest): Promise<ApprovalOutcome> {
     this.requests.push(req)
     return this.nextOutcome
+  }
+
+  /** Official policy pin seam; tests record the call, no runtime effect. */
+  setPolicy(agent: unknown, policy: 'ask' | 'never'): void {
+    this.policies.push({ agent, policy })
   }
 }
 

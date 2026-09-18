@@ -82,7 +82,9 @@ export function startReviewJob(registry: JobRegistry, state: GithubState, input:
   const spec: JobStartSpec = {
     kind: REVIEW_JOB_KIND,
     label: input.label,
-    owner: input.owner,
+    // The runtime object is the host's Agent; GithubAgent is this plugin's
+    // documented minimal view of it (see types.ts).
+    owner: input.owner as unknown as NonNullable<JobStartSpec['owner']>,
     outputLimitBytes: 64 * 1024,
     run: () => runReviewWork(state, record, jobInput),
   }

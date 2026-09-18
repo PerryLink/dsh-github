@@ -13,7 +13,7 @@
 import { createUserMessage } from '@deepseek-ai/dsh-llm/message'
 import { readGitState } from './git.ts'
 import { startReviewJob } from './jobs.ts'
-import type { CommandDefinition, CommandInvocation, CommandResult, CommandsService, GithubAgent, JobRegistry } from './types.ts'
+import type { CommandDefinition, CommandInvocation, CommandResult, CommandsService, GithubAgent, GithubJobId, JobRegistry } from './types.ts'
 import type { GithubState } from './state.ts'
 
 const USAGE_PR = 'Usage: /pr create [title]'
@@ -95,7 +95,12 @@ export function registerReviewCommand(commands: CommandsService, jobs: JobRegist
         if (!state.records.has(jobId)) {
           return { kind: 'error', text: `no review job "${jobId}". List jobs with job_list or check the /review output.` }
         }
-        const outcome = jobs.kill(jobId, invocation.agent, 'user requested stop via /review stop')
+        const outcome = jobs.kill(
+          jobId as GithubJobId,
+          // The runtime object is the host's Agent; GithubAgent is this plugin's minimal view.
+          invocation.agent as unknown as Parameters<typeof jobs.kill>[1],
+          'user requested stop via /review stop',
+        )
         return { kind: 'success', text: outcome === 'requested' ? `requested stop of job ${jobId}` : `job ${jobId} had already finished` }
       }
       if (input.startsWith('post ')) {

@@ -38,7 +38,7 @@ Options:
   --pr <number>                   Pull request number (required for review/fix-ci)
   --owner-repo <owner/repo>       Repository to review (required for review/fix-ci)
   --task-prompt <text>            Complete replacement for the default task text
-  --model <id>                    Model for the headless session (default: deepseek-v4-flash)
+  --model <id>                    Model for the headless session (default: deepseek-flash)
   --engine <static|model>         Review engine (default: static)
   --check-name <name>             Status-check name (default: dsh-github-review)
   --blocking <true|false>         Fail on needs-changes verdict (default: true)
@@ -71,7 +71,7 @@ const options = {
   pr: '',
   ownerRepo: '',
   taskPrompt: '',
-  model: 'deepseek-v4-flash',
+  model: 'deepseek-flash',
   engine: 'static',
   checkName: 'dsh-github-review',
   blocking: 'true',

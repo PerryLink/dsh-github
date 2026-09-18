@@ -48,7 +48,7 @@
 
 | 界面 | 状态 |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.5-rc.2`（兼容声明覆盖 `0.1.5-rc.2`） 0.1.2-rc.1（2026-09-09 已适配）：会话信封保留 ignorable 字段但仅用于存量日志读取兼容——Session.append 仍无法盖章，门控行为不变。 2026-09-11 已对照 dsh-v0.1.5-rc.2 master checkout 核验（完整门禁链 + profile 安装冒烟）。 |
+| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2`（兼容声明覆盖 `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`；0.1.2-rc.1 于 2026-09-09 已适配）：设置卡现注册在 **Plugins 页**（Official 组，`plugins.item` 槽），不再使用已删除的 Settings→插件 tab；CI 驱动器通过官方 `ctx.approval.setPolicy` 策略缝自动放行；评审机器人以 `ctx.jobs` 后台任务轮询，并带定时器降级。批量升级于 2026-09-18（typecheck + typecheck:ci + 183 项单元测试全绿）。 |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | 全部（host 插件；出站网络访问 GitHub） |
 | Model | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |
@@ -89,7 +89,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## 配置
 
-所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。
+所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，同一批键可在 **Plugins 页设置卡**（Official 组）中编辑——该卡已从 Settings→插件 tab 迁出（`0.1.6-alpha.2` 宿主不再声明该槽）。
 
 | 键 | 默认值 | 含义 |
 |---|---|---|
