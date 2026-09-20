@@ -212,7 +212,7 @@ scripts/prepare.mjs   self-contained git-install build
 
 ## Familia de plugins DSH de PerryLink
 
-Este proyecto es uno de los [40 complementos de DeepSeek Harness](https://github.com/PerryLink) mantenidos por [PerryLink](https://github.com/PerryLink). Si este te ayuda, probablemente los demás también:
+Este proyecto es uno de los [41 complementos de DeepSeek Harness](https://github.com/PerryLink) mantenidos por [PerryLink](https://github.com/PerryLink). Si este te ayuda, probablemente los demás también:
 
 | Plugin | One-liner |
 |---|---|
