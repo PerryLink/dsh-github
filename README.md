@@ -2,6 +2,7 @@
 
 # dsh-github
 [![Gitee](https://img.shields.io/badge/Gitee-mirror-c71d23?logo=gitee)](https://gitee.com/perrylink/dsh-github)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github/badge)](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github)
 
 **GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated by human approval, token never logged.**
 
