@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # dsh-github
 
@@ -47,7 +47,7 @@
 
 | Superficie | Estado |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (compatibilidad declarada para `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adaptado el 2026-09-09): la tarjeta de configuración ahora se registra en la **página Plugins** (grupo Official, slot `plugins.item`) en lugar de la pestaña eliminada Settings→plugins; el controlador de CI autoaprueba mediante la costura oficial `ctx.approval.setPolicy`; el bot de revisión sondea como tarea en segundo plano `ctx.jobs` con respaldo por temporizador. Actualizado en lote el 2026-09-18 (typecheck + typecheck:ci + 183 pruebas unitarias en verde). |
+| Harness | DeepSeek Harness `dsh-v0.1.7-alpha.1` (compatibilidad declarada para `>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adaptado el 2026-09-09): el job de revisión pasa a ser propiedad de un `SessionId` desnudo y la fuente de aviso usa el kind propio del plugin `dsh-github` (la unión `Agent \| SessionId` del host y su `kind: 'plugin'` comodín ya no existen); la tarjeta de configuración se registra en la **página Plugins** (grupo Official, slot `plugins.item`) y se renderiza desde el form que entrega `dsh-client-ui-plugin-manager`, en lugar de enlazar el eliminado `ctx.settingsScope`; el controlador de CI autoaprueba mediante la costura oficial `ctx.approval.setPolicy`; el bot de revisión sondea como tarea en segundo plano `ctx.jobs` con respaldo por temporizador. Actualizado el 2026-09-22 a `0.1.7-alpha.1` (typecheck + typecheck:ci + 185 pruebas unitarias en verde). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Plataformas | Todas (plugin host; red saliente a GitHub) |
 | Modelo | Cualquiera (la revisión estática es determinista; `reviewMode: "model"` es opcional) |
@@ -88,7 +88,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Configuración
 
-Todos los ajustes son campos `Config` de Schemastery (modificables desde cordis.yml). Una anulación dirigida por id reemplaza toda la fila — vuelve a indicar cada clave que necesites. `cordis.patch.yml` documenta cada clave en línea. En la GUI, esas mismas claves se editan en la **tarjeta de configuración de la página Plugins** (grupo Official) — la tarjeta se movió allí desde la pestaña Settings→plugins, que el host `0.1.6-alpha.2` ya no declara.
+Todos los ajustes son campos `Config` de Schemastery (modificables desde cordis.yml). Una anulación dirigida por id reemplaza toda la fila — vuelve a indicar cada clave que necesites. `cordis.patch.yml` documenta cada clave en línea. En la GUI, la **tarjeta de configuración de la página Plugins** (grupo Official) lee `tokenRef` del propio formulario de configuración de la entrada — el host `0.1.7-alpha.1` eliminó el enlace `ctx.settingsScope` y la costura de registro de namespaces que había detrás, así que la tarjeta ya no posee un namespace de configuración. El token de GitHub no es un campo de configuración: la tarjeta informa si la credencial referenciada está puesta y la escribe mediante el archivo de credenciales, que es de donde la resuelve la mitad host.
 
 | Clave | Por defecto | Significado |
 |---|---|---|
@@ -144,14 +144,14 @@ Todos los ajustes son campos `Config` de Schemastery (modificables desde cordis.
 
 - **Capa de credenciales.** `tokenSource: auto` resuelve por operación en el orden capa de credenciales (referencia `GITHUB_TOKEN`) → variable de entorno → token de la CLI `gh`. El valor es una variable local entregada al cliente REST; nunca entra en valores canónicos, representaciones, tarjetas, salidas de comandos, avisos inyectados, salidas de trabajos, motivos de aprobación ni mensajes de error.
 - **Puerta de aprobación.** Todas las escrituras fluyen a través de las herramientas del modelo. Un listener waterfall `tools/pre-execute` devuelve `ask` para las herramientas de escritura, de modo que el registro pregunta al humano mediante `ctx.approval` (el host registra el par de auditoría `approval/asked` + `approval/decided`) y se cierra ante fallo sin un respondedor. Los comandos nunca escriben directamente: un comando de escritura reúne contexto de solo lectura y luego despierta al agente para que el modelo ejecute la herramienta controlada dentro de un turno.
-- **Trabajo de revisión en segundo plano.** `/review <pr>` inicia un trabajo `github-review` en `ctx.jobs`; el trabajo obtiene metadatos (capturando el SHA del commit head para la publicación en línea), el diff limitado, las comprobaciones de CI y los comentarios existentes, y luego ejecuta el analizador determinista multiarchivo (`src/review.ts`). Con `reviewMode: "model"`, el trabajo entrega el diff limitado a un subagente de un solo uso a través de la seam `subagents` del host. La finalización llega a la sesión mediante el consumidor `dsh-tool-jobs` del host; el modelo lo lee con `job_output` y lo publica con `review_post`.
+- **Trabajo de revisión en segundo plano.** `/review <pr>` inicia un trabajo `github-review` en `ctx.jobs`; el trabajo obtiene metadatos (capturando el SHA del commit head para la publicación en línea), el diff limitado, las comprobaciones de CI y los comentarios existentes, y luego ejecuta el analizador determinista multiarchivo (`src/review.ts`). El trabajo es propiedad del `SessionId` desnudo del agente que llama — `0.1.7-alpha.1` cierra el registro sobre `SessionId` sin unión con `Agent` —, así que `dsh-tool-jobs` debe estar compuesto o `start` se niega. Con `reviewMode: "model"`, el trabajo entrega el diff limitado a un subagente de un solo uso a través de la seam `subagents` del host. La finalización llega a la sesión mediante el consumidor `dsh-tool-jobs` del host; el modelo lo lee con `job_output` y lo publica con `review_post`.
 - **Acción compuesta de CI / bot de revisión / puerta de status-check.** El repositorio incluye una acción compuesta (`action.yml`) que revisa PRs, arregla CI y escribe el informe; un bot de revisión por sondeo publica comentarios inline idempotentes; y una puerta de status-check publica el veredicto por commit head de PR. La herramienta de un solo uso `ci_run` impulsa la ejecución headless. Toda escritura permanece sujeta a aprobación.
 
 ## Permisos y datos
 
 - **Permisos**: las escrituras cabalgan sobre la capa de aprobación oficial; nada se reimplementa ni se elude. El plugin declara `network:outbound` y `filesystem:write` en su manifiesto de workshop.
 - **Datos**: el informe de revisión vive en la memoria del proceso, indexado por el id del trabajo; no se escribe nada duradero en disco.
-- **Registro de sesión**: el plugin no añade tipos de evento de sesión personalizados; todo el contenido visible para el modelo fluye por superficies registradas por el host (`tool/result`, `user/message`, `command/run`, `approval/asked`…).
+- **Registro de sesión**: el plugin no añade tipos de evento de sesión personalizados; todo el contenido visible para el modelo fluye por superficies registradas por el host (`tool/result`, `user/message`, `command/run`, `approval/asked`…). Los avisos que encolan los comandos llevan el kind de origen propio del plugin, `{ kind: 'dsh-github', form: 'notice', summary }` — el host no tiene un kind `plugin` comodín y su ruta de admisión del formato de sesión lo rechaza de plano.
 
 ## Límites de seguridad
 

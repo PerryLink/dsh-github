@@ -49,7 +49,7 @@
 
 | 界面 | 状态 |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2`（兼容声明覆盖 `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`；0.1.2-rc.1 于 2026-09-09 已适配）：设置卡现注册在 **Plugins 页**（Official 组，`plugins.item` 槽），不再使用已删除的 Settings→插件 tab；CI 驱动器通过官方 `ctx.approval.setPolicy` 策略缝自动放行；评审机器人以 `ctx.jobs` 后台任务轮询，并带定时器降级。批量升级于 2026-09-18（typecheck + typecheck:ci + 183 项单元测试全绿）。 |
+| Harness | DeepSeek Harness `dsh-v0.1.7-alpha.1`（兼容声明覆盖 `>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0`；0.1.2-rc.1 于 2026-09-09 已适配）：评审任务改由裸 `SessionId` 归属、通知来源改为插件自有的 `dsh-github` kind（宿主的 `Agent \| SessionId` 联合与兜底 `kind: 'plugin'` 均已移除）；设置卡注册在 **Plugins 页**（Official 组，`plugins.item` 槽），并从 `dsh-client-ui-plugin-manager` 提供的 owner form 渲染，不再绑定已删除的 `ctx.settingsScope`；CI 驱动器通过官方 `ctx.approval.setPolicy` 策略缝自动放行；评审机器人以 `ctx.jobs` 后台任务轮询，并带定时器降级。2026-09-22 升级至 `0.1.7-alpha.1`（typecheck + typecheck:ci + 185 项单元测试全绿）。 |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | 全部（host 插件；出站网络访问 GitHub） |
 | Model | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |
@@ -90,7 +90,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## 配置
 
-所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，同一批键可在 **Plugins 页设置卡**（Official 组）中编辑——该卡已从 Settings→插件 tab 迁出（`0.1.6-alpha.2` 宿主不再声明该槽）。
+所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，**Plugins 页设置卡**（Official 组）从该条目自己的配置表单读取 `tokenRef`：`0.1.7-alpha.1` 宿主已删除 `ctx.settingsScope` 绑定及其背后的命名空间注册缝，卡片因此不再拥有设置命名空间。GitHub 令牌根本不是配置字段：卡片只报告所引用凭证是否已配置，并通过凭证文件写入它——宿主半部正是从那里解析的。
 
 | 键 | 默认值 | 含义 |
 |---|---|---|
@@ -146,14 +146,14 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 - **凭证接缝。** `tokenSource: auto` 每次操作按 credentials seam（`GITHUB_TOKEN` 引用）→ 环境变量 → `gh` CLI token 的顺序解析。该值只是交给 REST 客户端的局部变量，绝不进入规范值、渲染、卡片、命令输出、注入通知、job 输出、审批理由或错误消息。
 - **审批门。** 所有写操作都经模型工具。`tools/pre-execute` waterfall 监听器对写工具返回 `ask`，注册表即通过 `ctx.approval` 询问人类（宿主落 `approval/asked` + `approval/decided` 审计对），无应答者时 fail-closed。命令从不直接写：写命令先收集只读上下文，再唤醒 agent，让模型在 turn 内调用受审批门保护的工具。
-- **后台审查 job。** `/review <pr>` 在 `ctx.jobs` 上启动 `github-review` job；job 抓取元数据（记录 head-commit SHA 供行级发布）、截断 diff、CI 检查与既有评论，然后运行确定性多文件分析器（`src/review.ts`）。`reviewMode: "model"` 时改为把截断 diff 交给宿主 `subagents` 接缝的一次性 subagent。完成通知经宿主的 `dsh-tool-jobs` 消费者送回会话；模型用 `job_output` 读取、用 `review_post` 发布。
+- **后台审查 job。** `/review <pr>` 在 `ctx.jobs` 上启动 `github-review` job；job 抓取元数据（记录 head-commit SHA 供行级发布）、截断 diff、CI 检查与既有评论，然后运行确定性多文件分析器（`src/review.ts`）。该 job 由调用 agent 的裸 `SessionId` 归属 —— `0.1.7-alpha.1` 的注册表以 `SessionId` 做访问围栏、不再接受 `Agent` 联合 —— 因此必须组合 `dsh-tool-jobs`，否则 `start` 会直接拒绝。`reviewMode: "model"` 时改为把截断 diff 交给宿主 `subagents` 接缝的一次性 subagent。完成通知经宿主的 `dsh-tool-jobs` 消费者送回会话；模型用 `job_output` 读取、用 `review_post` 发布。
 - **CI 复合动作 / 审查机器人 / 状态检查门禁。** 本仓库随附复合动作（`action.yml`），负责审查 PR、修复 CI 并产出报告；轮询式审查机器人发布幂等行内评论；状态检查门禁按 PR head commit 发布结论。一次性 `ci_run` 工具驱动 headless 运行。每个写操作都保持审批门控。
 
 ## 权限与数据
 
 - **权限**：写操作走官方审批接缝；没有任何东西被重实现或绕过。插件在其 workshop manifest 中声明 `network:outbound` 与 `filesystem:write`。
 - **数据**：审查报告按 job id 存于进程内存；不向磁盘写任何持久数据。
-- **会话日志**：插件不新增任何自定义会话事件类型；所有模型可见内容都走宿主已记录的界面（`tool/result`、`user/message`、`command/run`、`approval/asked`…）。
+- **会话日志**：插件不新增任何自定义会话事件类型；所有模型可见内容都走宿主已记录的界面（`tool/result`、`user/message`、`command/run`、`approval/asked`…）。命令排队的通知携带插件自己的可合并来源 kind `{ kind: 'dsh-github', form: 'notice', summary }` —— 宿主没有兜底的 `plugin` kind，其会话格式准入路径会直接拒绝。
 
 ## 安全边界
 

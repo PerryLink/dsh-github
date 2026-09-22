@@ -47,7 +47,7 @@
 
 | सतह | स्थिति |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (`>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0` के लिए compat घोषित; 0.1.2-rc.1 2026-09-09 को अनुकूलित): settings card अब **Plugins पेज** (Official समूह, `plugins.item` slot) पर पंजीकृत होता है, हटाए गए Settings→plugins टैब की जगह; CI driver आधिकारिक `ctx.approval.setPolicy` नीति सीम से ऑटो-अनुमोदन करता है; review bot `ctx.jobs` पृष्ठभूमि job के रूप में टाइमर फ़ॉलबैक के साथ पोल करता है। 2026-09-18 को बैच-अपग्रेड किया गया (typecheck + typecheck:ci + 183 यूनिट टेस्ट हरे)। |
+| Harness | DeepSeek Harness `dsh-v0.1.7-alpha.1` (`>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0` के लिए compat घोषित; 0.1.2-rc.1 2026-09-09 को अनुकूलित): review job अब नंगे `SessionId` का है और notice source plugin का अपना kind `dsh-github` है (host का `Agent \| SessionId` union और उसका catch-all `kind: 'plugin'` दोनों हट गए); settings card **Plugins पेज** (Official समूह, `plugins.item` slot) पर पंजीकृत होता है और `dsh-client-ui-plugin-manager` द्वारा दिए गए owner form से render होता है, हटाए गए `ctx.settingsScope` को bind करने की जगह; CI driver आधिकारिक `ctx.approval.setPolicy` नीति सीम से ऑटो-अनुमोदन करता है; review bot `ctx.jobs` पृष्ठभूमि job के रूप में टाइमर फ़ॉलबैक के साथ पोल करता है। 2026-09-22 को `0.1.7-alpha.1` पर अपग्रेड (typecheck + typecheck:ci + 185 यूनिट टेस्ट हरे)। |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | सभी (host plugin; GitHub की ओर outbound network) |
 | Model | कोई भी (static review deterministic है; `reviewMode: "model"` वैकल्पिक है) |
@@ -88,7 +88,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## कॉन्फ़िगरेशन
 
-सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है। GUI में, वही keys **Plugins पेज settings card** (Official समूह) के ज़रिए संपादित होती हैं — कार्ड Settings→plugins टैब से यहाँ ले जाया गया है, क्योंकि `0.1.6-alpha.2` host उस slot को अब declare नहीं करता।
+सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है। GUI में, **Plugins पेज settings card** (Official समूह) `tokenRef` उस entry के अपने configuration form से पढ़ता है — `0.1.7-alpha.1` host ने `ctx.settingsScope` binding और उसके पीछे का namespace-registration seam हटा दिया, इसलिए कार्ड अब कोई settings namespace नहीं रखता। GitHub token configuration field नहीं है: कार्ड बताता है कि referenced credential सेट है या नहीं, और उसे credentials फ़ाइल के ज़रिए लिखता है — host half वहीं से resolve करता है।
 
 | कुंजी | डिफ़ॉल्ट | अर्थ |
 |---|---|---|
@@ -144,14 +144,14 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 - **Credential seam.** `tokenSource: auto` प्रति operation क्रम में resolve करता है: credentials seam (`GITHUB_TOKEN` reference) → environment variable → `gh` CLI token। यह मान एक local variable है जो REST client को दिया जाता है; यह कभी canonical values, renders, cards, command outputs, injected notices, job output, approval reasons या error messages में नहीं जाता।
 - **Approval gate.** सभी writes model tools से होकर गुजरते हैं। एक `tools/pre-execute` waterfall listener write tools के लिए `ask` लौटाता है, इसलिए registry `ctx.approval` के ज़रिए मानव से पूछता है (host `approval/asked` + `approval/decided` audit pair log करता है) और बिना answerer के fail closed हो जाता है। Commands कभी सीधे write नहीं करते: एक write command read-only context इकट्ठा करता है, फिर एजेंट को जगाता है ताकि model gated tool को एक turn के भीतर चलाए।
-- **Background review job.** `/review <pr>` `ctx.jobs` पर एक `github-review` job शुरू करता है; job metadata fetch करता है (inline posting के लिए head-commit SHA कैप्चर करते हुए), capped diff, CI checks और existing comments, फिर deterministic multi-file analyzer चलाता है (`src/review.ts`)। `reviewMode: "model"` होने पर, job capped diff को host के `subagents` seam के ज़रिए एक one-shot subagent को सौंपता है। Completion host के `dsh-tool-jobs` consumer के ज़रिए session तक पहुँचती है; model उसे `job_output` से पढ़ता है और `review_post` से प्रकाशित करता है।
+- **Background review job.** `/review <pr>` `ctx.jobs` पर एक `github-review` job शुरू करता है; job metadata fetch करता है (inline posting के लिए head-commit SHA कैप्चर करते हुए), capped diff, CI checks और existing comments, फिर deterministic multi-file analyzer चलाता है (`src/review.ts`)। यह job कॉल करने वाले agent के नंगे `SessionId` का है — `0.1.7-alpha.1` registry को `SessionId` पर fence करता है, `Agent` union के बिना — इसलिए `dsh-tool-jobs` composed होना चाहिए, वरना `start` मना कर देगा। `reviewMode: "model"` होने पर, job capped diff को host के `subagents` seam के ज़रिए एक one-shot subagent को सौंपता है। Completion host के `dsh-tool-jobs` consumer के ज़रिए session तक पहुँचती है; model उसे `job_output` से पढ़ता है और `review_post` से प्रकाशित करता है।
 - **CI composite action / review bot / status-check gate.** Repo में एक composite action (`action.yml`) शामिल है जो PRs की समीक्षा करती है, CI ठीक करती है और report लिखती है; एक polling review bot idempotent inline comments प्रकाशित करता है; और एक status-check gate PR head commit के हिसाब से verdict प्रकाशित करता है। One-shot `ci_run` tool headless run चलाता है। हर write approval-gated रहता है।
 
 ## अनुमतियाँ और डेटा
 
 - **अनुमतियाँ**: writes official approval seam पर चलते हैं; कुछ भी re-implement या bypass नहीं किया जाता। Plugin अपने workshop manifest में `network:outbound` और `filesystem:write` घोषित करता है।
 - **डेटा**: review report process memory में job id के आधार पर रहता है; disk पर कुछ भी durable नहीं लिखा जाता।
-- **Session log**: plugin कोई custom session event types नहीं जोड़ता; सारा model-visible content host-logged surfaces से होकर बहता है (`tool/result`, `user/message`, `command/run`, `approval/asked`…)।
+- **Session log**: plugin कोई custom session event types नहीं जोड़ता; सारा model-visible content host-logged surfaces से होकर बहता है (`tool/result`, `user/message`, `command/run`, `approval/asked`…)। Commands जो notices queue करते हैं वे plugin का अपना source kind ले जाते हैं, `{ kind: 'dsh-github', form: 'notice', summary }` — host में कोई catch-all `plugin` kind नहीं है, और उसका session-format admission path उसे सीधे अस्वीकार करता है।
 
 ## सुरक्षा सीमाएँ
 

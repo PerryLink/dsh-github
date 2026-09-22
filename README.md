@@ -50,7 +50,7 @@
 
 | Surface | Status |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.6-alpha.2` (compat declared for `>=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adapted 2026-09-09): the settings card now registers on the **Plugins page** (Official group, `plugins.item` slot) instead of the removed Settings→plugins tab; the CI driver auto-approves through the official `ctx.approval.setPolicy` policy seam; the review bot polls as a `ctx.jobs` background job with a timer fallback. Batch-upgraded 2026-09-18 (typecheck + typecheck:ci + 183 unit tests green). |
+| Harness | DeepSeek Harness `dsh-v0.1.7-alpha.1` (compat declared for `>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0`; 0.1.2-rc.1 adapted 2026-09-09): the review job is owned by a bare `SessionId` and a notice source is the plugin-owned kind `dsh-github` (the host's `Agent \| SessionId` union and its catch-all `kind: 'plugin'` are both gone); the settings card registers on the **Plugins page** (Official group, `plugins.item` slot) and renders from the owner form `dsh-client-ui-plugin-manager` supplies, instead of binding the removed `ctx.settingsScope`; the CI driver auto-approves through the official `ctx.approval.setPolicy` policy seam; the review bot polls as a `ctx.jobs` background job with a timer fallback. Upgraded 2026-09-22 to `0.1.7-alpha.1` (typecheck + typecheck:ci + 185 unit tests green). |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | All (host plugin; outbound network to GitHub) |
 | Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |
@@ -91,7 +91,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Configuration
 
-All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the same keys are editable through the **Plugins page settings card** (Official group) — the card moved there from the Settings→plugins tab, which the `0.1.6-alpha.2` host no longer declares.
+All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the **Plugins page settings card** (Official group) reads `tokenRef` from the entry's own configuration form — the `0.1.7-alpha.1` host removed the `ctx.settingsScope` binding and the namespace-registration seam behind it, so the card no longer owns a settings namespace. The GitHub token is not a configuration field at all: the card reports whether the referenced credential is set and writes it through the credentials file, which is where the host half resolves it.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -147,14 +147,14 @@ All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id
 
 - **Credential seam.** `tokenSource: auto` resolves per operation in the order credentials seam (`GITHUB_TOKEN` reference) → environment variable → `gh` CLI token. The value is a local variable handed to the REST client; it never enters canonical values, renders, cards, command outputs, injected notices, job output, approval reasons, or error messages.
 - **Approval gate.** All writes flow through model tools. A `tools/pre-execute` waterfall listener returns `ask` for the write tools, so the registry asks the human through `ctx.approval` (the host logs the `approval/asked` + `approval/decided` audit pair) and fails closed without an answerer. Commands never write directly: a write command gathers read-only context, then wakes the agent so the model runs the gated tool inside a turn.
-- **Background review job.** `/review <pr>` starts a `github-review` job on `ctx.jobs`; the job fetches metadata (capturing the head-commit SHA for inline posting), the capped diff, CI checks, and existing comments, then runs the deterministic multi-file analyzer (`src/review.ts`). With `reviewMode: "model"`, the job hands the capped diff to a one-shot subagent through the host's `subagents` seam. Completion reaches the session through the host's `dsh-tool-jobs` consumer; the model reads it with `job_output` and publishes it with `review_post`.
+- **Background review job.** `/review <pr>` starts a `github-review` job on `ctx.jobs`; the job fetches metadata (capturing the head-commit SHA for inline posting), the capped diff, CI checks, and existing comments, then runs the deterministic multi-file analyzer (`src/review.ts`). The job is owned by the calling agent's bare `SessionId` — `0.1.7-alpha.1` fences the registry on `SessionId` with no `Agent` union — so `dsh-tool-jobs` must be composed or `start` refuses. With `reviewMode: "model"`, the job hands the capped diff to a one-shot subagent through the host's `subagents` seam. Completion reaches the session through the host's `dsh-tool-jobs` consumer; the model reads it with `job_output` and publishes it with `review_post`.
 - **CI composite action / review bot / status-check gate.** The repo ships a composite action (`action.yml`) that reviews PRs, fixes CI, and writes the report; a polling review bot posts idempotent inline comments; and a status-check gate publishes the verdict per PR head commit. The one-shot `ci_run` tool drives the headless run. Every write stays approval-gated.
 
 ## Permissions & data
 
 - **Permissions**: writes ride the official approval seam; nothing is re-implemented or bypassed. The plugin declares `network:outbound` and `filesystem:write` in its workshop manifest.
 - **Data**: the review report lives in process memory keyed by job id; nothing durable is written to disk.
-- **Session log**: the plugin adds no custom session event types; all model-visible content flows through host-logged surfaces (`tool/result`, `user/message`, `command/run`, `approval/asked`…).
+- **Session log**: the plugin adds no custom session event types; all model-visible content flows through host-logged surfaces (`tool/result`, `user/message`, `command/run`, `approval/asked`…). The notices commands queue carry the plugin's own merge-extensible source kind, `{ kind: 'dsh-github', form: 'notice', summary }` — the host has no catch-all `plugin` kind, and its session-format admission path refuses one outright.
 
 ## Security boundaries
 
