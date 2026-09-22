@@ -65,9 +65,9 @@ describe('review job lifecycle', () => {
     const id = startReviewJob(jobs, state, { repo: 'o/r', pr: 7, label: 'review PR #7', owner: new MockAgent() })
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('completed')
-    expect(done.output).toContain('1 finding(s)')
-    expect(done.output).toContain('CI: 1 check(s), 0 pending, 0 failed')
-    expect(done.output).toContain('existing review comments: 2')
+    expect(done.result).toContain('1 finding(s)')
+    expect(done.result).toContain('CI: 1 check(s), 0 pending, 0 failed')
+    expect(done.result).toContain('existing review comments: 2')
     expect(state.records.get(id)?.status).toBe('completed')
     expect(state.records.get(id)?.headSha).toBe('abc123')
     expect(state.records.get(id)?.report?.findings).toHaveLength(1)
@@ -85,8 +85,8 @@ describe('review job lifecycle', () => {
     const id = startReviewJob(jobs, state, { repo: 'o/r', pr: 7, label: 'review PR #7', owner: new MockAgent() })
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('completed')
-    expect(done.output).toContain('CI: unavailable')
-    expect(done.output).toContain('existing review comments: unavailable')
+    expect(done.result).toContain('CI: unavailable')
+    expect(done.result).toContain('existing review comments: unavailable')
   })
 
   it('honors per-job options: includeCi and includeComments off', async () => {
@@ -107,8 +107,8 @@ describe('review job lifecycle', () => {
     const id = startReviewJob(jobs, state, { repo: 'o/r', pr: 7, label: 'review PR #7', owner: new MockAgent(), includeCi: false, includeComments: false })
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('completed')
-    expect(done.output).not.toContain('CI:')
-    expect(done.output).not.toContain('existing review comments')
+    expect(done.result).not.toContain('CI:')
+    expect(done.result).not.toContain('existing review comments')
     expect(diffCalls).toBe(1)
     expect(ciCalls).toBe(0)
     expect(commentCalls).toBe(0)
@@ -125,7 +125,7 @@ describe('review job lifecycle', () => {
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('failed')
     expect(done.detail).toBe('no GitHub token')
-    expect(done.output).toContain('gh auth login')
+    expect(done.result).toContain('gh auth login')
     expect(JSON.stringify(done)).not.toContain(TOKEN)
   })
 
@@ -193,7 +193,7 @@ describe('model review (subagent seam)', () => {
     const done = await jobs.hooks(id).done
     expect(done.status).toBe('completed')
     expect(done.detail).toContain('model review')
-    expect(done.output).toBe('model review text')
+    expect(done.result).toBe('model review text')
     expect(state.records.get(id)?.report?.postBody).toBe('model review text')
     expect(state.records.get(id)?.report?.findings).toEqual([])
     expect(subagents.calls).toHaveLength(1)

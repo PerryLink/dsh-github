@@ -8,8 +8,9 @@
  * supported harness version.
  * @module dsh-github/types
  */
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { UserMessage } from '@deepseek-ai/dsh-llm/message'
-import type { JobId, JobStart } from '@deepseek-ai/dsh-jobs'
+import type { JobId, JobSpec } from '@deepseek-ai/dsh-jobs'
 import type { SubagentRun, SubagentStartRequest } from '@deepseek-ai/dsh-subagent'
 
 declare module '@deepseek-ai/dsh-jobs' {
@@ -21,10 +22,15 @@ declare module '@deepseek-ai/dsh-jobs' {
   }
 }
 
-/** Minimal live-agent view: only the members dsh-github touches. */
-export interface GithubAgent {
-  /** Stable session-scoped id. */
-  readonly id: string
+/**
+ * Live-agent view: the host's public `Agent` handle (its session-backed `id`)
+ * plus the members dsh-github touches. Extending the official face keeps this
+ * structurally assignable to the runtime object — the official job registry
+ * fences access by `SessionId`, and the approval seam pins policy on an
+ * `Agent`, so a hand-copied mirror with a plain `string` id would not compile
+ * at either call site.
+ */
+export interface GithubAgent extends Agent {
   /** Live driver state; decides followup (idle) vs inject (busy). */
   readonly status: 'idle' | 'running'
   /** Queue context for the next pre-step without waking the driver. */
@@ -66,35 +72,26 @@ export interface CommandsService {
 /** Registry-issued background-job id (the official branded `JobId`). */
 export type GithubJobId = JobId
 
-/** Producer declaration passed to the job registry's start (official `JobStart`). */
-export type JobStartSpec = JobStart
+/** Producer declaration passed to the job registry's start (official `JobSpec`). */
+export type JobStartSpec = JobSpec
 
 /** Re-export the official job seam faces the plugin consumes. */
 export type {
   JobHooks,
   JobOutcome,
-  JobSnapshot,
+  JobSpec,
+  JobView,
   JobRegistry,
 } from '@deepseek-ai/dsh-jobs'
 
-/** Closed approval outcomes; `allowed-once` is the only grant. */
-export type ApprovalOutcome = 'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'
-
-/** Readonly same-process permission question. */
-export interface ApprovalRequest {
-  readonly agent: GithubAgent
-  readonly toolName: string
-  readonly callId?: string
-  readonly reason?: string
-  readonly signal?: AbortSignal
-}
-
-/** Approval dispatch service subset used by dsh-github. */
-export interface ApprovalService {
-  request(req: ApprovalRequest): Promise<ApprovalOutcome>
-  /** Switch one live agent's policy; the CI driver pins `'never'` (auto-grant, no escalation). */
-  setPolicy(agent: GithubAgent, policy: 'ask' | 'never'): void
-}
+/**
+ * Closed approval outcomes; `allowed-once` is the only grant.
+ *
+ * Re-exported from the host seam rather than re-declared: `ctx.approval` is
+ * the host's own `ApprovalService` (declared by `@deepseek-ai/dsh-user-approval`),
+ * so a locally-declared member of the same name could not merge with it.
+ */
+export type { ApprovalOutcome } from '@deepseek-ai/dsh-user-approval/types'
 
 /** Host subagent seam subset used by dsh-github's model review: the official
  * run/request faces, with the plugin's minimal agent view as the parent. */
@@ -109,6 +106,5 @@ export interface SubagentsService {
 declare module '@deepseek-ai/cordis' {
   interface Context {
     commands: CommandsService
-    approval: ApprovalService
   }
 }

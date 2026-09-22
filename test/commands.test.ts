@@ -76,6 +76,13 @@ describe('/pr command', () => {
     expect(busy.followed).toHaveLength(0)
   })
 
+  it('attributes every queued notice to this plugin, never the retired kind "plugin"', async () => {
+    const services = await loaded()
+    const agent = new MockAgent()
+    await services.commands.run('pr', 'create t', agent)
+    expect(agent.followed[0]?.source).toEqual({ kind: 'dsh-github', form: 'notice', summary: 'The user ran /pr create "t". Create a GitHub pull request by calling the pr_create tool.' })
+  })
+
   it('mentions uncommitted changes and unpushed commits', async () => {
     const services = await loaded({}, {
       'status --porcelain=v1': 'M src/a.ts\n',
@@ -116,7 +123,18 @@ describe('/review command', () => {
     const result = await services.commands.run('review', 'o/r#7', agent)
     expect(result.kind).toBe('success')
     expect(result.text).toContain('github-review-1')
-    expect(services.jobs.startCalls[0]).toMatchObject({ kind: 'github-review', owner: agent })
+    expect(services.jobs.startCalls[0]).toMatchObject({ kind: 'github-review', owner: agent.id })
+  })
+
+  it('owns the job by the bare session id, not by the agent object', async () => {
+    // Host 0.1.7-alpha.1 fenced the registry on `SessionId` (no `Agent`
+    // union), and dsh-tool-jobs' completion reporter reads that owner back.
+    const services = await loaded()
+    const agent = new MockAgent()
+    await services.commands.run('review', 'o/r#7', agent)
+    const owner = services.jobs.startCalls[0]?.owner
+    expect(owner).toBe('session-1')
+    expect(typeof owner).toBe('string')
   })
 
   it('parses bare numbers via the configured repo', async () => {
@@ -133,8 +151,8 @@ describe('/review command', () => {
     const jobId = [...services.jobs.records.keys()][0] as string
     const done = await services.jobs.hooks(jobId).done
     expect(done.status).toBe('completed')
-    expect(done.output).not.toContain('CI:')
-    expect(done.output).not.toContain('existing review comments')
+    expect(done.result).not.toContain('CI:')
+    expect(done.result).not.toContain('existing review comments')
   })
 
   it('rejects a bad --max-diff value', async () => {

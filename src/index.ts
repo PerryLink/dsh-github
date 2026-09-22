@@ -26,11 +26,6 @@
  * @module dsh-github
  */
 import type { Context } from '@deepseek-ai/cordis'
-// Type-only: loads the dsh-settings `Context.settings` augmentation; the
-// package removed its `settingsNamespace` runtime helper on the published
-// 0.1.2-alpha line.
-import type {} from '@deepseek-ai/dsh-settings'
-import z from '@deepseek-ai/schemastery'
 import { createState } from './state.ts'
 import { runGitCli, type GitRunner } from './git.ts'
 import { runGhCli, type GhRunner } from './credential.ts'
@@ -55,28 +50,14 @@ export { Config }
 export type { Config as PluginConfig }
 
 /**
- * User-settings namespace owned by this plugin. The card in the "Plugins"
- * settings section edits this namespace; the GitHub token itself travels
- * through the credentials seam (never a settings field), addressed by
- * {@link GithubSettingsSchema.tokenRef}. Spelled as the literal the settings
- * service brands internally (the `settingsNamespace` helper left the
- * published 0.1.2-alpha line).
+ * Profile entry id owned by this plugin. It no longer names a settings
+ * namespace: since 0.1.7-alpha.1 the host has no
+ * `ctx.settings.register(namespace, schema)` seam, and the browser card reads
+ * the plugin's ordinary cordis.yml Config instead. The GitHub token itself
+ * never rides configuration — it goes through the credentials seam, resolved
+ * per operation, addressed by `Config.tokenRef`.
  */
 export const GITHUB_SETTINGS_NAMESPACE = 'dsh-github'
-
-// Service Definition — GithubSettingsSchema (the browser card contract) and
-// the injectable PluginDeps runner surface used by tests.
-/**
- * Settings surface for the browser configuration card. Only the fields that
- * make sense to edit from the settings page are exposed here; every other
- * tunable stays a cordis.yml entry config field.
- */
-export const GithubSettingsSchema = z.object({
-  tokenRef: z.string().pattern(/^[A-Za-z_][A-Za-z0-9_]*$/).default('GITHUB_TOKEN')
-    .description('Credential reference / environment variable name holding the token.'),
-  tokenSource: z.union(['auto', 'credentials', 'env', 'gh']).default('auto')
-    .description('Token lookup source: auto tries credentials → env → gh in order.'),
-})
 
 /** Environment-dependent runners, injectable for tests. */
 export interface PluginDeps {
@@ -133,18 +114,16 @@ export function applyWithDeps(ctx: Context, config: PluginConfig, deps: PluginDe
 }
 
 /**
- * Apply the plugin: register tools, commands, the write-approval gate, and the
- * user-settings namespace backing the browser configuration card.
+ * Apply the plugin: register the GitHub tools, the human commands, and the
+ * write-approval gate.
+ *
+ * The plugin no longer registers a settings namespace: the host removed the
+ * `ctx.settings.register(namespace, schema)` seam in 0.1.7-alpha.1. Every
+ * tunable stays a cordis.yml `Config` field (see {@link Config}), and the
+ * token keeps travelling through the credentials seam, resolved per operation.
  * @param ctx - plugin context; the injected services are ready at this point.
  * @param config - validated Schemastery configuration (defaults applied).
  */
 export function apply(ctx: Context, config: PluginConfig) {
   applyWithDeps(ctx, config)
-  // Optional settings service (present in any profile built on dsh-base):
-  // register the namespace the "Plugins" settings card edits. The token
-  // literal itself never rides this namespace — it goes through the
-  // credentials seam, resolved per operation.
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(GITHUB_SETTINGS_NAMESPACE, GithubSettingsSchema)
-  })
 }

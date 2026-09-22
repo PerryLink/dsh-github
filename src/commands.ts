@@ -11,6 +11,8 @@
  * @module dsh-github/commands
  */
 import { createUserMessage } from '@deepseek-ai/dsh-llm/message'
+// Type-only: declares this plugin's producer-owned message source kind.
+import type {} from './message-source.ts'
 import { readGitState } from './git.ts'
 import { startReviewJob } from './jobs.ts'
 import type { CommandDefinition, CommandInvocation, CommandResult, CommandsService, GithubAgent, GithubJobId, JobRegistry } from './types.ts'
@@ -25,7 +27,7 @@ function notify(agent: GithubAgent, text: string): void {
   const summary = text.split('\n')[0] ?? ''
   const message = createUserMessage({
     content: [{ type: 'text', text }],
-    source: { kind: 'plugin', plugin: 'dsh-github', form: 'notice', summary },
+    source: { kind: 'dsh-github', form: 'notice', summary },
   })
   if (agent.status === 'idle') agent.followup(message)
   else agent.inject(message)
@@ -97,8 +99,9 @@ export function registerReviewCommand(commands: CommandsService, jobs: JobRegist
         }
         const outcome = jobs.kill(
           jobId as GithubJobId,
-          // The runtime object is the host's Agent; GithubAgent is this plugin's minimal view.
-          invocation.agent as unknown as Parameters<typeof jobs.kill>[1],
+          // The official registry fences access by the caller's session id,
+          // which the host's Agent carries as `id`.
+          invocation.agent.id,
           'user requested stop via /review stop',
         )
         return { kind: 'success', text: outcome === 'requested' ? `requested stop of job ${jobId}` : `job ${jobId} had already finished` }

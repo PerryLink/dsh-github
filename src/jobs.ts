@@ -13,6 +13,7 @@
  * GitHub.
  * @module dsh-github/jobs
  */
+import type { SessionId } from '@deepseek-ai/dsh-session'
 import { analyzeDiff, type ReviewReport } from './review.ts'
 import type { GithubAgent, GithubJobId, JobOutcome, JobRegistry, JobStartSpec } from './types.ts'
 import type { GithubState, ReviewJobRecord } from './state.ts'
@@ -82,9 +83,9 @@ export function startReviewJob(registry: JobRegistry, state: GithubState, input:
   const spec: JobStartSpec = {
     kind: REVIEW_JOB_KIND,
     label: input.label,
-    // The runtime object is the host's Agent; GithubAgent is this plugin's
-    // documented minimal view of it (see types.ts).
-    owner: input.owner as unknown as NonNullable<JobStartSpec['owner']>,
+    // The official spec fences access by the owning session id, and the host's
+    // Agent carries exactly that as `id` (see types.ts).
+    owner: input.owner.id as SessionId,
     outputLimitBytes: 64 * 1024,
     run: () => runReviewWork(state, record, jobInput),
   }
@@ -115,7 +116,7 @@ function runReviewWork(state: GithubState, record: ReviewJobRecord, input: Requi
       if (!token.ok) {
         record.status = 'failed'
         record.error = token.error.message
-        return { status: 'failed', detail: 'no GitHub token', output: `${token.error.message}\n${token.error.guidance}` }
+        return { status: 'failed', detail: 'no GitHub token', result: `${token.error.message}\n${token.error.guidance}` }
       }
       const client = state.client(token.token.value)
 
@@ -165,8 +166,8 @@ function runReviewWork(state: GithubState, record: ReviewJobRecord, input: Requi
 
       record.status = 'completed'
       const detail = `${report.findings.length} finding(s)`
-      const output = [report.summary, ...notes].join('\n')
-      return { status: 'completed', detail, output }
+      const result = [report.summary, ...notes].join('\n')
+      return { status: 'completed', detail, result }
     } catch (error) {
       const aborted = abortedOutcome(controller, cancelReason)
       if (aborted !== null) {
@@ -225,7 +226,7 @@ async function runModelReview(
     // startReviewJob fails loud first; this is unreachable in practice but keeps the type honest.
     record.status = 'failed'
     record.error = 'model review requires the subagent seam'
-    return { status: 'failed', detail: 'model review unavailable', output: 'Model review requires the subagent seam; set reviewMode to "static" or load @deepseek-ai/dsh-subagent with a provider.' }
+    return { status: 'failed', detail: 'model review unavailable', result: 'Model review requires the subagent seam; set reviewMode to "static" or load @deepseek-ai/dsh-subagent with a provider.' }
   }
   const provider = state.config.modelReviewProvider ?? subagents.list()[0]
   if (provider === undefined) {
@@ -234,7 +235,7 @@ async function runModelReview(
     return {
       status: 'failed',
       detail: 'no subagent provider',
-      output: 'No subagent provider is registered on the subagents seam. Load a provider package '
+      result: 'No subagent provider is registered on the subagents seam. Load a provider package '
         + '(e.g. @deepseek-ai/dsh-subagent-spawn-in-process), or set reviewMode to "static".',
     }
   }
@@ -265,7 +266,7 @@ async function runModelReview(
         truncated,
       }
       record.status = 'completed'
-      return { status: 'completed', detail: `model review (${provider})`, output: text }
+      return { status: 'completed', detail: `model review (${provider})`, result: text }
     } finally {
       await run.dispose()
     }

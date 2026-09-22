@@ -7,20 +7,22 @@
 import { Context } from '@deepseek-ai/cordis'
 import { Config, applyWithDeps, type PluginConfig } from '../src/index.ts'
 import type { ApprovalOutcome, ApprovalRequest, CommandInvocation, CommandResult, JobHooks, JobStartSpec } from '../src/types.ts'
+import { JobId } from '@deepseek-ai/dsh-jobs'
+import { SessionId } from '@deepseek-ai/dsh-session'
 
 /** Fake agent implementing the minimal structural view dsh-github consumes. */
 export class MockAgent {
-  id = 'session-1'
+  id = SessionId('session-1')
   status: 'idle' | 'running' = 'idle'
-  injected: Array<{ text: string; summary: string }> = []
-  followed: Array<{ text: string; summary: string }> = []
+  injected: Array<{ text: string; summary: string; source: unknown }> = []
+  followed: Array<{ text: string; summary: string; source: unknown }> = []
 
   inject(message: { content: Array<{ text: string }>; source: { summary: string } }): void {
-    this.injected.push({ text: message.content.map(block => block.text).join('\n'), summary: message.source.summary })
+    this.injected.push({ text: message.content.map(block => block.text).join('\n'), summary: message.source.summary, source: message.source })
   }
 
   followup(message: { content: Array<{ text: string }>; source: { summary: string } }): void {
-    this.followed.push({ text: message.content.map(block => block.text).join('\n'), summary: message.source.summary })
+    this.followed.push({ text: message.content.map(block => block.text).join('\n'), summary: message.source.summary, source: message.source })
   }
 }
 
@@ -93,7 +95,7 @@ interface JobRecord {
   state: 'running' | 'stopping' | 'completed' | 'killed' | 'failed'
 }
 
-/** Job registry mock implementing start/kill/get semantics. */
+/** Job registry mock implementing the official start/kill/get semantics. */
 export class MockJobs {
   nextId = 1
   records = new Map<string, JobRecord>()
@@ -105,7 +107,7 @@ export class MockJobs {
     this.startCalls.push(spec)
     const id = `${spec.kind}-${this.nextId}`
     this.nextId += 1
-    const record: JobRecord = { spec, hooks: spec.run(), state: 'running' }
+    const record: JobRecord = { spec, hooks: spec.run({ id: JobId(id), append: () => {}, updateProgress: () => {} }), state: 'running' }
     void record.hooks.done.then((outcome) => {
       record.state = outcome.status
     })
@@ -113,7 +115,7 @@ export class MockJobs {
     return id
   }
 
-  kill(id: string, _caller?: unknown, reason?: string): 'requested' | 'already-finished' {
+  kill(id: string, _caller?: SessionId, reason?: string): 'requested' | 'already-finished' {
     const record = this.records.get(id)
     if (record === undefined) throw new Error(`unknown job ${id}`)
     if (record.state !== 'running') return 'already-finished'

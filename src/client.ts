@@ -1,22 +1,23 @@
 /**
- * dsh-github browser half — one card in the "Plugins" settings section.
+ * dsh-github browser half — one card in the Plugins page's Official group.
  *
- * The card edits the `dsh-github` settings namespace and lets the user fill
- * the GitHub token directly from the settings page. The token literal never
- * rides the settings document: it is written through the credentials domain,
- * addressed by the reference the namespace names (`tokenRef`, default
- * `GITHUB_TOKEN`), which is exactly where the host half resolves it — per
- * operation, no restart needed.
+ * The card reports and edits the GitHub token. The token literal never rides
+ * the settings document: it is written through the credentials domain,
+ * addressed by the reference the plugin's cordis.yml `Config.tokenRef` names
+ * (default `GITHUB_TOKEN`), which is exactly where the host half resolves it —
+ * per operation, no restart needed.
  *
- * The card registers into the Plugins page's `plugins.item` list slot and
- * renders the two views the page asks for: `summary` is the one-liner under
- * the card's title, `page` is the form with its own save control. The page
- * draws the title, icon, and crumb itself; buttons come from the shared
- * primitives.
+ * Since host 0.1.7-alpha.1 the page owns configuration: the card renders the
+ * `summary` one-liner and the `page` body from the `plugins.item` owner props
+ * (`view`, and the `form` the Plugins page supplies), instead of binding a
+ * `settingsScope` itself — that service, `settings.plugin.item`'s old shape,
+ * and the `dsh-settings-file` package behind them were all removed. The card
+ * therefore reads `tokenRef` from `form.state.value` and never writes the
+ * settings document; the credential is written through the credentials
+ * domain, which is a different seam and stayed.
  *
- * The shipped `lib/client.js` is the __ModuleLoader__ bundle built from this
- * module (plain ESM here; the bundle wraps it in the loader factory). The
- * browser module loader executes that bundle, not this file.
+ * The shipped `lib/client.js` is the built bundle of this module. The browser
+ * module loader executes that bundle, not this file.
  * @module @perrylink/dsh-github/client
  */
 import { createElement, useState, type ChangeEvent, type ReactNode } from 'react'
@@ -25,15 +26,15 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /**
- * The settings-namespace scope contract the card consumes, declared locally:
- * the owning package differs across host lines (the removed
- * `dsh-client-runtime` on `0.1.1-rc.2`, `dsh-client-ui-settings` on
- * `0.1.2-alpha.1`), and the runtime contract is structural. Mirrors the
- * owning seam's `SettingsScope`/`SettingsScopeSnapshot` faces.
+ * The configuration-form contract the card consumes, declared locally: a
+ * client package must not import a Host package, and the browser half of the
+ * seam lives in `@deepseek-ai/dsh-client-ui-settings`, which is an optional
+ * peer. Mirrors that package's `ConfigForm`/`ConfigFormSnapshot` faces — the
+ * ones the Plugins page hands a `plugins.item` entry as `form`.
  */
 
-/** Client-side sync state of one settings namespace. */
-export interface SettingsScopeSnapshot<T> {
+/** Client-side sync state of one configuration entry. */
+export interface ConfigFormSnapshot<T> {
   /** `loading` until the first accepted section, `ready` while one stands, `unavailable` otherwise. */
   status: 'loading' | 'ready' | 'unavailable'
   /** Last accepted schema-resolved section; undefined before the first acceptance. */
@@ -50,10 +51,10 @@ export interface SettingsScopeSnapshot<T> {
   mode: 'host' | 'memory'
 }
 
-/** Reactive owner handle over one namespace's durable section. */
-export interface SettingsScope<T> {
+/** Reactive owner handle over one configuration entry's accepted values. */
+export interface ConfigForm<T> {
   /** @returns the current sync snapshot (stable reference until the next change). */
-  getSnapshot(): SettingsScopeSnapshot<T>
+  getSnapshot(): ConfigFormSnapshot<T>
   /**
    * Observe snapshot replacements.
    * @param listener - invoked after each snapshot change.
@@ -108,7 +109,7 @@ export function createSnapshotStore<T>(init: T): SnapshotStore<T> {
 
 /** Namespace of the GitHub capability. Spelled here rather than imported: a client package must not depend on a Host package. */
 export const GITHUB_NS = 'dsh-github'
-/** Credential reference the provider resolves when the section names none. */
+/** Credential reference the provider resolves when the configuration names none. */
 export const DEFAULT_TOKEN_REF = 'GITHUB_TOKEN'
 
 /** Locale copy the card renders. */
@@ -161,9 +162,7 @@ export const zh: GithubCardLocale = {
 
 /** The card's full state, as projected into its snapshot store. */
 export interface GithubCardState {
-  /** False while the namespace is not served to this client; the card renders nothing. */
-  available: boolean
-  /** Whether the Host settings document accepts writes. */
+  /** Whether the Host configuration document accepts writes. */
   writable: boolean
   /** Whether the referenced credential is configured. */
   configured: boolean
@@ -207,43 +206,57 @@ export interface CredentialsApi {
   set(ref: string, value: string): Promise<unknown>
 }
 
-/** The section's settings value shape (subset of the Host schema). */
-interface GithubSettingsSection {
+/** The configuration the card reads its credential reference from (the plugin's own `Config` subset). */
+interface GithubCardConfig {
   tokenRef?: string
 }
 
 /**
- * Bridges the `dsh-github` scope and the credentials domain onto the card.
- * The token is the one control that does not live in the section: its literal
- * never rides a response, so the card learns only whether one is configured
- * and writes it through the credentials domain, addressed by the reference the
- * section names.
+ * Bridges the page-supplied configuration form and the credentials domain onto
+ * the card. The token is the one control that does not live in the
+ * configuration: its literal never rides a response, so the card learns only
+ * whether one is configured and writes it through the credentials domain,
+ * addressed by the reference `Config.tokenRef` names.
  */
 export class GithubCardController {
-  private readonly scope: SettingsScope<GithubSettingsSection>
+  private readonly form: ConfigForm<GithubCardConfig> | undefined
   private readonly api: CredentialsApi
   private readonly store: SnapshotStore<GithubCardState>
   private saving = false
   private failed = false
   private credential: { ref: string; configured: boolean; writable: boolean } = { ref: '', configured: false, writable: true }
 
-  constructor(scope: SettingsScope<GithubSettingsSection>, api: CredentialsApi) {
-    this.scope = scope
+  /**
+   * @param form - the configuration form the Plugins page hands this entry, or
+   *   `undefined` when the page supplied none (the card then reads the default
+   *   reference and offers the credential control alone).
+   * @param api - the credentials Remote namespace.
+   */
+  constructor(form: ConfigForm<GithubCardConfig> | undefined, api: CredentialsApi) {
+    this.form = form
     this.api = api
     this.store = createSnapshotStore(this.projection())
-    scope.subscribe(() => {
+    form?.subscribe(() => {
       void this.readCredential()
       this.publish()
     })
     void this.readCredential()
   }
 
+  /** Whether the Host configuration document accepts writes. */
+  writable(): boolean {
+    return this.form?.getSnapshot().writable ?? true
+  }
+
+  /** The configuration form this controller reads (identity-compared by the caller). */
+  formOf(): ConfigForm<GithubCardConfig> | undefined {
+    return this.form
+  }
+
   /** Project the card's full state for its snapshot store. */
   projection(): GithubCardState {
-    const snapshot = this.scope.getSnapshot()
     return {
-      available: snapshot.status === 'ready',
-      writable: snapshot.writable,
+      writable: this.writable(),
       configured: this.credential.configured,
       credentialWritable: this.credential.writable,
       saving: this.saving,
@@ -252,9 +265,9 @@ export class GithubCardController {
     }
   }
 
-  /** The credential reference the section names, or the provider default. */
+  /** The credential reference the configuration names, or the provider default. */
   refOf(): string {
-    const declared = this.scope.getSnapshot().value?.tokenRef
+    const declared = this.form?.getSnapshot().value?.tokenRef
     return declared !== undefined && declared.length > 0 ? declared : DEFAULT_TOKEN_REF
   }
 
@@ -337,7 +350,7 @@ export interface GithubCardProps {
   t: (key: keyof GithubCardLocale) => string
   useGithubCard: (selector: (snapshot: GithubCardState) => GithubCardState) => GithubCardState
   submit: (value: string) => Promise<boolean>
-  /** The view the Plugins page asks for: the one-liner under the title, or the form. */
+  /** The view the Plugins page asks for: the one-liner under the title, or the page body. */
   view: 'summary' | 'page'
 }
 
@@ -345,13 +358,13 @@ export interface GithubCardProps {
  * Render the GitHub card. `summary` renders the one-liner the Plugins page
  * places under the card's title (the description plus the token state badge);
  * `page` renders the token control and the save/discard row on the plugin's
- * own page. Renders nothing while the namespace is unavailable.
+ * own page. The page supplies the configuration form, so the card never
+ * depends on a served namespace to render.
  */
 export function GithubCard(props: GithubCardProps): ReactNode {
   const { t } = props
   const state = props.useGithubCard((snapshot) => snapshot)
   const [draft, setDraft] = useState('')
-  if (!state.available) return null
   if (props.view === 'summary') {
     return createElement(
       'span',
@@ -436,8 +449,13 @@ export function GithubCard(props: GithubCardProps): ReactNode {
 
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'dsh-github'
-/** Required services (cordis fiber inject). */
-export const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope', 'remote.credentials']
+/**
+ * Required services (cordis fiber inject). `settingsScope` is gone: host
+ * 0.1.7-alpha.1 removed it, and the Plugins page now hands the configuration
+ * form to the `plugins.item` entry instead. `@deepseek-ai/dsh-client-ui-plugin-manager`
+ * owns that slot, so it must be composed for the card to mount at all.
+ */
+export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.credentials']
 
 export interface ClientContextLike {
   get(service: string): unknown
@@ -450,23 +468,38 @@ export interface ClientContextLike {
     $on(event: string, listener: (ref: string) => void): unknown
     credentials: CredentialsApi
   }
-  settingsScope: { bind<T>(spec: { namespace: string }): SettingsScope<T> }
   slots: {
     inject(slot: string, factory: () => unknown): unknown
     register(options: Record<string, unknown>, component: unknown): unknown
   }
 }
 
-/** Mount the GitHub configuration card into the Plugins page's Official group. */
+/** The `form` member the Plugins page hands a `plugins.item` entry. */
+interface PluginConfigViewProps {
+  readonly view: 'summary' | 'page'
+  readonly form?: ConfigForm<GithubCardConfig> | undefined
+}
+
+/**
+ * Mount the GitHub configuration card into the Plugins page's Official group.
+ *
+ * The form arrives per render, so the controller is rebuilt whenever the page
+ * supplies a different one — the page's own form owner stays authoritative and
+ * the card keeps no second copy of the accepted values.
+ * @param ctx - the browser plugin context.
+ */
 export function apply(ctx: ClientContextLike): void {
   const t = ctx.locale.bind(NS)
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-github: card dictionaries')
-  const github = new GithubCardController(
-    ctx.settingsScope.bind<GithubSettingsSection>({ namespace: NS }),
-    ctx.remote.credentials,
-  )
+  let github: GithubCardController | undefined
+  const controllerFor = (form: PluginConfigViewProps['form']): GithubCardController => {
+    if (github === undefined || github.formOf() !== form) {
+      github = new GithubCardController(form, ctx.remote.credentials)
+    }
+    return github
+  }
   ctx.effect(
-    () => ctx.remote.$on('credentials/reference-updated', (ref) => github.refreshCredential(ref)),
+    () => ctx.remote.$on('credentials/reference-updated', (ref) => github?.refreshCredential(ref)),
     'dsh-github: credential invalidations',
   )
   ctx.slots.inject('plugins.item', () => ctx.slots.register(
@@ -476,7 +509,7 @@ export function apply(ctx: ClientContextLike): void {
       order: 100,
       label: () => t('githubTitle'),
       locale: NS,
-      inject: () => github.inject(),
+      inject: () => controllerFor(github?.formOf()).inject(),
     },
     GithubCard,
   ))
