@@ -6,6 +6,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.11] - 2026-09-22
+
 ### Changed
 
 - **Adapt to host `dsh-v0.1.7-alpha.1`.** Five confirmed breakages are fixed; the plugin no longer compiles or runs against the `0.1.6-alpha.2` faces:
