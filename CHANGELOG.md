@@ -6,6 +6,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Ship `lib/client.js` as the browser bundle the DSH web shell can install, not as `tsc` output.** `0.7.12` published the Node-side compile of `src/client.ts` — top-level `import`/`export` — at `exports["./client"].default`, but `@deepseek-ai/dsh-client-modules` installs that file with `document.createElement('script')` and concatenates several packages into one combo script per batch. The browser therefore threw `SyntaxError: Cannot use import statement outside a module`, the whole batch failed to parse, and every client entry in it stayed unactivated behind a **"Failed to load plugins"** page naming `@perrylink/dsh-github`. `pnpm build` now emits the artifact in the loader's shape — `window.__ModuleLoader__.load({ id: '@perrylink/dsh-github', factory: (require) => { … } })`, with `react` and `@deepseek-ai/dsh-client-ui-primitives` left as `require(...)` for the shell's module table and everything else inlined (`scripts/client-bundle.mjs`, `scripts/build-client.mjs`) — and `esbuild` joins the devDependencies for it. The previously published `lib/client.js` was a `tsc` artifact, so this changes a shipped file; the cordis plugin face (`apply`, `inject`) and the `./client` types are unchanged.
+- **Fail the build, install, and CI instead of shipping that artifact again.** `scripts/prepare.mjs` now requires *both* `typescript` and `esbuild` before it compiles anything — running `tsc` alone overwrites a good committed `lib/client.js` with plain ESM — and accepts committed artifacts only when they are a real bundle. `scripts/verify-artifacts.mjs` and the new `test/client-bundle.test.ts` execute the shipped file the way the shell does (as a classic script, against a stub `window.__ModuleLoader__`), so a leftover `import` fails with the same `SyntaxError` the browser reports, and a bare specifier the module table cannot answer fails as well.
+
 ## [0.7.15] - 2026-09-25
 
 ### Changed
@@ -31,6 +36,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Move the `@deepseek-ai/dsh-*` dev/test pins to the published `0.1.7-alpha.2` line and record `0.1.7-alpha.2` in `dshWorkshop.compatibility.dshVersions`; the monthly Compat workflow now installs the `0.1.7-alpha.2` host (`dsh-base` + `dsh-headless`) instead of `0.1.6-alpha.2`.
 - Append the fourth host clause `|| >=0.1.7-0 <0.2.0` to `engines.dsh` and to all thirteen `@deepseek-ai/dsh-*` peer ranges, and raise the `@deepseek-ai/cordis` peer and dev/test pin to `^4.0.4`. Under semver's prerelease rule a range whose only prerelease comparators sit on earlier tuples cannot admit a later alpha, so the three-clause band excluded the very host line this release targets. No previously supported host line is dropped.
 - Move the `pnpm-workspace.yaml` `overrides` block with the pins. Its four self-referential rows exist so a transitive peer's prerelease request resolves onto ONE copy of the host type graph instead of a second one; their values now follow the devDep pin to `0.1.7-alpha.2`. The KEYS stay the ranges a transitive peer spells (`@deepseek-ai/dsh-agent@^0.1.7-alpha.1`, `@deepseek-ai/dsh-llm@^0.1.7-alpha.1`, `@deepseek-ai/dsh-llm@^0.1.2-alpha.3`, `@deepseek-ai/dsh-llm@^0.1.2-alpha.4`) — they match what asks, while the value is what it resolves to. Moving the devDeps alone would have left those requests resolving to the previous line and split this package's `UserMessage`/`ContentBlock` from the host's `Agent`, which is the failure the block was written for.
+
 
 ## [0.7.12] - 2026-09-22
 
