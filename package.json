@@ -103,7 +103,7 @@
       "filesystem:write"
     ],
     "compatibility": {
-      "dshVersions": ["0.1.2-rc.1","0.1.5-rc.2"]
+      "dshVersions": ["0.1.2-rc.1","0.1.5-rc.2","0.1.7-alpha.2"]
     },
     "capability": {
       "id": "gh-ci",
@@ -122,7 +122,7 @@
     "@deepseek-ai/schemastery": "^3.18.3"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.3",
+    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-agent": ">=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0 || >=0.1.7-0 <0.2.0",
     "@deepseek-ai/dsh-client-ui-plugin-manager": ">=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0 || >=0.1.7-0 <0.2.0",
     "@deepseek-ai/dsh-client-ui-primitives": ">=0.1.2-rc.1 <0.2.0 || >=0.1.5-alpha.1 <0.2.0 || >=0.1.6-0 <0.2.0 || >=0.1.7-0 <0.2.0",
@@ -156,7 +156,7 @@
     "@deepseek-ai/dsh-util-values": "0.1.7-alpha.2",
     "@deepseek-ai/dsh-agent": "0.1.7-alpha.2",
     "@deepseek-ai/dsh-attachment": "0.1.7-alpha.2",
-    "@deepseek-ai/cordis": "^4.0.3",
+    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/cordis-plugin-loader": "^1.0.4",
     "@deepseek-ai/dsh-credentials": "0.1.7-alpha.2",
     "@deepseek-ai/dsh-jobs": "0.1.7-alpha.2",
