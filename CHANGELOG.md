@@ -4,7 +4,13 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.13] - 2026-09-23
+
+### Changed
+
+- Move the `@deepseek-ai/dsh-*` dev/test pins to the published `0.1.7-alpha.2` line and record `0.1.7-alpha.2` in `dshWorkshop.compatibility.dshVersions`; the monthly Compat workflow now installs the `0.1.7-alpha.2` host (`dsh-base` + `dsh-headless`) instead of `0.1.6-alpha.2`.
+- Append the fourth host clause `|| >=0.1.7-0 <0.2.0` to `engines.dsh` and to all thirteen `@deepseek-ai/dsh-*` peer ranges, and raise the `@deepseek-ai/cordis` peer and dev/test pin to `^4.0.4`. Under semver's prerelease rule a range whose only prerelease comparators sit on earlier tuples cannot admit a later alpha, so the three-clause band excluded the very host line this release targets. No previously supported host line is dropped.
+- Move the `pnpm-workspace.yaml` `overrides` block with the pins. Its four self-referential rows exist so a transitive peer's prerelease request resolves onto ONE copy of the host type graph instead of a second one; their values now follow the devDep pin to `0.1.7-alpha.2`. The KEYS stay the ranges a transitive peer spells (`@deepseek-ai/dsh-agent@^0.1.7-alpha.1`, `@deepseek-ai/dsh-llm@^0.1.7-alpha.1`, `@deepseek-ai/dsh-llm@^0.1.2-alpha.3`, `@deepseek-ai/dsh-llm@^0.1.2-alpha.4`) — they match what asks, while the value is what it resolves to. Moving the devDeps alone would have left those requests resolving to the previous line and split this package's `UserMessage`/`ContentBlock` from the host's `Agent`, which is the failure the block was written for.
 
 ## [0.7.12] - 2026-09-22
 
