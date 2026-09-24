@@ -50,7 +50,7 @@
 
 | 界面 | 状态 |
 |---|---|
-| Harness | DeepSeek Harness `dsh-v0.1.7-alpha.2`（兼容声明覆盖 `>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0 \|\| >=0.1.7-0 <0.2.0`；0.1.2-rc.1 于 2026-09-09 已适配）：评审任务改由裸 `SessionId` 归属、通知来源改为插件自有的 `dsh-github` kind（宿主的 `Agent \| SessionId` 联合与兜底 `kind: 'plugin'` 均已移除）；设置卡注册在 **Plugins 页**（Official 组，`plugins.item` 槽），并从 `dsh-client-ui-plugin-manager` 提供的 owner form 渲染，不再绑定已删除的 `ctx.settingsScope`；CI 驱动器通过官方 `ctx.approval.setPolicy` 策略缝自动放行；评审机器人以 `ctx.jobs` 后台任务轮询，并带定时器降级。2026-09-22 升级至 `0.1.7-alpha.1`（typecheck + typecheck:ci + 185 项单元测试全绿）。 |
+| Harness | DeepSeek Harness `dsh-v0.1.7-rc.1`（兼容声明覆盖 `>=0.1.2-rc.1 <0.2.0 \|\| >=0.1.5-alpha.1 <0.2.0 \|\| >=0.1.6-0 <0.2.0 \|\| >=0.1.7-0 <0.2.0`；0.1.2-rc.1 于 2026-09-09 已适配）：评审任务改由裸 `SessionId` 归属、通知来源改为插件自有的 `dsh-github` kind（宿主的 `Agent \| SessionId` 联合与兜底 `kind: 'plugin'` 均已移除）；设置卡注册在 **Plugins 页**（Official 组，`plugins.item` 槽），并从 `dsh-client-ui-plugin-manager` 提供的 owner form 渲染，不再绑定已删除的 `ctx.settingsScope`；CI 驱动器通过官方 `ctx.approval.setPolicy` 策略缝自动放行；评审机器人以 `ctx.jobs` 后台任务轮询，并带定时器降级。2026-09-24 升级至 `0.1.7-rc.1`（typecheck + typecheck:ci + 185 项单元测试全绿）。 |
 | Node | `^22.19.0 \|\| >=24.0.0` |
 | Platforms | 全部（host 插件；出站网络访问 GitHub） |
 | Model | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |
