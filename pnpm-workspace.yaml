@@ -24,21 +24,21 @@ allowBuilds:
 #
 # The first two rows are self-referential: a transitive peer asking for
 # ^0.1.7-alpha.1 otherwise resolves SEPARATELY from this package's own
-# 0.1.7-alpha.2 devDeps (pnpm matches a prerelease range only against its own
+# 0.1.7-rc.1 devDeps (pnpm matches a prerelease range only against its own
 # [major, minor, patch] tuple), which installs a second copy of the host type
 # graph and makes the plugin's UserMessage/ContentBlock disagree with the
 # host's Agent. Mirroring the devDep pin keeps one copy of each.
 overrides:
-  '@deepseek-ai/dsh-agent@^0.1.7-alpha.1': 0.1.7-alpha.2
-  '@deepseek-ai/dsh-llm@^0.1.7-alpha.1': 0.1.7-alpha.2
+  '@deepseek-ai/dsh-agent@^0.1.7-alpha.1': 0.1.7-rc.1
+  '@deepseek-ai/dsh-llm@^0.1.7-alpha.1': 0.1.7-rc.1
   # TypeScript follows every host package's peer imports, so ONE copy of the
   # host type graph must back the whole install: with dsh-llm resolved at two
   # versions, `Agent.followup`/`inject` took the 0.1.2-rc.1 `UserMessage` while
   # this package's own calls used 0.1.7-alpha.1, and no overload matched. These
-  # two rows pin the older references onto the 0.1.7-alpha.2 line the devDeps
+  # two rows pin the older references onto the 0.1.7-rc.1 line the devDeps
   # already name.
-  '@deepseek-ai/dsh-llm@^0.1.2-alpha.3': 0.1.7-alpha.2
-  '@deepseek-ai/dsh-llm@^0.1.2-alpha.4': 0.1.7-alpha.2
+  '@deepseek-ai/dsh-llm@^0.1.2-alpha.3': 0.1.7-rc.1
+  '@deepseek-ai/dsh-llm@^0.1.2-alpha.4': 0.1.7-rc.1
   '@deepseek-ai/dsh-acp@^0.1.2-alpha.3': 0.1.2-rc.1
   '@deepseek-ai/dsh-acp@^0.1.2-alpha.4': 0.1.2-rc.1
   '@deepseek-ai/dsh-acp-app@^0.1.2-alpha.3': 0.1.2-rc.1
@@ -535,8 +535,8 @@ overrides:
   '@deepseek-ai/dsh-workflow-worker-thread@^0.1.2-alpha.4': 0.1.2-rc.1
   '@deepseek-ai/dsh-workspace@^0.1.2-alpha.3': 0.1.2-rc.1
   '@deepseek-ai/dsh-workspace@^0.1.2-alpha.4': 0.1.2-rc.1
-  '@deepseek-ai/dsh-client-ui-primitives@>=0.1.0-rc.8 <0.2.0': 0.1.1-rc.2
-  '@deepseek-ai/dsh-client-ui-settings@>=0.1.1-rc.2 <0.2.0': 0.1.1-rc.2
-  '@deepseek-ai/dsh-tool-jobs@>=0.1.0-rc.8 <0.2.0': 0.1.1-rc.2
+  '@deepseek-ai/dsh-client-ui-primitives@>=0.1.0-rc.8 <0.2.0': 0.1.7-rc.1
+  '@deepseek-ai/dsh-client-ui-settings@>=0.1.1-rc.2 <0.2.0': 0.1.7-rc.1
+  '@deepseek-ai/dsh-tool-jobs@>=0.1.0-rc.8 <0.2.0': 0.1.7-rc.1
 
 verifyDepsBeforeRun: false
