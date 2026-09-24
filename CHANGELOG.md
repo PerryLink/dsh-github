@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.14] - 2026-09-24
+
+### Fixed
+
+- **The save-in-progress spinner crashed on every host from `0.1.7-alpha.1` on.** The browser half imported `IconLoadingOutline16` from `@deepseek-ai/dsh-client-ui-primitives`, which no longer exports it: the client-wide visual unification dropped the size-in-the-name form, so the same icon is now exported once per weight as `IconLoadingOutlineRegular` / `IconLoadingOutlineMedium` and carries its size as a `size` prop. The destructured binding was therefore `undefined`, and `React.createElement(undefined, …)` throws `Element type is invalid` the moment the save control rendered its spinner. Only the identifier changed — the new component takes the same `{ size: 16 }` prop — so there is no behavioural difference. `src/client.ts` and the rebuilt `lib/client.js` both move to `IconLoadingOutlineRegular`.
+- **The type gate could not have caught the above.** Three `pnpm-workspace.yaml` overrides still pinned the client line to `0.1.1-rc.2`: `@deepseek-ai/dsh-client-ui-primitives@>=0.1.0-rc.8 <0.2.0`, `@deepseek-ai/dsh-client-ui-settings@>=0.1.1-rc.2 <0.2.0` and `@deepseek-ai/dsh-tool-jobs@>=0.1.0-rc.8 <0.2.0`. The first of those is the very package the browser half compiles against, so `tsc` resolved the stale `0.1.1-rc.2` type surface, which still exported the removed name, and the build stayed green on a call that could only throw at run time (`lib/client.js` is a build artifact of `src/client.ts`, and nothing in the test suite renders it). All three rows now follow the `0.1.7-rc.1` devDep line, and re-running the gate against the corrected graph reproduces the defect directly: `src/client.ts(25,11): error TS2724: '"@deepseek-ai/dsh-client-ui-primitives"' has no exported member named 'IconLoadingOutline16'`.
+
+### Changed
+
+- Move the `@deepseek-ai/dsh-*` dev/test pins to the published `0.1.7-rc.1` line and record `0.1.7-rc.1` in `dshWorkshop.compatibility.dshVersions`; the monthly Compat workflow now installs the `0.1.7-rc.1` host (`@deepseek-ai/dsh`, `dsh-base` + `dsh-headless`) instead of `0.1.7-alpha.2`. The four self-referential `pnpm-workspace.yaml` override values follow the pins, as in previous line moves.
+- **The `peerDependencies` ranges are unchanged, so no supported host line is dropped.** The existing four-clause band already ends in `|| >=0.1.7-0 <0.2.0`, which admits `0.1.7-rc.1`; `engines.dsh` is likewise untouched.
+
 ## [0.7.13] - 2026-09-23
 
 ### Changed

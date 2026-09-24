@@ -22,7 +22,7 @@
  */
 import { createElement, useState, type ChangeEvent, type ReactNode } from 'react'
 import {
-  Button, IconLoadingOutline16,
+  Button, IconLoadingOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 
 /**
@@ -434,7 +434,7 @@ export function GithubCard(props: GithubCardProps): ReactNode {
           size: 'sm',
           disabled: !state.writable || !dirty || state.saving,
           icon: state.saving
-            ? createElement('span', { className: 'ghc-spin' }, createElement(IconLoadingOutline16, { size: 16 }))
+            ? createElement('span', { className: 'ghc-spin' }, createElement(IconLoadingOutlineRegular, { size: 16 }))
             : undefined,
           onClick: async () => {
             const landed = await props.submit(draft)
