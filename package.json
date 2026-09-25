@@ -29,7 +29,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc --noEmitOnError && node scripts/fix-dts.mjs",
+    "build": "tsc --noEmitOnError && node scripts/build-client.mjs && node scripts/fix-dts.mjs",
+    "build:client": "node scripts/build-client.mjs",
     "prepare": "node scripts/prepare.mjs",
     "prepublishOnly": "npm run build && npm test",
     "test": "vitest run",
@@ -170,6 +171,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "18.3.31",
     "@vitest/coverage-v8": "3.2.0",
+    "esbuild": "0.28.2",
     "oxlint": "0.18.1",
     "react": "18.3.1",
     "typescript": "^5.7.0",
