@@ -1,5 +1,6 @@
 /**
- * dsh-github browser half — one card in the Plugins page's Official group.
+ * dsh-github browser half — one card on this plugin's own row in the Plugins
+ * page's Installed group.
  *
  * The card reports and edits the GitHub token. The token literal never rides
  * the settings document: it is written through the credentials domain,
@@ -8,13 +9,20 @@
  * per operation, no restart needed.
  *
  * Since host 0.1.7-alpha.1 the page owns configuration: the card renders the
- * `summary` one-liner and the `page` body from the `plugins.item` owner props
- * (`view`, and the `form` the Plugins page supplies), instead of binding a
- * `settingsScope` itself — that service, `settings.plugin.item`'s old shape,
- * and the `dsh-settings-file` package behind them were all removed. The card
- * therefore reads `tokenRef` from `form.state.value` and never writes the
- * settings document; the credential is written through the credentials
- * domain, which is a different seam and stayed.
+ * `summary` one-liner and the `page` body from the seat's props (`view`, and
+ * the `form` the Plugins page supplies for the row's own configuration entry),
+ * instead of binding a `settingsScope` itself — that service,
+ * `settings.plugin.item`'s old shape, and the `dsh-settings-file` package
+ * behind them were all removed. The card therefore reads `tokenRef` from
+ * `form.state.value` and never writes the settings document; the credential is
+ * written through the credentials domain, which is a different seam and stayed.
+ *
+ * The seat is this bundle's own row (`plugins.row.config`, keyed
+ * `<package>#<rowId>`) rather than the page's `plugins.item` list. That list is
+ * the page's **Official** group, where the host's own settings plugins mount, so
+ * a community bundle registering there is presented as an official plugin
+ * instead of an installed one. The row seat carries the same `{ view, form }`
+ * props, so the card itself is unchanged.
  *
  * The shipped `lib/client.js` is the built bundle of this module. The browser
  * module loader executes that bundle, not this file.
@@ -450,10 +458,22 @@ export function GithubCard(props: GithubCardProps): ReactNode {
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'dsh-github'
 /**
+ * Package name the bundle patch installs this plugin under. The row
+ * configuration seat is keyed `<package>#<rowId>`, so this and {@link ROW_ID}
+ * must agree with the package name and row `id` that `cordis.patch.yml`
+ * declares.
+ */
+export const PACKAGE_NAME = '@perrylink/dsh-github'
+/** Row id the bundle patch declares for this plugin's configuration entry. */
+export const ROW_ID = 'dsh-github'
+/** The `plugins.row.config` key this bundle's row mounts its card under. */
+export const ROW_CONFIG_KEY = `${PACKAGE_NAME}#${ROW_ID}`
+/**
  * Required services (cordis fiber inject). `settingsScope` is gone: host
  * 0.1.7-alpha.1 removed it, and the Plugins page now hands the configuration
- * form to the `plugins.item` entry instead. `@deepseek-ai/dsh-client-ui-plugin-manager`
- * owns that slot, so it must be composed for the card to mount at all.
+ * form to the bundle row's `plugins.row.config` seat instead.
+ * `@deepseek-ai/dsh-client-ui-plugin-manager` owns that slot, so it must be
+ * composed for the card to mount at all.
  */
 export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.credentials']
 
@@ -474,18 +494,21 @@ export interface ClientContextLike {
   }
 }
 
-/** The `form` member the Plugins page hands a `plugins.item` entry. */
+/** The `form` member the Plugins page hands a `plugins.row.config` entry. */
 interface PluginConfigViewProps {
   readonly view: 'summary' | 'page'
   readonly form?: ConfigForm<GithubCardConfig> | undefined
 }
 
 /**
- * Mount the GitHub configuration card into the Plugins page's Official group.
+ * Mount the GitHub configuration card on this bundle's own row.
  *
- * The form arrives per render, so the controller is rebuilt whenever the page
- * supplies a different one — the page's own form owner stays authoritative and
- * the card keeps no second copy of the accepted values.
+ * The card takes the row configuration seat (`plugins.row.config`), so it
+ * renders inside this plugin's row in the Plugins page's Installed group rather
+ * than in the page's Official list. The form arrives per render, so the
+ * controller is rebuilt whenever the page supplies a different one — the page's
+ * own form owner stays authoritative and the card keeps no second copy of the
+ * accepted values.
  * @param ctx - the browser plugin context.
  */
 export function apply(ctx: ClientContextLike): void {
@@ -502,10 +525,10 @@ export function apply(ctx: ClientContextLike): void {
     () => ctx.remote.$on('credentials/reference-updated', (ref) => github?.refreshCredential(ref)),
     'dsh-github: credential invalidations',
   )
-  ctx.slots.inject('plugins.item', () => ctx.slots.register(
+  ctx.slots.inject('plugins.row.config', () => ctx.slots.register(
     {
-      name: 'plugins.item',
-      id: NS,
+      name: 'plugins.row.config',
+      key: ROW_CONFIG_KEY,
       order: 100,
       label: () => t('githubTitle'),
       locale: NS,

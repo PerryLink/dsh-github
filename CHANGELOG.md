@@ -27,6 +27,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **`dsh.client.inject` omitted two modules the browser half requires.** `src/client.ts` imports `react` and `@deepseek-ai/dsh-client-ui-primitives`, and neither was declared, so the module graph did not guarantee they arrive before this row materializes. Both are now listed.
 
+- **The configuration card mounted in the Plugins page's Official group.** The browser half took the `plugins.item` seat, which the page renders through `renderGroup("official", …)` beside the host's own settings plugins (agent-loop, shell, subagent, web-search) — so this community bundle was presented as an official plugin rather than an installed one. The card now takes this bundle row's own seat, `plugins.row.config`, keyed `<package>#<rowId>`; both seats hand the card the same `{ view, form }` props, so the card itself is unchanged. `test/client-card-seat.test.ts` pins the seat and derives the key from `cordis.patch.yml` rather than restating it.
+
 ### Changed
 
 - **The client bundle is now covered by the gates that were missing it.** `scripts/verify-artifacts.mjs` executed only the host face; it now also runs the shipped client bundle against a stub `__ModuleLoader__`, asserts it registers exactly once under the package name, materializes its factory, and rejects top-level ESM. `test/client-bundle-contract.test.ts` asserts the same contract as a unit test — the 0.7.14 lesson ("`lib/client.js` is a build artifact of `src/client.ts`, and nothing in the test suite renders it") applied to the half that had no gate at all.
