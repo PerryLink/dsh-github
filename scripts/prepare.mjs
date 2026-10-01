@@ -14,6 +14,19 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const lib = join(root, 'lib')
 const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc')
 
+// The client bundle must satisfy the browser module-loader contract, and `tsc`
+// alone emits ESM that cannot register. Runs after either branch below; it is a
+// no-op when the committed artifact is already wrapped.
+const wrapClient = () => {
+  const wrap = spawnSync(process.execPath, [join(root, 'scripts', 'build-client.mjs')], {
+    cwd: root,
+    stdio: 'inherit',
+  })
+  if (wrap.status !== 0) {
+    process.exit(typeof wrap.status === 'number' ? wrap.status : 1)
+  }
+}
+
 if (existsSync(tsc)) {
   const result = spawnSync(process.execPath, [tsc, '-p', 'tsconfig.json', '--noEmitOnError'], {
     cwd: root,
@@ -31,11 +44,14 @@ if (existsSync(tsc)) {
   if (fix.status !== 0) {
     process.exit(typeof fix.status === 'number' ? fix.status : 1)
   }
+  wrapClient()
   process.exit(0)
 }
 
 if (existsSync(join(lib, 'index.js'))) {
-  // Committed build artifacts: usable without a compiler.
+  // Committed build artifacts: usable without a compiler. The wrap step still
+  // runs so a stale committed client bundle is repaired rather than shipped.
+  wrapClient()
   process.exit(0)
 }
 

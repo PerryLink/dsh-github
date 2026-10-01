@@ -6,6 +6,31 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-01
+
+### Added
+
+- **DeepSeek Harness `0.2` support.** The declared host ranges (`engines.dsh` and the `@deepseek-ai/dsh-*` `peerDependencies` union) gain `|| >=0.2.0-rc.1 <0.3.0-0`, `dshWorkshop.compatibility.dshVersions` records `0.2.0-rc.2`, and the Compat workflow's profile job now runs both ends of the range (`0.1.7-rc.2` and `0.2.0-rc.2`) instead of a single pin.
+
+### Fixed
+
+- **The browser half never registered with the client module loader, so the Plugins page reported the plugin as failed to sync.** `lib/client.js` shipped as verbatim `tsc` ESM output — top-level `import`/`export` bindings and no `window.__ModuleLoader__.load({ id, factory })` call. The host's client module system (`@deepseek-ai/dsh-client-modules`) is a lazy CJS table whose only acceptance test is that registration, so the bundle executed, registered nothing, and the page surfaced
+
+  ```
+  client-modules: could not load "@perrylink/dsh-github": … :
+    loaded without registering "@perrylink/dsh-github" via __ModuleLoader__.load
+  ```
+
+  The host half was unaffected and kept its tools registered throughout. `scripts/build-client.mjs` now rewrites the compiled bundle in place: `import … from 'm'` becomes `require('m')`, each top-level `export` declaration loses its keyword and gains an `exports.<name> = <name>` line, and the body is wrapped in the loader's factory. It is wired into both `build` and `prepare`, fails loud on any shape it cannot transform, and is a no-op on an already-wrapped bundle. Original line order is preserved and the shipped `lib/client.js.map` is shifted by the wrapper's line count, so it stays aligned.
+
+  The same acceptance test and the same message are present in `@deepseek-ai/dsh-client-modules@0.1.7-rc.2`, so this is a defect in how the artifact is built rather than a `0.2`-only regression; worth confirming whether the committed bundle ever registered on the older line.
+
+- **`dsh.client.inject` omitted two modules the browser half requires.** `src/client.ts` imports `react` and `@deepseek-ai/dsh-client-ui-primitives`, and neither was declared, so the module graph did not guarantee they arrive before this row materializes. Both are now listed.
+
+### Changed
+
+- **The client bundle is now covered by the gates that were missing it.** `scripts/verify-artifacts.mjs` executed only the host face; it now also runs the shipped client bundle against a stub `__ModuleLoader__`, asserts it registers exactly once under the package name, materializes its factory, and rejects top-level ESM. `test/client-bundle-contract.test.ts` asserts the same contract as a unit test — the 0.7.14 lesson ("`lib/client.js` is a build artifact of `src/client.ts`, and nothing in the test suite renders it") applied to the half that had no gate at all.
+
 ## [0.7.15] - 2026-09-25
 
 ### Changed
