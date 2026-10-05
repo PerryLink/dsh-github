@@ -45,6 +45,7 @@
 - [目录结构](#目录结构)
 - [主题](#主题)
 - [贡献者](#贡献者)
+- [与其他 DSH 插件的互操作](#与其他-dsh-插件的互操作)
 - [PerryLink DSH Plugin Family](#perrylink-dsh-plugin-family)
 - [许可证](#许可证)
 
@@ -215,6 +216,24 @@ scripts/prepare.mjs   self-contained git-install build
 - [@PerryLink](https://github.com/PerryLink) —— 创建者与维护者：GitHub 工具面、审批门、后台审查 job、CI 复合动作、审查机器人、状态检查门禁，以及五语文档。
 - [@AraragiEro](https://github.com/AraragiEro) —— 插件设置页的 GitHub token 设置卡片（#6）。
 - [@alexchenzl](https://github.com/alexchenzl) —— 邀请本插件收录到 DSH Directory（#5）。
+
+## 与其他 DSH 插件的互操作
+
+已对照 **DSH `0.2.0-rc.2`**（本 README 面向的运行时）与 2026-10-05 实测的高星插件集验证。
+
+本插件**不干扰**其他插件，包括广泛安装的高星插件：
+
+- **无工具名冲突。** 所有工具都带命名空间，不占用任何已被内置工具或其他插件持有的裸名。
+- **无服务键冲突。** 不提供任何服务键，因此不存在服务键冲突。
+- **无 slot 冲突。** 不注册客户端 slot key，因此不参与 `shadows-shipped-ui` 座位争抢。
+- **无 HTTP 路由冲突。** 不注册任何 `webServer` 前缀。
+- **无 patch 层冲突。** 组合包 patch 只 `insert` 自己那一行，从不覆写内置行的 `config`。
+- **无全局改写。** 不改原型、不改写 `process.env`、不替换全局 fetch dispatcher。
+
+**共享事件监听器在构造上就不互相干扰。** 它用 `ctx.on()` 监听顺序敏感事件 `tools/pre-execute` —— Cordis 的**广播**语义：每个监听器都会运行，任何一个都无法饿死其他监听器。**此处每个监听器都通过 `next()` 委托**，因此链条绝不会被短路；改写作用在 `next()` 产出的值上，而不是用它顶替返回：
+  - `tools/pre-execute` — also used by `cc-safety-net` (1576★).
+
+静态证据：`dsh-plugin-doctor` 的 K10–K13 在本仓全部为 `pass`。
 
 ## PerryLink DSH Plugin Family
 
