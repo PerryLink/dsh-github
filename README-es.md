@@ -2,6 +2,8 @@
 
 # dsh-github
 
+> Release stamp: `0.7.16` (2026-10-04).
+
 **PRs, revisiones, issues y CI de GitHub para DeepSeek Harness — cada escritura aprobada por un humano y el token nunca registrado.**
 
 *Crea, revisa, fusiona y busca en GitHub desde el agente, con una acción compuesta de CI, un bot de revisión por sondeo y una puerta de status-check.*

@@ -2,6 +2,8 @@
 
 # dsh-github
 
+> Release stamp: `0.7.16` (2026-10-04).
+
 **DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ, issues और CI — हर write मानवीय approval से नियंत्रित, token कभी logged नहीं होता।**
 
 *एजेंट से GitHub पर बनाएँ, समीक्षा करें, merge करें और खोजें — CI composite action, polling review bot और status-check gate के साथ।*

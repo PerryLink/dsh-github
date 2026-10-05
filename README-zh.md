@@ -2,6 +2,8 @@
 
 # dsh-github
 
+> Release stamp: `0.7.16` (2026-10-04).
+
 **把 GitHub 的 PR、审查、issue 与 CI 接入 DeepSeek Harness —— 每个写操作都经人类审批，token 永不落日志。**
 
 *在 agent 中创建、审查、合并与搜索 GitHub，附带 CI 复合动作、轮询式审查机器人与状态检查门禁。*
