@@ -27,8 +27,17 @@
 
 ---
 
+## What is dsh-github?
+
+DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ, issues और CI — हर write मानवीय approval से नियंत्रित, token कभी logged नहीं होता।
+
+एजेंट से GitHub पर बनाएँ, समीक्षा करें, merge करें और खोजें — CI composite action, polling review bot और status-check gate के साथ।
+
+![dsh-github का टर्मिनल डेमो: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+
 ## 📚 विषय-सूची
 
+- [What is dsh-github?](#what-is-dsh-github)
 - [अनुकूलता](#अनुकूलता)
 - [अन्य DSH प्लगइनों के साथ अंतर-संचालनीयता](#अन्य-dsh-प्लगइनों-के-साथ-अंतर-संचालनीयता)
 - [आपको क्या मिलता है](#आपको-क्या-मिलता-है)
@@ -73,8 +82,12 @@
 ## त्वरित शुरुआत
 
 ```sh
+dsh plugin --profile web add github:PerryLink/dsh-github
+```
+
+```sh
 # 1. bundle को अपने profile में इंस्टॉल करें
-dsh plugin --profile web add "github:PerryLink/dsh-github#main"
+dsh plugin --profile web add github:PerryLink/dsh-github
 
 # या npm से (प्रकाशित रिलीज़)
 dsh plugin --profile web add @perrylink/dsh-github
@@ -85,7 +98,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## स्थापना और अनइंस्टॉल
 
-- **git channel** (नवीनतम `main`): `dsh plugin --profile web add "github:PerryLink/dsh-github#main"` — `prepare` script केवल production dependencies के साथ build करता है।
+- **git channel** (नवीनतम `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — `prepare` script केवल production dependencies के साथ build करता है।
 - **npm channel** (प्रकाशित रिलीज़): `dsh plugin --profile web add @perrylink/dsh-github`।
 - **tarball channel**: इस repo में `pnpm pack` चलाएँ, फिर `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`।
 - **अनइंस्टॉल**: `dsh plugin --profile web remove @perrylink/dsh-github` (या profile patch से row हटाएँ)।

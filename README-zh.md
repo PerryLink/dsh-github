@@ -29,8 +29,17 @@
 
 ---
 
+## What is dsh-github?
+
+把 GitHub 的 PR、审查、issue 与 CI 接入 DeepSeek Harness —— 每个写操作都经人类审批，token 永不落日志。
+
+在 agent 中创建、审查、合并与搜索 GitHub，附带 CI 复合动作、轮询式审查机器人与状态检查门禁。
+
+![dsh-github 终端演示：dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+
 ## 📚 目录
 
+- [What is dsh-github?](#what-is-dsh-github)
 - [兼容性](#兼容性)
 - [你能得到什么](#你能得到什么)
 - [快速上手](#快速上手)
@@ -75,8 +84,12 @@
 ## 快速上手
 
 ```sh
+dsh plugin --profile web add github:PerryLink/dsh-github
+```
+
+```sh
 # 1. 将 bundle 安装进你的 profile
-dsh plugin --profile web add "github:PerryLink/dsh-github#main"
+dsh plugin --profile web add github:PerryLink/dsh-github
 
 # 或从 npm 安装（已发布版本）
 dsh plugin --profile web add @perrylink/dsh-github
@@ -87,7 +100,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## 安装与卸载
 
-- **git 通道**（最新 `main`）：`dsh plugin --profile web add "github:PerryLink/dsh-github#main"` —— `prepare` 脚本仅以生产依赖构建。
+- **git 通道**（最新 `main`）：`dsh plugin --profile web add github:PerryLink/dsh-github` —— `prepare` 脚本仅以生产依赖构建。
 - **npm 通道**（已发布版本）：`dsh plugin --profile web add @perrylink/dsh-github`。
 - **tarball 通道**：在本仓库执行 `pnpm pack`，然后 `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`。
 - **卸载**：`dsh plugin --profile web remove @perrylink/dsh-github`（或从 profile patch 中移除该行）。

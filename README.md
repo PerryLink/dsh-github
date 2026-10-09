@@ -30,8 +30,17 @@
 
 ---
 
+## What is dsh-github?
+
+GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated by human approval, token never logged.
+
+Create, review, merge, and search GitHub from the agent, with a CI composite action, polling review bot, and status-check gate.
+
+![Terminal demo of dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+
 ## 📚 Table of contents
 
+- [What is dsh-github?](#what-is-dsh-github)
 - [Compatibility](#compatibility)
 - [What you get](#what-you-get)
 - [Quick start](#quick-start)
@@ -76,8 +85,12 @@
 ## Quick start
 
 ```sh
+dsh plugin --profile web add github:PerryLink/dsh-github
+```
+
+```sh
 # 1. install the bundle into your profile
-dsh plugin --profile web add "github:PerryLink/dsh-github#main"
+dsh plugin --profile web add github:PerryLink/dsh-github
 
 # or from npm (published releases)
 dsh plugin --profile web add @perrylink/dsh-github
@@ -88,7 +101,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Install & uninstall
 
-- **git channel** (latest `main`): `dsh plugin --profile web add "github:PerryLink/dsh-github#main"` — the `prepare` script builds with production dependencies only.
+- **git channel** (latest `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — the `prepare` script builds with production dependencies only.
 - **npm channel** (published releases): `dsh plugin --profile web add @perrylink/dsh-github`.
 - **tarball channel**: `pnpm pack` in this repo, then `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
 - **uninstall**: `dsh plugin --profile web remove @perrylink/dsh-github` (or remove the row from the profile patch).

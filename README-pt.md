@@ -27,8 +27,17 @@
 
 ---
 
+## What is dsh-github?
+
+PRs, revisões, issues e CI do GitHub para o DeepSeek Harness — toda gravação aprovada por um humano e o token nunca registrado em log.
+
+Crie, revise, mescle e pesquise no GitHub a partir do agente, com uma ação composta de CI, um bot de revisão por polling e uma barreira de status-check.
+
+![Demonstração de terminal do dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+
 ## 📚 Índice
 
+- [What is dsh-github?](#what-is-dsh-github)
 - [Compatibilidade](#compatibilidade)
 - [O que você obtém](#o-que-você-obtém)
 - [Início rápido](#início-rápido)
@@ -73,8 +82,12 @@ O `dsh-github` preenche a lacuna do GitHub entre o `dsh` e ferramentas como o Cl
 ## Início rápido
 
 ```sh
+dsh plugin --profile web add github:PerryLink/dsh-github
+```
+
+```sh
 # 1. instale o bundle no seu perfil
-dsh plugin --profile web add "github:PerryLink/dsh-github#main"
+dsh plugin --profile web add github:PerryLink/dsh-github
 
 # ou do npm (versões publicadas)
 dsh plugin --profile web add @perrylink/dsh-github
@@ -85,7 +98,7 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 ## Instalação e desinstalação
 
-- **canal git** (último `main`): `dsh plugin --profile web add "github:PerryLink/dsh-github#main"` — o script `prepare` compila apenas com dependências de produção.
+- **canal git** (último `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — o script `prepare` compila apenas com dependências de produção.
 - **canal npm** (versões publicadas): `dsh plugin --profile web add @perrylink/dsh-github`.
 - **canal tarball**: `pnpm pack` neste repositório e depois `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
 - **desinstalar**: `dsh plugin --profile web remove @perrylink/dsh-github` (ou remova a linha do patch de perfil).
