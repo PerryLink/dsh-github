@@ -37,6 +37,10 @@
 
 ![dsh-github 终端演示：dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
 
+![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+
+*同一次运行，动图版。*
+
 ## 📚 目录
 
 - [What is dsh-github?](#what-is-dsh-github)

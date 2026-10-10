@@ -38,6 +38,10 @@ Create, review, merge, and search GitHub from the agent, with a CI composite act
 
 ![Terminal demo of dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
 
+![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+
+*The same run, animated.*
+
 ## 📚 Table of contents
 
 - [What is dsh-github?](#what-is-dsh-github)

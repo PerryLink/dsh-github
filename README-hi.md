@@ -35,6 +35,10 @@ DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ,
 
 ![dsh-github का टर्मिनल डेमो: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
 
+![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+
+*वही रन, एनिमेटेड।*
+
 ## 📚 विषय-सूची
 
 - [What is dsh-github?](#what-is-dsh-github)

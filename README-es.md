@@ -35,6 +35,10 @@ Crea, revisa, fusiona y busca en GitHub desde el agente, con una acción compues
 
 ![Demostración de terminal de dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
 
+![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+
+*La misma ejecución, animada.*
+
 ## 📚 Tabla de contenidos
 
 - [What is dsh-github?](#what-is-dsh-github)
