@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.24] - 2026-10-18
+
+### Fixed
+
+- **`@deepseek-ai/schemastery` is a peer, not a bundled dependency.** The package already declared it in devDependencies; keeping a second copy in dependencies made a profile install carry two schemastery instances. The host-provided peer remains the only runtime copy.
+
 ## [0.7.23] - 2026-10-18
 
 ### Fixed
