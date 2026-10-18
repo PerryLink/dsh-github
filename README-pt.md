@@ -25,9 +25,21 @@
 
 [English](README.md) · [简体中文](README-zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
 
+```sh
+dsh plugin --profile <name> add @perrylink/dsh-github
+```
+
+
 </div>
 
 ---
+
+## Instalação e desinstalação
+
+- **canal git** (último `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — o script `prepare` compila apenas com dependências de produção.
+- **canal npm** (versões publicadas): `dsh plugin --profile web add @perrylink/dsh-github`.
+- **canal tarball**: `pnpm pack` neste repositório e depois `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
+- **desinstalar**: `dsh plugin --profile web remove @perrylink/dsh-github` (ou remova a linha do patch de perfil).
 
 ## What is dsh-github?
 
@@ -101,13 +113,6 @@ dsh plugin --profile web add @perrylink/dsh-github
 # 2. reinicie e verifique a linha
 dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 ```
-
-## Instalação e desinstalação
-
-- **canal git** (último `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — o script `prepare` compila apenas com dependências de produção.
-- **canal npm** (versões publicadas): `dsh plugin --profile web add @perrylink/dsh-github`.
-- **canal tarball**: `pnpm pack` neste repositório e depois `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
-- **desinstalar**: `dsh plugin --profile web remove @perrylink/dsh-github` (ou remova a linha do patch de perfil).
 
 ## Configuração
 
