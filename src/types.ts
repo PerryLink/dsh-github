@@ -97,10 +97,19 @@ export type { ApprovalOutcome } from '@deepseek-ai/dsh-user-approval/types'
  * run/request faces, with the plugin's minimal agent view as the parent. */
 export interface SubagentsService {
   list(): string[]
-  start(
+  /** Legacy one-shot seam, still present on 0.2.0 lines. */
+  start?(
     name: string,
     request: Omit<SubagentStartRequest, 'parent'> & { parent: GithubAgent },
   ): Promise<SubagentRun>
+  /** 0.2.1+ managed activation seam; `start` was removed from the host. */
+  startActivation?(spec: {
+    provider: string
+    label: string
+    request: Omit<SubagentStartRequest, 'label' | 'signal' | 'parent'> & { parent: GithubAgent }
+    signal: AbortSignal
+    delivery: 'caller'
+  }): Promise<SubagentRun>
 }
 
 declare module '@deepseek-ai/cordis' {

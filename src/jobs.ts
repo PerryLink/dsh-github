@@ -240,12 +240,25 @@ async function runModelReview(
     }
   }
   try {
-    const run = await subagents.start(provider, {
-      label: `review PR #${record.pr} (${record.repo})`,
-      prompt: [{ type: 'text', text: modelReviewPrompt(record, diffText, truncated) }],
+    const label = `review PR #${record.pr} (${record.repo})`
+    const request = {
+      prompt: [{ type: 'text' as const, text: modelReviewPrompt(record, diffText, truncated) }],
       parent: owner,
-      signal: controller.signal,
-    })
+    }
+    const run = typeof subagents.startActivation === 'function'
+      ? await subagents.startActivation({
+        provider,
+        label,
+        request,
+        signal: controller.signal,
+        delivery: 'caller',
+      })
+      : await subagents.start?.(provider, {
+        ...request,
+        label,
+        signal: controller.signal,
+      })
+    if (run === undefined) throw new Error('the subagent seam exposes neither startActivation nor start')
     try {
       const result = await run.result
       if (result.stopReason !== 'completed') {

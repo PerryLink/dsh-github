@@ -58,6 +58,32 @@ class MockSubagents implements SubagentsService {
   }
 }
 
+/** 0.2.1+ seam: only `startActivation`, no legacy `start`. */
+class MockActivationSubagents implements SubagentsService {
+  calls: Array<{ provider: string; label: string; parent: unknown; delivery: string }> = []
+
+  list(): string[] {
+    return ['spawn']
+  }
+
+  async startActivation(spec: {
+    provider: string
+    label: string
+    request: { prompt: Array<{ type: 'text'; text: string }>; parent: unknown }
+    signal: AbortSignal
+    delivery: 'caller'
+  }): Promise<{
+    result: Promise<{ output: Array<{ type: string; text: string }>; stopReason: string }>
+    dispose(): Promise<void>
+  }> {
+    this.calls.push({ provider: spec.provider, label: spec.label, parent: spec.request.parent, delivery: spec.delivery })
+    return {
+      result: Promise.resolve({ output: [{ type: 'text', text: 'activated review' }], stopReason: 'completed' }),
+      dispose: async () => {},
+    }
+  }
+}
+
 describe('review job lifecycle', () => {
   it('completes with findings, head SHA, CI summary, and comment count', async () => {
     const { state } = makeState(FULL_ROUTES)
@@ -200,6 +226,18 @@ describe('model review (subagent seam)', () => {
     expect(subagents.calls[0]?.provider).toBe('spawn')
     expect(subagents.calls[0]?.prompt).toContain('READ-ONLY')
     expect(subagents.calls[0]?.prompt).toContain('+// TODO: later')
+  })
+
+  it('uses startActivation when the 0.2.1 host no longer exposes start', async () => {
+    const subagents = new MockActivationSubagents()
+    const { state } = makeState(FULL_ROUTES, { config: { reviewMode: 'model' }, subagents })
+    const jobs = new MockJobs()
+    const id = startReviewJob(jobs, state, { repo: 'o/r', pr: 7, label: 'review PR #7', owner: new MockAgent() })
+    const done = await jobs.hooks(id).done
+    expect(done.status).toBe('completed')
+    expect(done.result).toBe('activated review')
+    expect(subagents.calls).toHaveLength(1)
+    expect(subagents.calls[0]?.delivery).toBe('caller')
   })
 
   it('honors a configured modelReviewProvider', async () => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.23] - 2026-10-18
+
+### Fixed
+
+- **Model review now uses the 0.2.1+ `startActivation` seam.** `ctx.subagents.start` was removed from the host; the plugin's local type still declared it, so `reviewMode: "model"` threw before any review ran. The job now feature-detects `startActivation` and keeps the legacy `start` path for older hosts, with a caller-delivery activation test.
+
 ## [0.7.22] - 2026-10-18
 
 ### Changed
