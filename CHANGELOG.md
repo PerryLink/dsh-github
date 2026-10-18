@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.22] - 2026-10-18
+
+### Changed
+
+- Add a 1280×720 hero and a 960×540, 4-second terminal GIF rendered from the test run; `screenshots.json` is an object array and `capture.json` records the command.
+
+## [0.7.21] - 2026-10-17
+
+### Fixed
+
+- **Browser half is a `window.__ModuleLoader__.load` factory, not bare ESM.** `lib/client.js` was tsc output with top-level `import`/`export`; the host executes the file as a classic script, so the Plugins page failed to load. A `scripts/bundle-client.mjs` post-build step wraps the compiled module with the host loader and externalizes `react` / `dsh-client-ui-primitives` through `require`.
+- Compatibility: `engines.dsh` -> `>=0.2.1-0 <0.3.0`; devDependencies to `0.2.1-rc.2`; add `@deepseek-ai/dsh-working-directory`.
+
 All notable changes to this project are documented in this file. The format
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

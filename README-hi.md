@@ -4,6 +4,8 @@
 
 > Release stamp: `0.7.16` (2026-10-04).
 
+> **पैकेज नाम।** यह प्रोजेक्ट npm पर **`@perrylink/dsh-github`** के रूप में प्रकाशित होता है। सादा नाम `dsh-github` किसी असंबंधित प्रोजेक्ट का है — उसे इंस्टॉल करने से यह प्लगइन इंस्टॉल नहीं होता।
+
 **DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ, issues और CI — हर write मानवीय approval से नियंत्रित, token कभी logged नहीं होता।**
 
 *एजेंट से GitHub पर बनाएँ, समीक्षा करें, merge करें और खोजें — CI composite action, polling review bot और status-check gate के साथ।*
@@ -33,7 +35,7 @@ DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ,
 
 एजेंट से GitHub पर बनाएँ, समीक्षा करें, merge करें और खोजें — CI composite action, polling review bot और status-check gate के साथ।
 
-![dsh-github का टर्मिनल डेमो: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+![dsh-github का टर्मिनल डेमो: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
 
 ![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
 

@@ -4,6 +4,8 @@
 
 > Release stamp: `0.7.16` (2026-10-04).
 
+> **包名说明。** 本项目的 npm 发布名是 **`@perrylink/dsh-github`**。裸名 `dsh-github` 属于另一个无关项目——装它不会装到本插件。
+
 **把 GitHub 的 PR、审查、issue 与 CI 接入 DeepSeek Harness —— 每个写操作都经人类审批，token 永不落日志。**
 
 *在 agent 中创建、审查、合并与搜索 GitHub，附带 CI 复合动作、轮询式审查机器人与状态检查门禁。*
@@ -35,7 +37,7 @@
 
 在 agent 中创建、审查、合并与搜索 GitHub，附带 CI 复合动作、轮询式审查机器人与状态检查门禁。
 
-![dsh-github 终端演示：dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+![dsh-github 终端演示：dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
 
 ![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
 

@@ -1,5 +1,14 @@
-{
-  "screenshots": [
-    "docs/assets/dsh-github-demo.png"
-  ]
-}
+[
+  {
+    "path": "docs/assets/dsh-github-hero.png",
+    "kind": "hero",
+    "alt": "dsh-github terminal output",
+    "caption": "Real dsh-github test run; 186 tests passed."
+  },
+  {
+    "path": "docs/assets/dsh-github-demo.gif",
+    "kind": "demo",
+    "alt": "Animated dsh-github terminal session",
+    "caption": "The same run, assembled line by line."
+  }
+]

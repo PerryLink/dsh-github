@@ -31,6 +31,13 @@ if (existsSync(tsc)) {
   if (fix.status !== 0) {
     process.exit(typeof fix.status === 'number' ? fix.status : 1)
   }
+  const bundle = spawnSync(process.execPath, [join(root, 'scripts', 'bundle-client.mjs')], {
+    cwd: root,
+    stdio: 'inherit',
+  })
+  if (bundle.status !== 0) {
+    process.exit(typeof bundle.status === 'number' ? bundle.status : 1)
+  }
   process.exit(0)
 }
 

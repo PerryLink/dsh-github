@@ -3,6 +3,8 @@
 # dsh-github
 
 > Release stamp: `0.7.16` (2026-10-04).
+
+> **Package name.** This project publishes to npm as **`@perrylink/dsh-github`**. The bare npm name `dsh-github` belongs to a different, unrelated project — installing it does not install this plugin.
 [![Gitee](https://img.shields.io/badge/Gitee-mirror-c71d23?logo=gitee)](https://gitee.com/perrylink/dsh-github)
 [![dshfind](https://dshfind.com/api/badge/PerryLink/dsh-github?metric=downloads)](https://dshfind.com/plugins/PerryLink/dsh-github?ref=badge)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github/badge)](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github)
@@ -36,7 +38,7 @@ GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated b
 
 Create, review, merge, and search GitHub from the agent, with a CI composite action, polling review bot, and status-check gate.
 
-![Terminal demo of dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+![Terminal demo of dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
 
 ![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
 

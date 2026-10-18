@@ -4,6 +4,8 @@
 
 > Release stamp: `0.7.16` (2026-10-04).
 
+> **Nombre del paquete.** Este proyecto se publica en npm como **`@perrylink/dsh-github`**. El nombre simple `dsh-github` pertenece a otro proyecto no relacionado: instalarlo no instala este plugin.
+
 **PRs, revisiones, issues y CI de GitHub para DeepSeek Harness — cada escritura aprobada por un humano y el token nunca registrado.**
 
 *Crea, revisa, fusiona y busca en GitHub desde el agente, con una acción compuesta de CI, un bot de revisión por sondeo y una puerta de status-check.*
@@ -33,7 +35,7 @@ PRs, revisiones, issues y CI de GitHub para DeepSeek Harness — cada escritura 
 
 Crea, revisa, fusiona y busca en GitHub desde el agente, con una acción compuesta de CI, un bot de revisión por sondeo y una puerta de status-check.
 
-![Demostración de terminal de dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.png)
+![Demostración de terminal de dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
 
 ![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
 
