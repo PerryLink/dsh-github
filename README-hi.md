@@ -121,7 +121,28 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 #### विस्तृत उदाहरण
 
-- `pr_create`
+**कमांड**
+
+~~~sh
+pr_create
+~~~
+
+**इनपुट**
+
+~~~json
+{
+  "title": "feat: shiny",
+  "body": "desc"
+}
+~~~
+
+**आउटपुट**
+
+~~~text
+created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
+~~~
+
+*स्रोत `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
 #### संक्षिप्त उदाहरण
 

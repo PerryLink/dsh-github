@@ -123,7 +123,28 @@ These are the plugin's real entry points; install once, then call one.
 
 #### Detailed example
 
-- `pr_create`
+**Command**
+
+~~~sh
+pr_create
+~~~
+
+**Input**
+
+~~~json
+{
+  "title": "feat: shiny",
+  "body": "desc"
+}
+~~~
+
+**Output**
+
+~~~text
+created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
+~~~
+
+*Observed from `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
 #### Brief examples
 

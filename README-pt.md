@@ -121,7 +121,28 @@ São os pontos de entrada reais; instale e chame um.
 
 #### Exemplo detalhado
 
-- `pr_create`
+**Comando**
+
+~~~sh
+pr_create
+~~~
+
+**Entrada**
+
+~~~json
+{
+  "title": "feat: shiny",
+  "body": "desc"
+}
+~~~
+
+**Saída**
+
+~~~text
+created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
+~~~
+
+*Observado em `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
 #### Exemplos breves
 

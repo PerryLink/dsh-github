@@ -123,7 +123,28 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 
 #### 详细示例
 
-- `pr_create`
+**命令**
+
+~~~sh
+pr_create
+~~~
+
+**输入**
+
+~~~json
+{
+  "title": "feat: shiny",
+  "body": "desc"
+}
+~~~
+
+**输出**
+
+~~~text
+created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
+~~~
+
+*来源 `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
 #### 简短示例
 
