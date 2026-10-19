@@ -256,6 +256,8 @@ Static evidence: `dsh-plugin-doctor` K10–K13 report `pass` for every check on 
 
 ## Contributors
 
+- [@JosephTian876](https://github.com/JosephTian876) — the unbundled `lib/client.js` report (#11).
+- [@womeimingzi11](https://github.com/womeimingzi11) — the browser-half module-loader registration report (#14); the factory-wrapped bundle shipped in later releases.
 - [@PerryLink](https://github.com/PerryLink) — creator and maintainer: the GitHub tool surface, approval gate, background review jobs, CI composite action, review bot, status-check gate, and the five-language docs.
 - [@AraragiEro](https://github.com/AraragiEro) — the GitHub token settings card in the Plugins settings page (#6).
 - [@alexchenzl](https://github.com/alexchenzl) — invited the plugin onto the DSH Directory (#5).
