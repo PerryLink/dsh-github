@@ -47,9 +47,10 @@ PRs, revisiones, issues y CI de GitHub para DeepSeek Harness — cada escritura 
 
 Crea, revisa, fusiona y busca en GitHub desde el agente, con una acción compuesta de CI, un bot de revisión por sondeo y una puerta de status-check.
 
-![Demostración de terminal de dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
+![Diagrama de flujo de dsh-github: solicitud → política/revisión → veredicto.](docs/assets/dsh-github-flow.svg)
 
-![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+*Resumen del flujo: solicitud → política/revisión → veredicto. Los ejemplos siguientes usan la superficie de comandos real.*
+
 
 *La misma ejecución, animada.*
 
@@ -113,6 +114,19 @@ dsh plugin --profile web add @perrylink/dsh-github
 # 2. reinicia y verifica la fila
 dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 ```
+
+### Ejemplos
+
+Son los puntos de entrada reales; instala y llama a uno.
+
+#### Ejemplo detallado
+
+- `pr_create`
+
+#### Ejemplos breves
+
+- `pr_merge`
+- `gh_review`
 
 ## Configuración
 

@@ -42,9 +42,10 @@ dsh plugin --profile <name> add @perrylink/dsh-github
 
 在 agent 中创建、审查、合并与搜索 GitHub，附带 CI 复合动作、轮询式审查机器人与状态检查门禁。
 
-![dsh-github 终端演示：dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
+![dsh-github 工作流图：请求 → 策略/复核 → 判定。](docs/assets/dsh-github-flow.svg)
 
-![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+*工作流概览：请求 → 策略/复核 → 判定。下面的示例使用实际命令面。*
+
 
 *同一次运行，动图版。*
 
@@ -115,6 +116,19 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 - **npm 通道**（已发布版本）：`dsh plugin --profile web add @perrylink/dsh-github`。
 - **tarball 通道**：在本仓库执行 `pnpm pack`，然后 `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`。
 - **卸载**：`dsh plugin --profile web remove @perrylink/dsh-github`（或从 profile patch 中移除该行）。
+
+### 示例
+
+以下为插件真实入口；安装后调用一个即可。
+
+#### 详细示例
+
+- `pr_create`
+
+#### 简短示例
+
+- `pr_merge`
+- `gh_review`
 
 ## 配置
 

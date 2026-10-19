@@ -40,9 +40,10 @@ DeepSeek Harness के लिए GitHub के PR, समीक्षाएँ,
 
 एजेंट से GitHub पर बनाएँ, समीक्षा करें, merge करें और खोजें — CI composite action, polling review bot और status-check gate के साथ।
 
-![dsh-github का टर्मिनल डेमो: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
+![dsh-github कार्यप्रवाह आरेख: अनुरोध → नीति/समीक्षा → निर्णय।](docs/assets/dsh-github-flow.svg)
 
-![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+*कार्यप्रवाह: अनुरोध → नीति/समीक्षा → निर्णय। नीचे के उदाहरण वास्तविक कमांड सतह का उपयोग करते हैं।*
+
 
 *वही रन, एनिमेटेड।*
 
@@ -113,6 +114,19 @@ dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 - **npm channel** (प्रकाशित रिलीज़): `dsh plugin --profile web add @perrylink/dsh-github`।
 - **tarball channel**: इस repo में `pnpm pack` चलाएँ, फिर `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`।
 - **अनइंस्टॉल**: `dsh plugin --profile web remove @perrylink/dsh-github` (या profile patch से row हटाएँ)।
+
+### उदाहरण
+
+ये वास्तविक प्रवेश बिंदु हैं; इंस्टॉल के बाद एक चलाएँ।
+
+#### विस्तृत उदाहरण
+
+- `pr_create`
+
+#### संक्षिप्त उदाहरण
+
+- `pr_merge`
+- `gh_review`
 
 ## कॉन्फ़िगरेशन
 

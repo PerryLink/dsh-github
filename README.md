@@ -50,11 +50,11 @@ GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated b
 
 Create, review, merge, and search GitHub from the agent, with a CI composite action, polling review bot, and status-check gate.
 
-![Terminal demo of dsh-github: dsh-github — install, verify the row, check the repo](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-hero.png)
+![Workflow diagram for dsh-github: request → policy / review → verdict.](docs/assets/dsh-github-flow.svg)
 
-![Animated terminal demo of dsh-github](https://raw.githubusercontent.com/PerryLink/dsh-github/main/docs/assets/dsh-github-demo.gif)
+*Workflow overview: request → policy / review → verdict. The examples below use the real command surface.*
 
-*The same run, animated.*
+
 
 ## 📚 Table of contents
 
@@ -116,6 +116,19 @@ dsh plugin --profile web add @perrylink/dsh-github
 # 2. restart and verify the row
 dsh --profile web --dump-config | grep -A3 'id: dsh-github'
 ```
+
+### Examples
+
+These are the plugin's real entry points; install once, then call one.
+
+#### Detailed example
+
+- `pr_create`
+
+#### Brief examples
+
+- `pr_merge`
+- `gh_review`
 
 ## Configuration
 
