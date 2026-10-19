@@ -144,6 +144,27 @@ created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
 
 *स्रोत `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
+#### विफलता शाखा
+
+**इनपुट**
+
+~~~text
+{"title":"x"} (credentials seam empty; GITHUB_TOKEN unset; gh not logged in)
+~~~
+
+**आउटपुट**
+
+~~~text
+{
+  "status": "error",
+  "code": "no-token",
+  "message": "no GitHub token found (source: credentials/env/gh)",
+  "guidance": "Configure one of: 1) a dsh credential for this reference (recommended; $DSH_HOME/.credentials.yaml), 2) the same-named environment variable, or 3) `gh auth login` for the gh CLI. Set `tokenSource` in cordis.yml to pin one source."
+}
+~~~
+
+*स्रोत `plugins/dsh-github/src/credential.ts:96-104; plugins/dsh-github/test/tools.test.ts:88-93`*
+
 #### संक्षिप्त उदाहरण
 
 - `pr_merge`
