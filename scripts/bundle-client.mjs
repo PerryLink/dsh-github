@@ -7,6 +7,9 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
+// The registration id must be the package name: a client graph row is keyed by
+// it, so any other id leaves the module unresolvable and the host never boots it.
+const { name: pkgName } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const file = join(root, 'lib', 'client.js')
 let text = readFileSync(file, 'utf8')
 if (text.startsWith('window.__ModuleLoader__.load(')) process.exit(0)
@@ -37,7 +40,7 @@ text = text.replace(/\/\/# sourceMappingURL=.*$/gm, '')
 
 const tail = exports.map(name => `\t\texports.${name} = ${name};`).join('\n')
 const wrapped = `window.__ModuleLoader__.load({
-\tid: "dsh-github",
+\tid: ${JSON.stringify(pkgName)},
 \tfactory: (require) => {
 \t\tvar module = { exports: {} };
 \t\tvar exports = module.exports;
