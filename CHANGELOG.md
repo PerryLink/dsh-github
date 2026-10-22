@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.25] - 2026-10-22
+
+### Fixed
+
+- **The browser bundle registers under the package name, so installing 0.7.24 no longer resets the profile (issue #16).** `scripts/bundle-client.mjs` hardcoded `id: "dsh-github"`, while DSH 0.2.1-rc.2 keys client-module rows by package name. The lookup missed, the loader re-executed the bundle from the single-resource URL, and `duplicate factory registration` aborted web boot; Desktop's fatal recovery then backed up `cordis.patch.yml` and rewrote `dsh.profile.bundles` to the two official bundles. The wrapper id now comes from `package.json.name`, and `verify:artifacts` plus `test/client-bundle.test.ts` assert it. Thanks to @fishdivinity for the fix (#24) and @N-o-c-t-i-s for the independent patch (#25).
+
 ## [0.7.24] - 2026-10-18
 
 ### Fixed
