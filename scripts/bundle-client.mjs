@@ -8,6 +8,10 @@ import { dirname, join } from 'node:path'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 const file = join(root, 'lib', 'client.js')
+const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+if (typeof manifest.name !== 'string' || manifest.name.length === 0) {
+  throw new Error('bundle-client: package.json has no name')
+}
 let text = readFileSync(file, 'utf8')
 if (text.startsWith('window.__ModuleLoader__.load(')) process.exit(0)
 
@@ -37,7 +41,7 @@ text = text.replace(/\/\/# sourceMappingURL=.*$/gm, '')
 
 const tail = exports.map(name => `\t\texports.${name} = ${name};`).join('\n')
 const wrapped = `window.__ModuleLoader__.load({
-\tid: "dsh-github",
+\tid: ${JSON.stringify(manifest.name)},
 \tfactory: (require) => {
 \t\tvar module = { exports: {} };
 \t\tvar exports = module.exports;
