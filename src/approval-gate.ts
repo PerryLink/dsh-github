@@ -31,6 +31,50 @@ const ACTION_BY_TOOL: Record<string, GithubAction> = {
 /** Tools the gate intercepts; everything else delegates via next(). */
 const WRITE_TOOLS = new Set(Object.keys(ACTION_BY_TOOL))
 
+/**
+ * Structural view of the host approval service's live policy reader.
+ * `effectivePolicy` is a runtime method on the official ApprovalService but is
+ * marked `private` in its type declaration, so the gate reads it structurally
+ * and tolerates hosts that do not expose it (older lines) by failing closed.
+ */
+interface ApprovalPolicyReader {
+  effectivePolicy?: (session: unknown) => 'ask' | 'never' | undefined
+}
+
+/**
+ * Structural view of the host sandbox policy service. It is intentionally not
+ * imported: the plugin does not declare `@deepseek-ai/dsh-sandbox-policy` as a
+ * dependency, and the service is optional in headless compositions.
+ */
+interface SandboxPolicyReader {
+  resolve?: (request: { session: unknown }) => { mode?: string } | undefined
+}
+
+/**
+ * Whether the host granted this session full access with prompts disabled.
+ *
+ * `ask` is not a prompt in a session whose approval policy is `never` — the
+ * host's ApprovalService short-circuits it to `rejected` before any answerer,
+ * so a write would fail with "the user rejected" without ever asking. This
+ * predicate only grants the bypass when the live sandbox policy also reports
+ * `danger-full-access`, and any missing service or thrown lookup fails closed.
+ * @param ctx - plugin context.
+ * @param exec - the intercepted tool execution carrying the live agent.
+ * @returns true only for a danger-full-access session whose policy is never.
+ */
+function isUnattendedFullAccess(ctx: Context, exec: ToolExecution): boolean {
+  try {
+    const session = (exec.agent as unknown as { session?: unknown } | undefined)?.session
+    if (session === undefined) return false
+    const approval = ctx.approval as unknown as ApprovalPolicyReader
+    if (approval.effectivePolicy?.(session) !== 'never') return false
+    const sandbox = ctx.get('sandboxPolicy' as never) as unknown as SandboxPolicyReader | undefined
+    return sandbox?.resolve?.({ session })?.mode === 'danger-full-access'
+  } catch {
+    return false
+  }
+}
+
 /** Read the frozen tool arguments as a plain object, tolerant of bad input. */
 function argumentsAsRecord(exec: ToolExecution): Record<string, unknown> {
   return typeof exec.arguments === 'object' && exec.arguments !== null ? exec.arguments as Record<string, unknown> : {}
@@ -129,6 +173,12 @@ export function registerApprovalGate(ctx: Context, state: GithubState): () => vo
       // prompt) and allow the in-flight call. The host hands us its own Agent
       // handle, which is exactly what setPolicy declares.
       if (exec.agent !== undefined) ctx.approval.setPolicy(exec.agent, 'never')
+      return { kind: 'allow' }
+    }
+    if (isUnattendedFullAccess(ctx, exec)) {
+      // A danger-full-access session with prompts disabled cannot ask; the host
+      // would reject the call and report a rejection the human never made.
+      // allowedActions still gates the action before this point.
       return { kind: 'allow' }
     }
     return { kind: 'ask', reason: `dsh-github: ${askReason(exec.name, argumentsAsRecord(exec), state)}` }

@@ -173,4 +173,55 @@ describe('approval gate (tools/pre-execute)', () => {
       expect(decision).toEqual({ kind: 'allow' })
     }
   })
+
+  it('allows writes in a danger-full-access session whose approval policy is never', async () => {
+    const services = await loaded()
+    services.approval.policy = 'never'
+    services.sandbox.mode = 'danger-full-access'
+    expect(await decide(services, 'pr_create', { title: 'full access' })).toEqual({ kind: 'allow' })
+    expect(await decide(services, 'issue_close', { issueNumber: 3 })).toEqual({ kind: 'allow' })
+  })
+
+  it('still asks when prompts are disabled but the sandbox is not full access', async () => {
+    const services = await loaded()
+    services.approval.policy = 'never'
+    services.sandbox.mode = 'workspace-write'
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+    services.sandbox.mode = 'read-only'
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+  })
+
+  it('still asks in a full-access sandbox when the policy can prompt', async () => {
+    const services = await loaded()
+    services.approval.policy = 'ask'
+    services.sandbox.mode = 'danger-full-access'
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+  })
+
+  it('keeps allowedActions authoritative in a full-access session', async () => {
+    const services = await loaded({ allowedActions: ['review.post'] })
+    services.approval.policy = 'never'
+    services.sandbox.mode = 'danger-full-access'
+    const decision = await decide(services, 'issue_open', { title: 'x' })
+    expect(decision).toMatchObject({ kind: 'deny' })
+    expect((decision as { reason: string }).reason).toContain('allowedActions')
+  })
+
+  it('fails closed when the sandbox policy lookup is unavailable or throws', async () => {
+    const services = await loaded()
+    services.approval.policy = 'never'
+    services.sandbox.mode = 'danger-full-access'
+    services.sandbox.resolve = undefined as never
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+    services.sandbox.resolve = () => { throw new Error('lookup failed') }
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+  })
+
+  it('fails closed when the host exposes no effectivePolicy reader', async () => {
+    const services = await loaded()
+    services.approval.policy = 'never'
+    services.sandbox.mode = 'danger-full-access'
+    services.approval.effectivePolicy = undefined as never
+    expect(await decide(services, 'pr_create', { title: 'x' })).toMatchObject({ kind: 'ask' })
+  })
 })

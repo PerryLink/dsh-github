@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.26] - 2026-10-22
+
+### Fixed
+
+- **Full-access sessions no longer fail every write with "the user rejected" (issue #15).** The gate returned `ask` for every interactive write, but the host's ApprovalService short-circuits `ask` to `rejected` when a session's approval policy is `never`, before any answerer runs. In a session that is both `danger-full-access` and `never` — the host's full-access preset — the model saw a rejection the human never made and no GitHub write could run. The gate now allows the in-flight write only when the live `sandboxPolicy.resolve({ session }).mode` is `danger-full-access` and `ctx.approval.effectivePolicy(session)` is `never`; `allowedActions` is still checked first, every other combination still asks, and a missing service, missing policy reader, or thrown lookup fails closed. Tests cover the matrix and the fail-closed paths. Thanks to @ljyzww for the root-cause analysis and the patch direction.
+
 ## [0.7.25] - 2026-10-22
 
 ### Fixed

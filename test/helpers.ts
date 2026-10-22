@@ -13,6 +13,8 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 /** Fake agent implementing the minimal structural view dsh-github consumes. */
 export class MockAgent {
   id = SessionId('session-1')
+  /** The live session the runtime augmentation attaches to a real Agent. */
+  session = { id: this.id }
   status: 'idle' | 'running' = 'idle'
   injected: Array<{ text: string; summary: string; source: unknown }> = []
   followed: Array<{ text: string; summary: string; source: unknown }> = []
@@ -147,6 +149,8 @@ export class MockJobs {
 export class MockApproval {
   requests: ApprovalRequest[] = []
   nextOutcome: ApprovalOutcome = 'allowed-once'
+  /** Effective policy the host service would report for a session. */
+  policy: 'ask' | 'never' = 'ask'
   /** setPolicy calls recorded by the alpha.2 approval policy seam. */
   policies: Array<{ agent: unknown; policy: 'ask' | 'never' }> = []
 
@@ -158,6 +162,20 @@ export class MockApproval {
   /** Official policy pin seam; tests record the call, no runtime effect. */
   setPolicy(agent: unknown, policy: 'ask' | 'never'): void {
     this.policies.push({ agent, policy })
+  }
+
+  /** Live policy reader used by the full-access bypass (runtime method). */
+  effectivePolicy(_session: unknown): 'ask' | 'never' {
+    return this.policy
+  }
+}
+
+/** Sandbox policy mock: the host's session-scoped mode resolver. */
+export class MockSandboxPolicy {
+  mode: 'read-only' | 'workspace-write' | 'danger-full-access' = 'workspace-write'
+
+  resolve(_request: { session: unknown }): { mode: string } {
+    return { mode: this.mode }
   }
 }
 
@@ -179,9 +197,10 @@ export interface TestServices {
   jobs: MockJobs
   approval: MockApproval
   credentials: MockCredentials
+  sandbox: MockSandboxPolicy
 }
 
-/** Build a context with all five mocked services provided. */
+/** Build a context with all six mocked services provided. */
 export function makeServices(): TestServices {
   const ctx = new Context()
   const tools = new MockTools()
@@ -189,12 +208,14 @@ export function makeServices(): TestServices {
   const jobs = new MockJobs()
   const approval = new MockApproval()
   const credentials = new MockCredentials()
+  const sandbox = new MockSandboxPolicy()
   ctx.provide('tools', tools)
   ctx.provide('commands', commands)
   ctx.provide('jobs', jobs)
   ctx.provide('approval', approval)
   ctx.provide('credentials', credentials)
-  return { ctx, tools, commands, jobs, approval, credentials }
+  ctx.provide('sandboxPolicy', sandbox)
+  return { ctx, tools, commands, jobs, approval, credentials, sandbox }
 }
 
 export interface LoadOptions {
