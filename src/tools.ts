@@ -655,11 +655,17 @@ export function ghIssueTool(state: GithubState) {
         if ('status' in value) {
           return [{ type: 'text', text: `${value.message}${value.guidance !== undefined ? `\n${value.guidance}` : ''}` }]
         }
+        const items = value.items ?? []
         return [{
           type: 'text',
-          text: (value.items ?? []).length === 0
+          text: items.length === 0
             ? `no issues in ${value.repo}`
-            : (value.items ?? []).map(item => `#${item.number} ${item.title} [${item.kind}/${item.state}] by ${item.author} — ${item.url}`).join('\n'),
+            : items.map(item => {
+                const line = `#${item.number} ${item.title} [${item.kind}/${item.state}] by ${item.author} — ${item.url}`
+                if (value.action !== 'comments' || item.body === null || item.body === undefined) return line
+                const capped = capText(item.body, state.config.maxFileChars)
+                return `${line}\n${capped.text}${capped.truncated ? `\n… (truncated at ${state.config.maxFileChars} chars)` : ''}`
+              }).join(value.action === 'comments' ? '\n\n' : '\n'),
         }]
       },
       presentationMeta: identityMeta,

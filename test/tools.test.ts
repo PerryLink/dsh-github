@@ -276,6 +276,18 @@ describe('gh_issue tool', () => {
     expect(comments).toMatchObject({ action: 'comments', total: 1 })
     expect(comments.items[0]).toMatchObject({ number: 9, kind: 'comment', title: 'first line' })
   })
+
+  it('renders full comment bodies for action comments but keeps list one-line', async () => {
+    const services = await loaded(ISSUE_ROUTES)
+    const tool = services.tools.get('gh_issue')
+    const render = (value: unknown): string => (tool.output.render as (args: unknown, value: unknown) => Array<{ type: string; text?: string }>)({}, value)
+      .map(block => block.text ?? '')
+      .join('')
+    const comments = await services.tools.run('gh_issue', { action: 'comments', issueNumber: 3 })
+    expect(render(comments)).toContain('first line\nsecond line')
+    const list = await services.tools.run('gh_issue', { action: 'list', state: 'open' })
+    expect(render(list)).not.toContain('pr body')
+  })
 })
 
 describe('review_post tool', () => {

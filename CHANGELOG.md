@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.27] - 2026-10-23
+
+### Fixed
+
+- **`gh_issue(action: "comments")` now returns the comment bodies instead of an 80-character headline (issue #26).** The execute path already mapped `body` into the canonical value and the output schema already declared it; only `render` discarded it. The comments action now appends each body under its one-line header and caps it with the configured `maxFileChars` (with an explicit truncation marker), while `list` and `get` keep the one-line summary. Added a render regression test.
+
 ## [0.7.26] - 2026-10-22
 
 ### Fixed
