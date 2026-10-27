@@ -172,12 +172,13 @@ created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
 
 ## Configuração
 
-Todos os ajustes são campos `Config` do Schemastery (modificáveis a partir do cordis.yml). Uma substituição direcionada por id troca toda a linha — redeclare cada chave de que você precisa. O `cordis.patch.yml` documenta cada chave em linha. Na GUI, o **cartão de configurações da página Plugins** (grupo Official) lê `tokenRef` do próprio formulário de configuração da entrada — o host `0.1.7-alpha.1` removeu a vinculação `ctx.settingsScope` e a costura de registro de namespace por trás dela, então o cartão não possui mais um namespace de configuração. O token do GitHub não é um campo de configuração: o cartão informa se a credencial referenciada está definida e a grava pelo arquivo de credenciais, que é de onde a metade host a resolve.
+Todos os ajustes são campos `Config` do Schemastery (modificáveis a partir do cordis.yml). Uma substituição direcionada por id troca toda a linha — redeclare cada chave de que você precisa. O `cordis.patch.yml` documenta cada chave em linha. Na GUI, o **cartão de configurações da página Plugins** (grupo Official) lê `tokenRef` do próprio formulário de configuração da entrada — o host `0.1.7-alpha.1` removeu a vinculação `ctx.settingsScope` e a costura de registro de namespace por trás dela, então o cartão não possui mais um namespace de configuração. O token em si é o campo `githubToken` da entrada: o cartão o grava ali e a metade host o resolve antes do arquivo de credenciais, do ambiente e do CLI gh.
 
 | Chave | Padrão | Significado |
 |---|---|---|
-| `tokenSource` | `auto` | `auto` (credenciais → ambiente → gh) ou um de `credentials` / `env` / `gh` |
+| `tokenSource` | `auto` | `auto` (campo da página → credenciais → ambiente → gh) ou um de `config` / `credentials` / `env` / `gh` |
 | `tokenRef` | `GITHUB_TOKEN` | Referência da camada de credenciais / nome da variável de ambiente |
+| `githubToken` | — | Token salvo pela página Plugins; texto puro na configuração do perfil, usado primeiro enquanto não estiver vazio |
 | `defaultOwnerRepo` | — | Fallback `owner/repo` quando uma chamada não nomeia nenhum e o git não tem origin |
 | `autoCommit` | `false` | Se `/pr create` pode instruir o modelo a fazer commit+push primeiro |
 | `maxDiffChars` | `8000` | Limite de caracteres para diffs de PR lidos nas revisões |
