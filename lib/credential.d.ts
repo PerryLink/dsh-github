@@ -29,14 +29,16 @@ export declare function runGhCli(args: string[], signal?: AbortSignal): Promise<
 /**
  * Resolve the GitHub token for one operation.
  *
- * `auto` order: credentials seam → `GITHUB_TOKEN`-style environment variable →
- * `gh` CLI logged-in token. An explicit source restricts to that one source.
+ * `auto` order: configuration field set on the plugin's page → credentials seam
+ * → `GITHUB_TOKEN`-style environment variable → `gh` CLI logged-in token. An
+ * explicit source restricts to that one source.
  * @param credentials - the credentials seam (`ctx.credentials`).
  * @param tokenSource - configured lookup policy.
  * @param tokenRef - reference / environment-variable name.
  * @param runGh - `gh` CLI runner; the real one by default.
  * @param signal - aborts the `gh` lookup.
+ * @param configuredToken - token typed into the Plugins page configuration form.
  * @returns the token with its source, or a structured error with guidance.
  */
-export declare function resolveToken(credentials: CredentialProvider, tokenSource: TokenSource, tokenRef: string, runGh?: GhRunner, signal?: AbortSignal): Promise<TokenResolution>;
+export declare function resolveToken(credentials: CredentialProvider, tokenSource: TokenSource, tokenRef: string, runGh?: GhRunner, signal?: AbortSignal, configuredToken?: string): Promise<TokenResolution>;
 //# sourceMappingURL=credential.d.ts.map

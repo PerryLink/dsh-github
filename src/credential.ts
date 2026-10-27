@@ -32,9 +32,10 @@ export type TokenResolution = { ok: true; token: ResolvedToken } | { ok: false; 
 export type GhRunner = (args: string[], signal?: AbortSignal) => Promise<{ stdout: string }>
 
 const NO_TOKEN_GUIDANCE =
-  'Configure one of: 1) a dsh credential for this reference (recommended; ' +
-  '$DSH_HOME/.credentials.yaml), 2) the same-named environment variable, or ' +
-  '3) `gh auth login` for the gh CLI. Set `tokenSource` in cordis.yml to pin one source.'
+  'Configure one of: 1) the GitHub token field on this plugin\'s page in the Plugins panel, ' +
+  '2) a dsh credential for this reference (' +
+  '$DSH_HOME/.credentials.yaml), 3) the same-named environment variable, or ' +
+  '4) `gh auth login` for the gh CLI. Set `tokenSource` in cordis.yml to pin one source.'
 
 /** Run the real `gh` CLI with stdout captured (never logged). */
 export function runGhCli(args: string[], signal?: AbortSignal): Promise<{ stdout: string }> {
@@ -49,13 +50,15 @@ export function runGhCli(args: string[], signal?: AbortSignal): Promise<{ stdout
 /**
  * Resolve the GitHub token for one operation.
  *
- * `auto` order: credentials seam → `GITHUB_TOKEN`-style environment variable →
- * `gh` CLI logged-in token. An explicit source restricts to that one source.
+ * `auto` order: configuration field set on the plugin's page → credentials seam
+ * → `GITHUB_TOKEN`-style environment variable → `gh` CLI logged-in token. An
+ * explicit source restricts to that one source.
  * @param credentials - the credentials seam (`ctx.credentials`).
  * @param tokenSource - configured lookup policy.
  * @param tokenRef - reference / environment-variable name.
  * @param runGh - `gh` CLI runner; the real one by default.
  * @param signal - aborts the `gh` lookup.
+ * @param configuredToken - token typed into the Plugins page configuration form.
  * @returns the token with its source, or a structured error with guidance.
  */
 export async function resolveToken(
@@ -64,11 +67,20 @@ export async function resolveToken(
   tokenRef: string,
   runGh: GhRunner = runGhCli,
   signal?: AbortSignal,
+  configuredToken?: string,
 ): Promise<TokenResolution> {
+  const typed = configuredToken?.trim()
+  const configured = typed === undefined || typed === '' ? undefined : typed
   const order: Array<Exclude<TokenSource, 'auto'>> =
-    tokenSource === 'auto' ? ['credentials', 'env', 'gh'] : [tokenSource]
+    tokenSource === 'auto'
+      ? [...(configured === undefined ? [] : (['config'] as const)), 'credentials', 'env', 'gh']
+      : [tokenSource]
 
   for (const source of order) {
+    if (source === 'config') {
+      if (configured !== undefined) return { ok: true, token: { value: configured, source: 'config' } }
+      continue
+    }
     if (source === 'credentials') {
       let ref: ReturnType<typeof credentialRef>
       try {
@@ -98,7 +110,7 @@ export async function resolveToken(
     ok: false,
     error: {
       code: 'no-token',
-      message: `no GitHub token found (source: ${tokenSource === 'auto' ? 'credentials/env/gh' : tokenSource})`,
+      message: `no GitHub token found (source: ${tokenSource === 'auto' ? 'config/credentials/env/gh' : tokenSource})`,
       guidance: NO_TOKEN_GUIDANCE,
     },
   }

@@ -11,7 +11,7 @@ import z from '@deepseek-ai/schemastery';
 /** GitHub write actions the plugin may perform (each still requires approval). */
 export type GithubAction = 'pr.create' | 'review.post' | 'issue.create' | 'issue.comment' | 'issue.close' | 'pr.merge' | 'pr.update' | 'ci.run';
 /** Where a GitHub token is looked up. `auto` tries them in order. */
-export type TokenSource = 'auto' | 'credentials' | 'env' | 'gh';
+export type TokenSource = 'auto' | 'config' | 'credentials' | 'env' | 'gh';
 /**
  * The CI surface: the one-shot `ci_run` tool, the polling review bot, the
  * `/ci` command family, and the status-check gate. Every tunable is a Schema
@@ -68,6 +68,12 @@ export interface Config {
     tokenSource: TokenSource;
     /** Credentials-seam reference / environment-variable name for the token. */
     tokenRef: string;
+    /**
+     * Token typed into the Plugins page configuration form. It sits in the profile
+     * configuration as plain text, which is what the credentials file is too;
+     * leave it empty when the configuration is shared with other tools.
+     */
+    githubToken: string;
     /** `owner/repo` used when a call does not name one and git has no origin. */
     defaultOwnerRepo?: string;
     /** Whether `/pr create` may instruct the model to commit and push first. */
@@ -120,5 +126,18 @@ export declare const DEFAULT_CODE_EXTENSIONS: string[];
 /** Default test-path globs for the test-existence rule. */
 export declare const DEFAULT_TEST_PATTERNS: string[];
 export declare const CiConfig: z<CiConfig>;
+/**
+ * Read one configuration value a volatile field hands over as a live reference.
+ *
+ * Such a field arrives as an object carrying `get()` instead of the stored
+ * value, and a Settings write updates that object in place — reading it per
+ * operation is what lets a token saved on the page apply without reloading the
+ * plugin.
+ * @param value - plain value or live reference.
+ * @returns the current value.
+ */
+export declare function liveValue<T>(value: T | {
+    get(): T;
+}): T;
 export declare const Config: z<Config>;
 //# sourceMappingURL=config.d.ts.map

@@ -14,7 +14,7 @@ import { repoFromRemoteUrl, type GitRunner } from './git.ts'
 import { resolveToken, type GhRunner, type TokenResolution } from './credential.ts'
 import type { SubagentsService } from './types.ts'
 import type { ReviewReport } from './review.ts'
-import { CiConfig, type Config } from './config.ts'
+import { CiConfig, liveValue, type Config } from './config.ts'
 
 /** Result of resolving which repository a call targets. */
 export type RepoResolution = { ok: true; repo: string } | { ok: false; code: string; message: string; guidance: string }
@@ -101,7 +101,7 @@ export function createState(ctx: { credentials: CredentialProvider; subagents?: 
     workspaceDir: normalizedConfig.workspaceDir ?? process.cwd(),
     apiHost,
     isCiDriver: process.env.DSH_GITHUB_CI_DRIVER === '1',
-    resolveToken: (signal?: AbortSignal) => resolveToken(ctx.credentials, normalizedConfig.tokenSource, normalizedConfig.tokenRef, runGh, signal),
+    resolveToken: (signal?: AbortSignal) => resolveToken(ctx.credentials, normalizedConfig.tokenSource, normalizedConfig.tokenRef, runGh, signal, liveValue(normalizedConfig.githubToken)),
     client: (token: string) => new GithubClient(token, clientOptions),
     graphqlClient: (token: string) => new GithubGraphqlClient(token, clientOptions),
     resolveRepo: (ownerRepo: string | undefined, signal?: AbortSignal) => resolveRepo(state, ownerRepo, signal),
