@@ -47,6 +47,29 @@ describe('resolveToken', () => {
     expect(result.ok).toBe(false)
   })
 
+  it('prefers the token configured on the Plugins page over every other source', async () => {
+    process.env.GITHUB_TOKEN = TOKEN
+    const seam = {
+      resolve: async () => ({ value: `${TOKEN}-seam`, source: 'env' }),
+    } as unknown as CredentialProvider
+    const result = await resolveToken(seam, 'auto', 'GITHUB_TOKEN', ghRunner(), undefined, ` ${TOKEN}-page `)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.token).toEqual({ value: `${TOKEN}-page`, source: 'config' })
+  })
+
+  it('falls through a blank configured token', async () => {
+    process.env.GITHUB_TOKEN = TOKEN
+    const result = await resolveToken(credentials, 'auto', 'GITHUB_TOKEN', ghRunner('fail'), undefined, '   ')
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.token.source).toBe('env')
+  })
+
+  it('fails closed when config is pinned but no token was typed', async () => {
+    const result = await resolveToken(credentials, 'config', 'GITHUB_TOKEN', ghRunner(), undefined, '')
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error.message).toContain('config')
+  })
+
   it('returns a structured error with guidance when nothing resolves', async () => {
     const result = await resolveToken(credentials, 'auto', 'GITHUB_TOKEN', ghRunner('fail'))
     expect(result.ok).toBe(false)

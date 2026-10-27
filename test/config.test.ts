@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { Config } from '../src/index.ts'
+import { liveValue } from '../src/config.ts'
 
 describe('Config schema', () => {
   it('applies defaults for an empty object', () => {
     const resolved = Config({}) as Record<string, unknown>
     expect(resolved.tokenSource).toBe('auto')
     expect(resolved.tokenRef).toBe('GITHUB_TOKEN')
+    // A volatile field validates to its live reference, not to the stored value.
+    expect(liveValue(resolved.githubToken as string | { get(): string })).toBe('')
     expect(resolved.autoCommit).toBe(false)
     expect(resolved.maxDiffChars).toBe(8000)
     expect(resolved.renderExcerptChars).toBe(2000)
@@ -22,6 +25,16 @@ describe('Config schema', () => {
     expect(resolved.allowedActions).toEqual(['pr.create', 'review.post', 'issue.create', 'issue.comment', 'issue.close', 'pr.merge', 'pr.update', 'ci.run'])
     expect(resolved.defaultOwnerRepo).toBeUndefined()
     expect(resolved.workspaceDir).toBeUndefined()
+  })
+
+  it('marks the token field volatile so the settings page can serve it', () => {
+    const field = (Config as unknown as { dict: Record<string, { meta: { volatile?: boolean } }> }).dict.githubToken
+    expect(field?.meta.volatile).toBe(true)
+  })
+
+  it('reads a value through its live reference, or as a plain value', () => {
+    expect(liveValue({ get: () => 'typed' })).toBe('typed')
+    expect(liveValue('plain')).toBe('plain')
   })
 
   it('fails loud on an invalid tokenSource', () => {
