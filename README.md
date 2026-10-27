@@ -174,12 +174,13 @@ created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
 
 ## Configuration
 
-All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the **Plugins page settings card** (Official group) reads `tokenRef` from the entry's own configuration form — the `0.1.7-alpha.1` host removed the `ctx.settingsScope` binding and the namespace-registration seam behind it, so the card no longer owns a settings namespace. The GitHub token is not a configuration field at all: the card reports whether the referenced credential is set and writes it through the credentials file, which is where the host half resolves it.
+All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the **Plugins page settings card** (Official group) reads `tokenRef` from the entry's own configuration form — the `0.1.7-alpha.1` host removed the `ctx.settingsScope` binding and the namespace-registration seam behind it, so the card no longer owns a settings namespace. The token itself is the entry's `githubToken` field: the card writes it there, and the host half resolves it ahead of the credentials file, the environment, and the gh CLI.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `tokenSource` | `auto` | `auto` (credentials → env → gh) or one of `credentials` / `env` / `gh` |
+| `tokenSource` | `auto` | `auto` (page field → credentials → env → gh) or one of `config` / `credentials` / `env` / `gh` |
 | `tokenRef` | `GITHUB_TOKEN` | Credential-seam reference / environment-variable name |
+| `githubToken` | — | Token saved from the Plugins page; plain text in the profile configuration, tried first while non-empty |
 | `defaultOwnerRepo` | — | Fallback `owner/repo` when a call names none and git has no origin |
 | `autoCommit` | `false` | Whether `/pr create` may instruct the model to commit+push first |
 | `maxDiffChars` | `8000` | Character cap for PR diffs read into reviews |

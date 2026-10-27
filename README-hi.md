@@ -172,12 +172,13 @@ created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
 
 ## कॉन्फ़िगरेशन
 
-सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है। GUI में, **Plugins पेज settings card** (Official समूह) `tokenRef` उस entry के अपने configuration form से पढ़ता है — `0.1.7-alpha.1` host ने `ctx.settingsScope` binding और उसके पीछे का namespace-registration seam हटा दिया, इसलिए कार्ड अब कोई settings namespace नहीं रखता। GitHub token configuration field नहीं है: कार्ड बताता है कि referenced credential सेट है या नहीं, और उसे credentials फ़ाइल के ज़रिए लिखता है — host half वहीं से resolve करता है।
+सभी tunables Schemastery `Config` fields हैं (cordis.yml से बदले जा सकते हैं)। एक id-लक्षित override पूरी row को बदल देता है — जो key आपको चाहिए उसे दोबारा लिखें। `cordis.patch.yml` हर key को inline दस्तावेज़ित करता है। GUI में, **Plugins पेज settings card** (Official समूह) `tokenRef` उस entry के अपने configuration form से पढ़ता है — `0.1.7-alpha.1` host ने `ctx.settingsScope` binding और उसके पीछे का namespace-registration seam हटा दिया, इसलिए कार्ड अब कोई settings namespace नहीं रखता। token स्वयं उस entry का `githubToken` field है: कार्ड उसे वहीं लिखता है, और host half उसे credentials फ़ाइल, environment और gh CLI से पहले resolve करता है।
 
 | कुंजी | डिफ़ॉल्ट | अर्थ |
 |---|---|---|
-| `tokenSource` | `auto` | `auto` (credentials → env → gh) या `credentials` / `env` / `gh` में से कोई एक |
+| `tokenSource` | `auto` | `auto` (पेज field → credentials → env → gh) या `config` / `credentials` / `env` / `gh` में से कोई एक |
 | `tokenRef` | `GITHUB_TOKEN` | Credential-seam reference / environment-variable नाम |
+| `githubToken` | — | Plugins पेज से सहेजा गया token; profile configuration में plain text, खाली न होने पर पहले इस्तेमाल होता है |
 | `defaultOwnerRepo` | — | जब कोई call कोई नाम न दे और git के पास कोई origin न हो तो Fallback `owner/repo` |
 | `autoCommit` | `false` | क्या `/pr create` model को पहले commit+push करने का निर्देश दे सकता है |
 | `maxDiffChars` | `8000` | reviews में पढ़े जाने वाले PR diffs की character सीमा |

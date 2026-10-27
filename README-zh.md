@@ -174,12 +174,13 @@ created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
 
 ## 配置
 
-所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，**Plugins 页设置卡**（Official 组）从该条目自己的配置表单读取 `tokenRef`：`0.1.7-alpha.1` 宿主已删除 `ctx.settingsScope` 绑定及其背后的命名空间注册缝，卡片因此不再拥有设置命名空间。GitHub 令牌根本不是配置字段：卡片只报告所引用凭证是否已配置，并通过凭证文件写入它——宿主半部正是从那里解析的。
+所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行 —— 需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，**Plugins 页设置卡**（Official 组）从该条目自己的配置表单读取 `tokenRef`：`0.1.7-alpha.1` 宿主已删除 `ctx.settingsScope` 绑定及其背后的命名空间注册缝，卡片因此不再拥有设置命名空间。令牌本身就是该条目的 `githubToken` 字段：卡片写到这里，宿主半部按「页面字段 → 凭证文件 → 环境变量 → gh」的顺序解析。
 
 | 键 | 默认值 | 含义 |
 |---|---|---|
-| `tokenSource` | `auto` | `auto`（credentials → env → gh）或指定 `credentials` / `env` / `gh` |
+| `tokenSource` | `auto` | `auto`（页面字段 → credentials → env → gh）或指定 `config` / `credentials` / `env` / `gh` |
 | `tokenRef` | `GITHUB_TOKEN` | credentials seam 引用名 / 环境变量名 |
+| `githubToken` | — | 从插件页保存的令牌；以明文存于 profile 配置，非空时优先使用 |
 | `defaultOwnerRepo` | — | 调用未指定且 git 无 origin 时的兜底 `owner/repo` |
 | `autoCommit` | `false` | `/pr create` 是否允许指示模型先 commit+push |
 | `maxDiffChars` | `8000` | 审查读取 PR diff 的字符数上限 |

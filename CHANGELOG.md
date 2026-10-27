@@ -68,9 +68,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`githubToken` — a token field the Plugins page can edit.** DSH 0.2.1 serves a settings namespace only for a plugin whose Config marks at least one field `.volatile()`; `dsh-github` had none, so the settings service skipped the whole namespace and the row had no editable form. The card now writes this field, and `tokenSource` gains a `config` member that `auto` tries before the credentials file, the environment, and the gh CLI. The value sits in the profile configuration as plain text; the credentials file and `gh auth login` remain the alternatives.
+
 ### Fixed
 
 - **The shipped browser bundle registers under the package name.** `scripts/bundle-client.mjs` hardcoded `id: "dsh-github"`; DSH 0.2.1 keys client rows by package name (`@perrylink/dsh-github`), so the loader fell back to the single-resource URL and re-executed the bundle, aborting web boot with `duplicate factory registration`. The wrapper now reads `package.json.name`, and `verify:artifacts` + `test/client-bundle.test.ts` assert the registration id.
+- **The GitHub card mounts again on DSH 0.2.1.** The browser half required the browser-side credentials remote, which 0.2.1 removed (`@deepseek-ai/dsh-credentials` ships no `./remote`): the client entry stayed pending — a fatal web boot in 0.2.x — and the defensive variant returned before `ctx.slots.register`, so no card appeared in the Plugins panel. It now reads the page-supplied `form` (`{ state, mutate }`), registers on `plugins.item` unconditionally, renders through `SettingsForm` / `SettingsSecretField` so themes and installed skins restyle it, and adds a short guide to both GitHub token pages.
 
 ## [0.7.18] - 2026-10-05
 

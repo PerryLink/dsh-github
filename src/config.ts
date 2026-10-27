@@ -13,7 +13,7 @@ import z from '@deepseek-ai/schemastery'
 export type GithubAction = 'pr.create' | 'review.post' | 'issue.create' | 'issue.comment' | 'issue.close' | 'pr.merge' | 'pr.update' | 'ci.run'
 
 /** Where a GitHub token is looked up. `auto` tries them in order. */
-export type TokenSource = 'auto' | 'credentials' | 'env' | 'gh'
+export type TokenSource = 'auto' | 'config' | 'credentials' | 'env' | 'gh'
 
 /**
  * The CI surface: the one-shot `ci_run` tool, the polling review bot, the
@@ -72,6 +72,12 @@ export interface Config {
   tokenSource: TokenSource
   /** Credentials-seam reference / environment-variable name for the token. */
   tokenRef: string
+  /**
+   * Token typed into the Plugins page configuration form. It sits in the profile
+   * configuration as plain text, which is what the credentials file is too;
+   * leave it empty when the configuration is shared with other tools.
+   */
+  githubToken: string
   /** `owner/repo` used when a call does not name one and git has no origin. */
   defaultOwnerRepo?: string
   /** Whether `/pr create` may instruct the model to commit and push first. */
@@ -184,14 +190,46 @@ export const CiConfig: z<CiConfig> = z.object({
     .description('Report-file directory; defaults to DSH_GITHUB_CI_OUTPUT_DIR, then the workspace directory.'),
 })
 
+/**
+ * A string field the Plugins page may edit.
+ *
+ * `.volatile()` is what makes the field reachable from the browser at all: DSH
+ * serves a settings namespace only when its Config exposes at least one
+ * volatile field, and accepts a write only beneath a volatile node. A volatile
+ * schema types its output as `Volatile<string>` because the plugin receives a
+ * live reference rather than the stored value; {@link liveValue} reads that
+ * reference, so the schema keeps the plain face its consumers use.
+ * @param description - schema description the settings form shows.
+ * @returns the schema field.
+ */
+function editableString(description: string): z<string> {
+  return z.string().default('').volatile().description(description) as unknown as z<string>
+}
+
+/**
+ * Read one configuration value a volatile field hands over as a live reference.
+ *
+ * Such a field arrives as an object carrying `get()` instead of the stored
+ * value, and a Settings write updates that object in place — reading it per
+ * operation is what lets a token saved on the page apply without reloading the
+ * plugin.
+ * @param value - plain value or live reference.
+ * @returns the current value.
+ */
+export function liveValue<T>(value: T | { get(): T }): T {
+  const getter = (value as { get?: unknown }).get
+  return typeof getter === 'function' ? (value as { get(): T }).get() : (value as T)
+}
+
 export const Config: z<Config> = z.object({
-  tokenSource: z.union(['auto', 'credentials', 'env', 'gh'] as const)
+  tokenSource: z.union(['auto', 'config', 'credentials', 'env', 'gh'] as const)
     .default('auto')
-    .description('Token lookup source: auto tries credentials → env → gh in order.'),
+    .description('Token lookup source: auto tries this page → credentials → env → gh in order.'),
   tokenRef: z.string()
     .pattern(/^[A-Za-z_][A-Za-z0-9_]*$/)
     .default('GITHUB_TOKEN')
     .description('Credential reference / environment variable name holding the token.'),
+  githubToken: editableString('Token set from this page; used before the credentials file when non-empty. Stored in the profile configuration in plain text.'),
   defaultOwnerRepo: z.string()
     .pattern(OWNER_REPO_PATTERN)
     .description('Fallback owner/repo when neither the call nor git names one.'),
