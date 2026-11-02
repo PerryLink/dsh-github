@@ -1,3 +1,5 @@
+> **Moved:** this project is now **[dsh-github-bot](https://github.com/PerryLink/dsh-github-bot)**. This repository stays as a pointer/backup; new work happens in the new home. Old npm package `@perrylink/dsh-github` is deprecated; install `dsh-github-bot`.
+
 <div align="center">
 
 # dsh-github

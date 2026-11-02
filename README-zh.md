@@ -1,3 +1,5 @@
+> **已迁移：** 本项目现在位于 **[dsh-github-bot](https://github.com/PerryLink/dsh-github-bot)**。本仓库保留为索引/备份，新工作在新仓库进行。旧 npm 包 `@perrylink/dsh-github` 已弃用，请安装 `dsh-github-bot`。
+
 <div align="center">
 
 # dsh-github
