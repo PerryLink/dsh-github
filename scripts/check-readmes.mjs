@@ -1,10 +1,10 @@
 // Cross-checks the documentation against the source:
-// 1. Every README's table-of-contents anchor links resolve against its own
-//    headings using GitHub-style slugs (emoji/CJK/Devanagari kept, punctuation
-//    stripped — including `&`, which GitHub drops while keeping the surrounding
-//    hyphens — spaces → hyphens, ASCII lowercased). The 📚-marked
-//    table-of-contents heading itself is exempt from the must-be-referenced
-//    rule: it is the navigation index, not a target.
+// 1. Every README's header navigation and badge anchor links resolve against
+//    its own headings using GitHub-style slugs (emoji/CJK/Devanagari kept,
+//    punctuation stripped — including `&`, which GitHub drops while keeping the
+//    surrounding hyphens — spaces → hyphens, ASCII lowercased). The shared
+//    header is a three-link navigation plus language links, not a full table
+//    of contents, so a heading does not have to be linked from a TOC.
 // 2. Every tool name in src/tools.ts and every config key in src/config.ts is
 //    mentioned in every README (drift guard for the 5-language docs).
 // 3. No README pins a versioned tarball name (dsh-github-x.y.z.tgz) — the
@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
-const FILES = ['README.md', 'README-zh.md', 'README-es.md', 'README-pt.md', 'README-hi.md']
+const FILES = ['README.md', 'README.en.md', 'README.es.md', 'README.pt.md', 'README.hi.md']
 
 /** GitHub-slugger-compatible slug for one heading line (without the `## `). */
 function slug(heading) {
@@ -28,11 +28,6 @@ function slug(heading) {
     .replace(/\s+/g, '-')
     .replace(/&/g, '')
     .replace(/[.,:;!?()'"·—•*]/g, '')
-}
-
-/** The 📚 heading is the table of contents itself, never a link target. */
-function isTocHeading(heading) {
-  return heading.includes('📚')
 }
 
 /** Extract tool names from `name: '…'` literals in src/tools.ts. */
@@ -75,11 +70,9 @@ for (const file of FILES) {
   const headings = text.split('\n').filter(line => /^## /.test(line)).map(line => line.slice(3))
   const anchors = [...text.matchAll(/\]\(#([^)]+)\)/g)].map(match => decodeURIComponent(match[1]))
   const broken = anchors.filter(anchor => !headings.some(heading => slug(heading) === anchor))
-  const unreferenced = headings.filter(heading => !isTocHeading(heading) && !anchors.includes(slug(heading)))
-  if (broken.length > 0 || unreferenced.length > 0) {
-    console.log(`${file}: ${broken.length} broken, ${unreferenced.length} unreferenced`)
+  if (broken.length > 0) {
+    console.log(`${file}: ${broken.length} broken anchors (${anchors.length} links)`)
     for (const anchor of broken) console.log(`  broken: #${anchor}`)
-    for (const heading of unreferenced) console.log(`  unreferenced: ## ${heading}`)
     failed = true
   } else {
     console.log(`${file}: OK (${headings.length} headings, ${anchors.length} links)`)

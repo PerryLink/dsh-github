@@ -1,278 +1,356 @@
-> **Moved:** this project is now **[dsh-github-bot](https://github.com/PerryLink/dsh-github-bot)**. This repository stays as a pointer/backup; new work happens in the new home. Old npm package `@perrylink/dsh-github` is deprecated; install `dsh-github-bot`.
-
 <div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-dark.svg">
+  <img src="docs/assets/dsh-github-flow-light.svg" width="100%" alt="dsh-github 数据流：pr_create → tools/pre-execute → ctx.approval → api.github.com → review_post；/review 后台任务与 ci_run 状态门并列">
+</picture>
 
 # dsh-github
 
-> Release stamp: `0.7.16` (2026-10-04).
+**在 agent 里安全地写 GitHub——每个写操作先经人类审批，token 永不落日志。**
 
-> **Package name.** This project publishes to npm as **`@perrylink/dsh-github`**. The bare npm name `dsh-github` belongs to a different, unrelated project — installing it does not install this plugin.
-[![Gitee](https://img.shields.io/badge/Gitee-mirror-c71d23?logo=gitee)](https://gitee.com/perrylink/dsh-github)
+把 PR、审查、issue 与 CI 接入 DeepSeek Harness 的主机端插件：15 个工具、4 族命令、后台审查 job、CI 复合动作与状态检查门禁。
+
+[安装](#三步上手) · [配置](#配置) · [FAQ](#faq) · [简体中文](README.md) · [English](README.en.md) · [Español](README.es.md) · [Português](README.pt.md) · [हिन्दी](README.hi.md)
+
+[![License](https://img.shields.io/badge/license-Apache--2.0-3366CC?style=flat-square&labelColor=2B3245)](LICENSE)
+[![DSH](https://img.shields.io/badge/DSH-%E2%89%A50.2.1%20%3C0.3.0-4B67B4?style=flat-square&labelColor=2B3245)](#兼容性)
+[![npm](https://img.shields.io/npm/v/%40perrylink%2Fdsh-github?style=flat-square&labelColor=2B3245&color=CB3837)](https://www.npmjs.com/package/@perrylink/dsh-github)
+[![CI](https://img.shields.io/github/actions/workflow/status/PerryLink/dsh-github/ci.yml?branch=main&label=CI&style=flat-square&labelColor=2B3245)](https://github.com/PerryLink/dsh-github/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?style=flat-square&labelColor=2B3245)](#兼容性)
+
+[![Stars](https://img.shields.io/github/stars/PerryLink/dsh-github?style=flat-square&labelColor=2B3245)](https://github.com/PerryLink/dsh-github/stargazers)
+[![npm downloads](https://img.shields.io/npm/dm/%40perrylink%2Fdsh-github?style=flat-square&labelColor=2B3245&color=CB3837)](https://www.npmjs.com/package/@perrylink/dsh-github)
 [![dshfind](https://dshfind.com/api/badge/PerryLink/dsh-github?metric=downloads)](https://dshfind.com/plugins/PerryLink/dsh-github?ref=badge)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github/badge)](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github)
-
-**GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated by human approval, token never logged.**
-
-*Create, review, merge, and search GitHub from the agent, with a CI composite action, polling review bot, and status-check gate.*
-
-> **Official repository.** This is the only official repository of dsh-github, maintained by PerryLink. Same-name repositories under other accounts are not affiliated.
-
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![DSH plugin](https://img.shields.io/badge/dsh--plugin-✅-green)](https://github.com/topics/dsh-plugin)
-[![dsh-doctor](https://raw.githubusercontent.com/PerryLink/dsh-plugin-doctor/main/badges/PerryLink__dsh-github.svg)](https://github.com/PerryLink/dsh-plugin-doctor#verified-徽章)
-[![DSH Market](https://raw.githubusercontent.com/2BingLing/dsh-market/master/assets/readme/badge-listed-en.svg)](https://dsh.market/)
-[![Node](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-brightgreen.svg)](#)
-[![CI](https://img.shields.io/github/actions/workflow/status/PerryLink/dsh-github/ci.yml?branch=main&label=CI)](https://github.com/PerryLink/dsh-github/actions)
-[![Version](https://img.shields.io/github/v/tag/PerryLink/dsh-github?label=version)](https://github.com/PerryLink/dsh-github/releases)
-[![npm version](https://img.shields.io/npm/v/%40perrylink%2Fdsh-github)](https://www.npmjs.com/package/@perrylink/dsh-github)
-- **1024 store channel**: `npm i -g dsh1024` once, then `dsh1024 plugin --profile web add @perrylink/dsh-github` (counts toward the [deepseek1024.com](https://deepseek1024.com) install ranking).
-[![npm downloads](https://img.shields.io/npm/dm/%40perrylink%2Fdsh-github)](https://www.npmjs.com/package/@perrylink/dsh-github)
-
-[English](README.md) · [简体中文](README-zh.md) · [Español](README-es.md) · [Português](README-pt.md) · [हिन्दी](README-hi.md)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/PerryLink/dsh-github/badge)](https://securityscorecards.dev/viewer/?uri=github.com/PerryLink/dsh-github)
+[![DSH Market](https://img.shields.io/badge/DSH_Market-listed-4B67B4?style=flat-square&labelColor=2B3245)](https://dsh.market/)
+[![Gitee](https://img.shields.io/badge/Gitee-mirror-C71D23?style=flat-square&labelColor=2B3245&logo=gitee)](https://gitee.com/perrylink/dsh-github)
 
 ```sh
 dsh plugin --profile <name> add @perrylink/dsh-github
 ```
 
-
 </div>
 
----
+<sub>社区插件，与 DeepSeek 官方无关；唯一仓库：<https://github.com/PerryLink/dsh-github>（Gitee 为镜像）。npm 发布名是 `@perrylink/dsh-github`，裸名 `dsh-github` 属于另一个无关项目。项目已迁移到 [dsh-github-bot](https://github.com/PerryLink/dsh-github-bot)：本仓库保留为索引/备份，旧 npm 包 `@perrylink/dsh-github` 已弃用，新工作请安装 `dsh-github-bot`。</sub>
 
-## Install & uninstall
+## 它是什么
 
-- **git channel** (latest `main`): `dsh plugin --profile web add github:PerryLink/dsh-github` — the `prepare` script builds with production dependencies only.
-- **npm channel** (published releases): `dsh plugin --profile web add @perrylink/dsh-github`.
-- **tarball channel**: `pnpm pack` in this repo, then `dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz`.
-- **uninstall**: `dsh plugin --profile web remove @perrylink/dsh-github` (or remove the row from the profile patch).
+`dsh-github` 把 GitHub 的 PR、审查、issue 与 CI 接进 agent 的回合，同时给每个写操作套上审批笼子：`pr_create`、`pr_merge`、`review_post`、`issue_close` 这类工具只有在 `ctx.approval` 得到明确同意后才会落到 GitHub。读侧（PR 元数据、截断 diff、文件、搜索、状态检查）不设审批，直接返回。后台 `/review` 在 `ctx.jobs` 上跑确定性多文件分析器，CI 侧另有一套复合动作、轮询审查机器人与状态检查门禁。token 逐操作从 credentials seam、环境变量或 `gh` CLI 解析，只进 `Authorization` 头，日志、事件、卡片、命令输出与错误消息里都看不到它。
 
-## What is dsh-github?
+## 三步上手
 
-GitHub PRs, reviews, issues, and CI for DeepSeek Harness — every write gated by human approval, token never logged.
+1. **安装**（三选一）：
 
-Create, review, merge, and search GitHub from the agent, with a CI composite action, polling review bot, and status-check gate.
+   ```sh
+   # git 通道（最新 main；等价于 git+https://github.com/PerryLink/dsh-github.git）
+   dsh plugin --profile web add github:PerryLink/dsh-github
+   # npm 通道（已发布版本）
+   dsh plugin --profile web add @perrylink/dsh-github
+   # tarball 通道：本仓库 pnpm pack 后
+   dsh plugin --profile web add ./perrylink-dsh-github-<version>.tgz
+   ```
 
-![Workflow diagram for dsh-github: request → policy / review → verdict.](docs/assets/dsh-github-flow.svg)
+   `prepare` 脚本只带生产依赖构建，git 通道无需额外准备。
 
-*Workflow overview: request → policy / review → verdict. The examples below use the real command surface.*
+2. **最小配置**（默认即可用；token 按需指定来源）：
 
+   ```yaml
+   - insert:
+       - id: dsh-github
+         name: '@perrylink/dsh-github'
+         config:
+           tokenSource: auto
+           autoCommit: false
+   ```
 
+   `tokenSource: auto` 会依次尝试 Plugins 页字段 → credentials 文件 → 环境变量 → `gh` CLI，token 本身不写进这份 YAML。
 
-## 📚 Table of contents
+3. **验证已生效**：
 
-- [What is dsh-github?](#what-is-dsh-github)
-- [Compatibility](#compatibility)
-- [What you get](#what-you-get)
-- [Quick start](#quick-start)
-- [Install & uninstall](#install--uninstall)
-- [Configuration](#configuration)
-- [Tools & surfaces](#tools--surfaces)
-- [Architecture](#architecture)
-- [Permissions & data](#permissions--data)
-- [Security boundaries](#security-boundaries)
-- [Known limitations](#known-limitations)
-- [Development](#development)
-- [Repository layout](#repository-layout)
-- [Interoperability with other DSH plugins](#interoperability-with-other-dsh-plugins)
-- [Topics](#topics)
-- [Contributors](#contributors)
-- [PerryLink DSH Plugin Family](#perrylink-dsh-plugin-family)
-- [License](#license)
+   ```sh
+   dsh --profile web --dump-config | grep -A3 'id: dsh-github'
+   ```
 
-## Compatibility
+   看到 `id: dsh-github` 这一行即挂载成功；第一次写操作会走审批。
 
-| Surface | Status |
-|---|---|
-| Harness | DeepSeek Harness `dsh-v0.2.1-rc.2` (verified 2026-10-18): `engines.dsh >=0.2.1-0 <0.3.0`; the P0 compatibility paths have regression tests. |
-| Node | `^22.19.0 \|\| >=24.0.0` |
-| Platforms | All (host plugin; outbound network to GitHub) |
-| Model | Any (static review is deterministic; `reviewMode: "model"` is optional) |
+**卸载**：`dsh plugin --profile web remove @perrylink/dsh-github`（或从 profile patch 里删掉该行）。
 
-## What you get
+<details>
+<summary>从 DSH Desktop 市场安装</summary>
 
-`dsh-github` fills the GitHub gap between `dsh` and tools like Claude Code and Codex: your agent can read, review, open, update, and merge pull requests, read repository metadata and files, comment on and close issues, and search — while a human approves every write and the token stays secret.
+所有 PerryLink 插件均可在 DSH Desktop 内置市场中浏览：**市场 → 来源 → 添加来源 → 粘贴** `https://perrylink-dsh-catalog.perrylink.workers.dev/catalog-source.json` **→ 选中**。安装仍需通过市场的 npm 身份校验与你的确认。
 
-- **15 tools** — `pr_create`, `pr_merge`, `pr_update`, `gh_review`, `review_post`, `gh_issue`, `issue_open`, `issue_comment`, `issue_close`, `gh_search`, `gh_repo`, `gh_file`, `gh_repo_search`, `gh_checks`, all canonical JSON via `defineTool`, plus the one-shot `ci_run` when `ci.enabled` is on.
-- **4 command families** — `/pr create`, `/review` (start/stop/post), `/issue open`, and `/ci` (`scan`/`status`/`start`/`stop`/`run <pr>`, registered under `ci.enabled`).
-- **Full PR lifecycle** — create → review → update (title/body/state/base) → merge (merge/squash/rebase, optional head-branch delete).
-- **Inline reviews** — `review_post` posts one summary comment or line-anchored review comments against the PR head commit.
-- **Approval-gated writes** — every GitHub write goes through `ctx.approval` (default `ask`, fail-closed); approval reasons preview titles, body sizes, and comment overrides.
-- **Token secrecy** — credentials seam → environment → `gh` CLI, resolved per operation, never in logs, events, renders, or errors.
-- **Background review jobs** — `/review` runs on `ctx.jobs` with the host's own `job_list` / `job_output` / `job_kill` surface.
-- **Resilience** — 429 retry with `Retry-After`/`x-ratelimit-reset` backoff; read tools are concurrency-safe; all calls honor cancellation.
-- **CI surface** — the one-shot `ci_run` tool, a polling review bot, and a status-check gate (composite action `action.yml`).
+</details>
 
-## Quick start
+### 示例
 
-```sh
-dsh plugin --profile web add github:PerryLink/dsh-github
-```
+以下为插件真实入口；安装后调用一个即可。
 
-```sh
-# 1. install the bundle into your profile
-dsh plugin --profile web add github:PerryLink/dsh-github
+**详细示例** — 命令 `pr_create`，输入：
 
-# or from npm (published releases)
-dsh plugin --profile web add @perrylink/dsh-github
-
-# 2. restart and verify the row
-dsh --profile web --dump-config | grep -A3 'id: dsh-github'
-```
-
-### Examples
-
-These are the plugin's real entry points; install once, then call one.
-
-#### Detailed example
-
-**Command**
-
-~~~sh
-pr_create
-~~~
-
-**Input**
-
-~~~json
+```json
 {
   "title": "feat: shiny",
   "body": "desc"
 }
-~~~
+```
 
-**Output**
+输出：
 
-~~~text
+```text
 created pull request #7: https://github.com/o/r/pull/7 (main ← feat/shiny)
-~~~
+```
 
 *Observed from `plugins/dsh-github/test/tools.test.ts:69-74 (fixture + assertions); renderer at plugins/dsh-github/src/tools.ts:189`*
 
-#### Failure branch
+**失败分支** — 没有任何可用 token 时，输入：
 
-**Input**
-
-~~~text
+```text
 {"title":"x"} (credentials seam empty; GITHUB_TOKEN unset; gh not logged in)
-~~~
+```
 
-**Output**
+输出：
 
-~~~text
+```text
 {
   "status": "error",
   "code": "no-token",
   "message": "no GitHub token found (source: credentials/env/gh)",
   "guidance": "Configure one of: 1) a dsh credential for this reference (recommended; $DSH_HOME/.credentials.yaml), 2) the same-named environment variable, or 3) `gh auth login` for the gh CLI. Set `tokenSource` in cordis.yml to pin one source."
 }
-~~~
+```
 
 *Observed from `plugins/dsh-github/src/credential.ts:96-104; plugins/dsh-github/test/tools.test.ts:88-93`*
 
-#### Brief examples
+**简短示例**：`pr_merge` · `gh_review`
 
-- `pr_merge`
-- `gh_review`
+## 核心能力
 
-## Configuration
+`dsh-github` 补上了 `dsh` 与 Claude Code、Codex 之类工具之间的 GitHub 缺口：agent 能读、审、开、改、合 PR，读仓库元数据与文件，评论与关闭 issue，以及搜索——每个写操作都有人类审批，token 全程保密。
 
-All tunables are Schemastery `Config` fields (changeable from cordis.yml). An id-targeted override replaces the whole row — restate every key you need. `cordis.patch.yml` documents each key inline. In the GUI, the **Plugins page settings card** (Official group) reads `tokenRef` from the entry's own configuration form — the `0.1.7-alpha.1` host removed the `ctx.settingsScope` binding and the namespace-registration seam behind it, so the card no longer owns a settings namespace. The token itself is the entry's `githubToken` field: the card writes it there, and the host half resolves it ahead of the credentials file, the environment, and the gh CLI.
+- **15 个工具** —— `pr_create`、`pr_merge`、`pr_update`、`gh_review`、`review_post`、`gh_issue`、`issue_open`、`issue_comment`、`issue_close`、`gh_search`、`gh_repo`、`gh_file`、`gh_repo_search`、`gh_checks`，全部经 `defineTool` 返回规范 JSON；`ci.enabled` 打开时再加一次性 `ci_run`。
+- **4 族命令** —— `/pr create`、`/review`（start / stop / post）、`/issue open`，以及 `ci.enabled` 下的 `/ci`（scan / status / start / stop / run）。
+- **完整 PR 生命周期** —— 创建 → 审查 → 更新（标题 / 正文 / 状态 / 目标分支）→ 合并（merge / squash / rebase，可选合并后删源分支）。
+- **行级审查** —— `review_post` 可发布单条汇总评论，或按行锚定 PR head commit 的行级审查评论。
+- **写操作审批** —— 每个 GitHub 写操作都经 `ctx.approval`（默认 `ask`，fail-closed）；审批理由预览标题、正文长度与评论覆盖内容。
+- **token 保密** —— credentials seam → 环境变量 → `gh` CLI，逐操作解析，绝不进日志、事件、渲染或错误。
+- **后台审查 job** —— `/review` 跑在 `ctx.jobs` 上，复用宿主自带 `job_list` / `job_output` / `job_kill` 工具面。
+- **韧性** —— 按 `Retry-After` / `x-ratelimit-reset` 退避重试 429；读工具并发安全；所有调用尊重取消信号。
+- **CI 界面** —— 一次性 `ci_run` 工具、轮询式审查机器人与状态检查门禁（复合动作 `action.yml`）。
 
-| Key | Default | Meaning |
+### 工具与界面
+
+| 界面 | 类型 | 说明 |
 |---|---|---|
-| `tokenSource` | `auto` | `auto` (page field → credentials → env → gh) or one of `config` / `credentials` / `env` / `gh` |
-| `tokenRef` | `GITHUB_TOKEN` | Credential-seam reference / environment-variable name |
-| `githubToken` | — | Token saved from the Plugins page; plain text in the profile configuration, tried first while non-empty |
-| `defaultOwnerRepo` | — | Fallback `owner/repo` when a call names none and git has no origin |
-| `autoCommit` | `false` | Whether `/pr create` may instruct the model to commit+push first |
-| `maxDiffChars` | `8000` | Character cap for PR diffs read into reviews |
-| `renderExcerptChars` | `2000` | Character cap for the diff excerpt rendered into tool output |
-| `maxComments` | `20` | Cap for PR comments listed by `gh_review` |
-| `reviewJobTimeoutMs` | `600000` | Deadline for one background review job (fails with `timeout`) |
-| `maxReviewRecords` | `50` | Cap for in-memory review-job records; oldest settled records evict first |
-| `maxFileChars` | `12000` | Character cap for file contents read by `gh_file` |
-| `maxFindings` | `50` | Cap for analyzer findings per review |
-| `maxLineLength` | `300` | Line length beyond which the analyzer flags a long-line finding |
-| `reviewMode` | `static` | Review engine: `static` (deterministic analyzer) or `model` (one-shot subagent through the host's `subagents` seam; fails loud when the seam is absent) |
-| `modelReviewProvider` | — | Subagent provider name for `reviewMode: "model"`; defaults to the first registered provider |
-| `maxRetries` | `3` | 429 retry attempts per request |
-| `retryBaseMs` | `500` | Retry backoff base (doubles per attempt) |
-| `retryMaxWaitMs` | `60000` | Retry backoff ceiling |
-| `requestTimeoutMs` | `30000` | Hard per-request timeout; aborts the fetch when exceeded |
-| `apiBaseUrl` | `https://api.github.com` | GitHub REST base URL (GitHub Enterprise) |
-| `allowedActions` | `['pr.create','pr.merge','pr.update','review.post','issue.create','issue.comment','issue.close','ci.run']` | Write-action whitelist; anything else is denied before approval |
-| `workspaceDir` | process cwd | Working directory for read-only git inspection |
-| `ci` | `{ enabled: false, … }` | CI integration section: polling review bot, status-check gate, and the one-shot `ci_run` tool (all `ci.*` keys live inside it) |
+| `pr_create` | 工具 | 创建 pull request（写；审批门控） |
+| `pr_merge` | 工具 | 合并 PR（merge / squash / rebase，可选删源分支） |
+| `pr_update` | 工具 | 更新 PR（标题 / 正文 / 状态 / 目标分支） |
+| `gh_review` | 工具 | 读取 PR：元数据、截断 diff、评论、CI、静态发现 |
+| `review_post` | 工具 | 发布审查评论（汇总或行级锚定） |
+| `gh_issue` | 工具 | 列出 / 获取 / 评论 issue（PR 标记为 `kind: "pr"`） |
+| `issue_open` | 工具 | 创建 issue |
+| `issue_comment` | 工具 | 评论 issue 或 PR |
+| `issue_close` | 工具 | 关闭 issue（可选关闭原因） |
+| `gh_search` | 工具 | 搜索 issue 与 PR（独立搜索配额） |
+| `gh_repo` | 工具 | 读取仓库元数据 |
+| `gh_file` | 工具 | 按分支 / tag / commit 读取单个文件 |
+| `gh_repo_search` | 工具 | GraphQL 仓库搜索（独立搜索配额） |
+| `gh_checks` | 工具 | GraphQL PR 状态检查（check runs + commit statuses） |
+| `/pr create` | 命令 | 读取 git 状态并排队一条 `pr_create` 指令 |
+| `/review` | 命令 | 启动 / 停止 / 发布后台审查 job |
+| `/issue open` | 命令 | 排队一条 `issue_open` 指令 |
+| `/ci` | 命令 | CI 驱动：scan / status / start / stop / run（`ci.enabled`） |
+| `ci_run` | 工具 | 由复合动作 / CI 驱动执行的一次性 CI 审查 |
+| 审查机器人 | 界面 | 带幂等行内评论的轮询式审查机器人（`ci.*`） |
+| 状态检查门禁 | 界面 | 按 PR head commit 发布 `success` / `needs-changes` 结论（`action.yml`） |
 
-## Tools & surfaces
+### 架构
 
-| Surface | Kind | Notes |
+- **凭证接缝。** `tokenSource: auto` 每次操作按 credentials seam（`GITHUB_TOKEN` 引用）→ 环境变量 → `gh` CLI token 的顺序解析。该值只是交给 REST 客户端的局部变量，绝不进入规范值、渲染、卡片、命令输出、注入通知、job 输出、审批理由或错误消息。
+- **审批门。** 所有写操作都经模型工具。`tools/pre-execute` waterfall 监听器对写工具返回 `ask`，注册表即通过 `ctx.approval` 询问人类（宿主落 `approval/asked` + `approval/decided` 审计对），无应答者时 fail-closed。命令从不直接写：写命令先收集只读上下文，再唤醒 agent，让模型在 turn 内调用受审批门保护的工具。
+- **后台审查 job。** `/review <pr>` 在 `ctx.jobs` 上启动 `github-review` job；job 抓取元数据（记录 head-commit SHA 供行级发布）、截断 diff、CI 检查与既有评论，然后运行确定性多文件分析器（`src/review.ts`）。该 job 由调用 agent 的裸 `SessionId` 归属——`0.1.7-alpha.1` 的注册表以 `SessionId` 做访问围栏、不再接受 `Agent` 联合——因此必须组合 `dsh-tool-jobs`，否则 `start` 会直接拒绝。`reviewMode: "model"` 时改为把截断 diff 交给宿主 `subagents` 接缝的一次性 subagent。完成通知经宿主的 `dsh-tool-jobs` 消费者送回会话；模型用 `job_output` 读取、用 `review_post` 发布。
+- **CI 复合动作 / 审查机器人 / 状态检查门禁。** 本仓库随附复合动作（`action.yml`），负责审查 PR、修复 CI 并产出报告；轮询式审查机器人发布幂等行内评论；状态检查门禁按 PR head commit 发布结论。一次性 `ci_run` 工具驱动 headless 运行。每个写操作都保持审批门控。
+
+## 配置
+
+所有可调项都是 Schemastery `Config` 字段（可从 cordis.yml 修改）。以 id 定位的覆盖会替换整行——需要重新声明你所需的每个键。`cordis.patch.yml` 逐键内联说明。在图形界面中，**Plugins 页设置卡**（Official 组）从该条目自己的配置表单读取 `tokenRef`：`0.1.7-alpha.1` 宿主已删除 `ctx.settingsScope` 绑定及其背后的命名空间注册缝，卡片因此不再拥有设置命名空间。令牌本身就是该条目的 `githubToken` 字段：卡片写到这里，宿主半部按「页面字段 → 凭证文件 → 环境变量 → gh」的顺序解析。
+
+最常用键：
+
+| 键 | 默认值 | 含义 |
 |---|---|---|
-| `pr_create` | tool | Create a pull request (write; approval-gated) |
-| `pr_merge` | tool | Merge a PR (merge/squash/rebase, optional head-branch delete) |
-| `pr_update` | tool | Update a PR (title/body/state/base) |
-| `gh_review` | tool | Read a PR: metadata, capped diff, comments, CI, static findings |
-| `review_post` | tool | Publish a review comment (summary or line-anchored inline) |
-| `gh_issue` | tool | List / get / comment on issues (PRs marked `kind: "pr"`) |
-| `issue_open` | tool | Create an issue |
-| `issue_comment` | tool | Comment on an issue or PR |
-| `issue_close` | tool | Close an issue (optional state reason) |
-| `gh_search` | tool | Search issues and PRs (separate search quota) |
-| `gh_repo` | tool | Read repository metadata |
-| `gh_file` | tool | Read one file at a branch/tag/commit |
-| `gh_repo_search` | tool | GraphQL repository search (separate search quota) |
-| `gh_checks` | tool | GraphQL PR status checks (check runs + commit statuses) |
-| `/pr create` | command | Read git state and queue a `pr_create` instruction |
-| `/review` | command | Start / stop / post a background review job |
-| `/issue open` | command | Queue an `issue_open` instruction |
-| `ci_run` | tool | One-shot CI review run by the composite action / CI driver |
-| review bot | surface | Polling review bot with idempotent inline comments (`ci.*`) |
-| status-check gate | surface | Publishes the `success` / `needs-changes` verdict per PR head commit (`action.yml`) |
+| `tokenSource` | `auto` | `auto`（页面字段 → credentials → env → gh）或指定 `config` / `credentials` / `env` / `gh` |
+| `tokenRef` | `GITHUB_TOKEN` | credentials seam 引用名 / 环境变量名 |
+| `githubToken` | — | 从插件页保存的令牌；以明文存于 profile 配置，非空时优先使用 |
+| `defaultOwnerRepo` | — | 调用未指定且 git 无 origin 时的兜底 `owner/repo` |
+| `autoCommit` | `false` | `/pr create` 是否允许指示模型先 commit + push |
+| `maxDiffChars` | `8000` | 审查读取 PR diff 的字符数上限 |
+| `reviewMode` | `static` | 评审引擎：`static`（确定性分析器）或 `model`（经宿主 `subagents` 接缝的一次性 subagent；接缝缺失时响亮失败） |
+| `ci` | `{ enabled: false, … }` | CI 集成段：轮询式审查机器人、状态检查门禁与一次性 `ci_run` 工具（其下为全部 `ci.*` 子键） |
 
-## Architecture
+<details>
+<summary>完整配置表（23 个键）</summary>
 
-- **Credential seam.** `tokenSource: auto` resolves per operation in the order credentials seam (`GITHUB_TOKEN` reference) → environment variable → `gh` CLI token. The value is a local variable handed to the REST client; it never enters canonical values, renders, cards, command outputs, injected notices, job output, approval reasons, or error messages.
-- **Approval gate.** All writes flow through model tools. A `tools/pre-execute` waterfall listener returns `ask` for the write tools, so the registry asks the human through `ctx.approval` (the host logs the `approval/asked` + `approval/decided` audit pair) and fails closed without an answerer. Commands never write directly: a write command gathers read-only context, then wakes the agent so the model runs the gated tool inside a turn.
-- **Background review job.** `/review <pr>` starts a `github-review` job on `ctx.jobs`; the job fetches metadata (capturing the head-commit SHA for inline posting), the capped diff, CI checks, and existing comments, then runs the deterministic multi-file analyzer (`src/review.ts`). The job is owned by the calling agent's bare `SessionId` — `0.1.7-alpha.1` fences the registry on `SessionId` with no `Agent` union — so `dsh-tool-jobs` must be composed or `start` refuses. With `reviewMode: "model"`, the job hands the capped diff to a one-shot subagent through the host's `subagents` seam. Completion reaches the session through the host's `dsh-tool-jobs` consumer; the model reads it with `job_output` and publishes it with `review_post`.
-- **CI composite action / review bot / status-check gate.** The repo ships a composite action (`action.yml`) that reviews PRs, fixes CI, and writes the report; a polling review bot posts idempotent inline comments; and a status-check gate publishes the verdict per PR head commit. The one-shot `ci_run` tool drives the headless run. Every write stays approval-gated.
+| 键 | 默认值 | 含义 |
+|---|---|---|
+| `tokenSource` | `auto` | `auto`（页面字段 → credentials → env → gh）或指定 `config` / `credentials` / `env` / `gh` |
+| `tokenRef` | `GITHUB_TOKEN` | credentials seam 引用名 / 环境变量名 |
+| `githubToken` | — | 从插件页保存的令牌；以明文存于 profile 配置，非空时优先使用 |
+| `defaultOwnerRepo` | — | 调用未指定且 git 无 origin 时的兜底 `owner/repo` |
+| `autoCommit` | `false` | `/pr create` 是否允许指示模型先 commit + push |
+| `maxDiffChars` | `8000` | 审查读取 PR diff 的字符数上限 |
+| `renderExcerptChars` | `2000` | 渲染进工具输出的 diff 摘要字符数上限 |
+| `maxComments` | `20` | `gh_review` 列出 PR 评论的上限 |
+| `reviewJobTimeoutMs` | `600000` | 单个后台审查 job 的截止时间（超时以 `timeout` 失败） |
+| `maxReviewRecords` | `50` | 内存审查 job 记录上限；最旧的已终态记录先淘汰 |
+| `maxFileChars` | `12000` | `gh_file` 读取文件内容的字符数上限 |
+| `maxFindings` | `50` | 每次审查分析器发现数上限 |
+| `maxLineLength` | `300` | 行长度超过该值时分析器报超长行发现 |
+| `reviewMode` | `static` | 评审引擎：`static`（确定性分析器）或 `model`（经宿主 `subagents` 接缝的一次性 subagent；接缝缺失时响亮失败） |
+| `modelReviewProvider` | — | `reviewMode: "model"` 使用的 subagent provider 名；缺省用第一个注册的 provider |
+| `maxRetries` | `3` | 单请求的 429 重试次数 |
+| `retryBaseMs` | `500` | 重试退避基数（逐次翻倍） |
+| `retryMaxWaitMs` | `60000` | 重试退避上限 |
+| `requestTimeoutMs` | `30000` | 单次请求硬超时；超时即中止 fetch |
+| `apiBaseUrl` | `https://api.github.com` | GitHub REST 基地址（GitHub Enterprise） |
+| `allowedActions` | `pr.create` · `pr.merge` · `pr.update` · `review.post` · `issue.create` · `issue.comment` · `issue.close` · `ci.run` | 写动作白名单；名单外直接拒绝 |
+| `workspaceDir` | 进程 cwd | 只读 git 检查的工作目录 |
+| `ci` | `{ enabled: false, … }` | CI 集成段：轮询式审查机器人、状态检查门禁与一次性 `ci_run` 工具（其下为全部 `ci.*` 子键） |
 
-## Permissions & data
+</details>
 
-- **Permissions**: writes ride the official approval seam; nothing is re-implemented or bypassed. The plugin declares `network:outbound` and `filesystem:write` in its workshop manifest.
-- **Data**: the review report lives in process memory keyed by job id; nothing durable is written to disk.
-- **Session log**: the plugin adds no custom session event types; all model-visible content flows through host-logged surfaces (`tool/result`, `user/message`, `command/run`, `approval/asked`…). The notices commands queue carry the plugin's own merge-extensible source kind, `{ kind: 'dsh-github', form: 'notice', summary }` — the host has no catch-all `plugin` kind, and its session-format admission path refuses one outright.
+profile patch 覆盖示例：
 
-## Security boundaries
+```yaml
+- insert:
+    - id: dsh-github
+      name: '@perrylink/dsh-github'
+      config:
+        tokenSource: auto
+        tokenRef: GITHUB_TOKEN
+        autoCommit: false
+        reviewMode: static
+        allowedActions: [pr.create, review.post, issue.create, issue.comment, issue.close, pr.merge, pr.update, ci.run]
+```
 
-- **Approval, not enforcement.** Writes only produce `ask`/deny decisions on the official seam; the sandbox and approval systems remain the enforcement authorities.
-- **Fail closed.** Missing approval answerer degrades to the strictest decision — never to silent pass-through.
-- **The token never leaves the process.** It is read per operation and sent only in the Authorization header; never logged, rendered, injected, or surfaced in errors.
-- **No writes outside approval.** `/pr create` never commits or pushes by itself; with `autoCommit: true`, the model performs those writes through the bash tool's own approval gate. The review job performs no writes; only `review_post` publishes, after approval.
-- **Untrusted content is escaped and marked.** `formatPostBody` backtick- and HTML-escapes diff-derived file names, and external GitHub content (files, bodies, comments, search results) is marked as external in renders.
-- **Bounded work and rate limits.** 429s are retried with backoff; the remaining quota is surfaced on every result, including failures.
+## FAQ
 
-## Known limitations
+<details>
+<summary>token 会不会被插件存下来？审查数据存在哪？</summary>
 
-- **No custom session events** — deliberate (see Architecture); audit trails rely on the host's own event vocabulary.
-- **Static analyzer by default** — deterministic rules (`src/review.ts`), zero tokens, reproducible. `reviewMode: "model"` costs tokens and requires the `subagents` seam and a registered provider.
-- **Jobs and records are process-local** — the review report lives in plugin memory keyed by job id; the record map is capped by `maxReviewRecords` (oldest settled records evict first).
-- **npm `latest` dist-tags are stale** — install through the profile closure `dsh-base` provides; never bare `npm i @deepseek-ai/dsh-tools`.
+插件本身不落盘 token：每次操作按 `tokenSource` 的顺序现取，只放进 `Authorization` 头，绝不写日志、事件、卡片、命令输出或错误。唯一例外是你主动在 Plugins 页设置卡里保存的 `githubToken`——它以明文存在 profile 配置里（与 credentials 文件同级的暴露面）；配置会共享给别人时请留空，改用凭证引用、环境变量或 `gh auth login`。审查报告按 job id 只存进程内存，不向磁盘写任何持久数据。
 
-## Development
+</details>
+
+<details>
+<summary>没配 token，或宿主没有审批应答者，会静默失败吗？</summary>
+
+不会。没 token 时工具返回结构化错误，`code` 为 `no-token`，并附上三条配置指引；审批服务缺失或没有人应答时，写操作 fail-closed，绝不静默放行。两者都是可见错误，不是“看起来成功”。
+
+</details>
+
+<details>
+<summary>会和其他插件抢工具名、事件或 slot 吗？</summary>
+
+不会。工具全部带命名空间，不提供 service key、不注册客户端 slot、不注册 `webServer` 前缀；共享的 `tools/pre-execute` 用 `ctx.on()` 广播监听，每个监听器都经 `next()` 委托，链条不会被短路。逐条论证见「与其他 DSH 插件的互操作性」。
+
+</details>
+
+<details>
+<summary>静态审查和模型审查怎么选？</summary>
+
+默认 `reviewMode: "static"`：确定性规则、零 token、可复现，适合绝大多数 PR。`reviewMode: "model"` 把截断 diff 交给一次性 subagent，会消耗 token，且要求宿主提供 `subagents` 接缝和已注册 provider，否则加载期响亮失败。
+
+</details>
+
+<details>
+<summary>GitHub 限流或网络抖动会怎样？</summary>
+
+429 按 `Retry-After` / `x-ratelimit-reset` 退避重试（`maxRetries`、`retryBaseMs`、`retryMaxWaitMs` 可调），每个请求还有 `requestTimeoutMs` 硬超时；剩余配额会随每次结果返回，失败时也可见。
+
+</details>
+
+## 安全边界
+
+- **审批，而非强制执行。** 写操作只在官方接缝上产生 `ask` / deny 决策；沙箱与审批系统仍是执行权威。
+- **Fail closed。** 缺少审批应答者时退化为最严格决策——绝不静默放行。
+- **token 不离开进程。** 逐操作读取，只写入 `Authorization` 头；从不落日志、渲染、注入或出现在错误中。
+- **审批之外无写操作。** `/pr create` 自己从不 commit / push；`autoCommit: true` 时模型经 bash 工具自身的审批门执行这些写操作。审查 job 零写操作；只有 `review_post` 在审批后发布。
+- **不可信内容被转义与标记。** `formatPostBody` 对 diff 派生的文件名做反引号与 HTML 转义，外部 GitHub 内容（文件、正文、评论、搜索结果）在渲染中被标记为外部内容。
+- **有界工作与配额。** 429 带退避重试；剩余配额在包括失败在内的每个结果上对模型可见。
+
+## 权限与数据
+
+- **权限**：写操作走官方审批接缝；没有任何东西被重实现或绕过。插件在其 workshop manifest 中声明 `network:outbound` 与 `filesystem:write`。
+- **数据**：审查报告按 job id 存于进程内存；不向磁盘写任何持久数据。
+- **会话日志**：插件不新增任何自定义会话事件类型；所有模型可见内容都走宿主已记录的界面（`tool/result`、`user/message`、`command/run`、`approval/asked`…）。命令排队的通知携带插件自己的可合并来源 kind `{ kind: 'dsh-github', form: 'notice', summary }`——宿主没有兜底的 `plugin` kind，其会话格式准入路径会直接拒绝。
+
+## 已知限制
+
+- **无自定义会话事件** —— 刻意为之（见架构）；审计依赖宿主自有事件词汇。
+- **默认静态分析器** —— 确定性规则集（`src/review.ts`），零 token、可复现。`reviewMode: "model"` 消耗 token，且需要 `subagents` 接缝与已注册的 provider。
+- **job 与记录是进程内状态** —— 审查报告按 job id 存于插件内存；记录表受 `maxReviewRecords` 上限约束（最旧已终态记录先淘汰）。
+- **npm `latest` 标签过期** —— 请通过 `dsh-base` 提供的 profile 闭包安装；不要裸跑 `npm i @deepseek-ai/dsh-tools`。
+
+## 与其他 DSH 插件的互操作性
+
+已对照 **DSH `0.2.0-rc.2`**（本 README 面向的运行时）与 2026-10-05 实测的高星插件集验证。
+
+本插件**不干扰**其他插件，包括广泛安装的高星插件：
+
+- **无工具名冲突。** 所有工具都带命名空间，不占用任何已被内置工具或其他插件持有的裸名。
+- **无服务键冲突。** 不提供任何服务键，因此不存在服务键冲突。
+- **无 slot 冲突。** 不注册客户端 slot key，因此不参与 `shadows-shipped-ui` 座位争抢。
+- **无 HTTP 路由冲突。** 不注册任何 `webServer` 前缀。
+- **无 patch 层冲突。** 组合包 patch 只 `insert` 自己那一行，从不覆写内置行的 `config`。
+- **无全局改写。** 不改原型、不改写 `process.env`、不替换全局 fetch dispatcher。
+
+**共享事件监听器在构造上就不互相干扰。** 它用 `ctx.on()` 监听顺序敏感事件 `tools/pre-execute`——Cordis 的**广播**语义：每个监听器都会运行，任何一个都无法饿死其他监听器。**此处每个监听器都通过 `next()` 委托**，因此链条绝不会被短路；改写作用在 `next()` 产出的值上，而不是用它顶替返回：
+
+- `tools/pre-execute` — also used by `cc-safety-net` (1576★).
+
+静态证据：`dsh-plugin-doctor` 的 K10–K13 在本仓全部为 `pass`。
+
+## 兼容性
+
+| 维度 | 状态 |
+|---|---|
+| Harness | DeepSeek Harness `dsh-v0.2.1-rc.2`（2026-10-18 验证）：`engines.dsh >=0.2.1-0 <0.3.0`；P0 兼容路径已有回归测试。 |
+| Node | `^22.19.0 \|\| >=24.0.0` |
+| 平台 | 全部（host 插件；出站网络访问 GitHub） |
+| 模型 | 任意（静态审查是确定性的；`reviewMode: "model"` 为可选） |
+
+## 生态与质量
+
+- [Gitee 镜像](https://gitee.com/perrylink/dsh-github)（同步镜像，以 GitHub 为准）
+- [dshfind 插件页](https://dshfind.com/plugins/PerryLink/dsh-github)（安装量与排名）
+- [OpenSSF Scorecard 报告](https://securityscorecards.dev/viewer/?uri=github.com/PerryLink/dsh-github)（由 [.github/workflows/scorecard.yml](.github/workflows/scorecard.yml) 驱动）
+- [dsh-plugin-doctor 验证报告](https://github.com/PerryLink/dsh-plugin-doctor#verified-徽章)（K10–K13 全 `pass`）
+- [DSH Market](https://dsh.market/)（已上架）
+- **1024 商店渠道**：先 `npm i -g dsh1024`，再 `dsh1024 plugin --profile web add @perrylink/dsh-github`（计入 [deepseek1024.com](https://deepseek1024.com) 安装排行）
+- [生态实测知识库](https://perrylink.github.io/dsh-plugin-guide/)：插件开发指南 · 选型实测数据 · 维护取舍判据
+
+## 开发
 
 ```sh
 pnpm install             # node ^22.19 || >=24
-pnpm run build           # tsc --noEmitOnError → lib/
-pnpm run prepare         # self-contained git-install build (scripts/prepare.mjs)
-pnpm run prepublishOnly  # build + test before publishing
+pnpm run build           # tsc --noEmitOnError → lib/（含 fix-dts 与 client bundle）
+pnpm run prepare         # 自包含 git 安装构建（scripts/prepare.mjs）
+pnpm run prepublishOnly  # 发布前构建 + 测试
 pnpm test                # vitest run
 pnpm run typecheck       # tsc --noEmit
-pnpm run check:readmes   # cross-checks TOC anchors, tools, and config keys in all 5 READMEs
+pnpm run typecheck:ci    # 已发布线类型检查
+pnpm run check:readmes   # 五语 README 的工具与配置键覆盖
 ```
 
-## Repository layout
+`lib/` 是提交进仓库的发布产物，`pnpm run build` 会重新生成它。配图由 [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) 程序化生成（Python + Pillow），可重复执行，输出 `docs/assets/dsh-github-flow-{light,dark}.svg`。
 
-```
+Topics：`dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
+
+### 目录布局
+
+```text
 src/index.ts          plugin entry (name/inject/apply, applyWithDeps for tests)
 src/config.ts         Schemastery Config
 src/types.ts          local structural views of host services + Context merging
@@ -282,66 +360,44 @@ src/git.ts            read-only git inspection + origin parsing for any API host
 src/review.ts         deterministic diff analyzer + sanitized comment drafting
 src/jobs.ts           github-review background job producer (metadata + diff + CI + comments)
 src/approval-gate.ts  tools/pre-execute ask/deny gate with write previews
-src/tools.ts          the fourteen model-facing tools (plus `ci_run` under src/ci/)
+src/tools.ts          the fourteen model-facing tools
+src/ci/               review pipeline, polling bot, one-shot ci_run
 src/commands.ts       /pr, /review, /issue
+src/client.ts         browser half: the Plugins settings card
 src/present.ts        pure UI-card presenters
 test/                 vitest suite + mock host scaffolding + opt-in e2e smoke
 cordis.patch.yml      bundle patch (one insert row)
 scripts/prepare.mjs   self-contained git-install build
 ```
 
-## Interoperability with other DSH plugins
+## 家族与致谢
 
-Verified against **DSH `0.2.0-rc.2`** (the runtime this README ships for) and the high-star plugin set surveyed on 2026-10-05.
+本项目是 [PerryLink](https://github.com/PerryLink) 维护的 DeepSeek Harness 插件家族成员（全部 Apache-2.0）。如果这个插件帮到了你，**给个 star**——它不解锁任何功能，但会让下一个人更容易找到它。
 
-This plugin **does not interfere** with other plugins, including the widely installed high-star ones:
-
-- **No tool-name collision.** Every tool is namespaced; no bare name owned by a shipped tool or another plugin is registered.
-- **No service-key collision.** It provides no service key at all, so it cannot collide on one.
-- **No slot collision.** It registers no client slot key, so it cannot contend for a `shadows-shipped-ui` seat.
-- **No HTTP route collision.** It registers no `webServer` prefix.
-- **No patch-layer collision.** The bundle patch only `insert`s its own row; it never overrides a built-in row's `config`.
-- **No global mutation.** It does not patch prototypes, rewrite `process.env`, or replace the global fetch dispatcher.
-
-**Shared event listeners are non-interfering by construction.** It observes the ordering-sensitive event `tools/pre-execute` with `ctx.on()` — Cordis's broadcast registration, where every listener runs and none can starve another. **Every listener here delegates through `next()`**, so the chain is never short-circuited, and a mutation is applied to the value `next()` produced rather than returned in its place:
-  - `tools/pre-execute` — also used by `cc-safety-net` (1576★).
-
-Static evidence: `dsh-plugin-doctor` K10–K13 report `pass` for every check on this repository.
-
-## Topics
-
-`dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
-
-## Contributors
-
-- [@JosephTian876](https://github.com/JosephTian876) — the unbundled `lib/client.js` report (#11).
-- [@womeimingzi11](https://github.com/womeimingzi11) — the browser-half module-loader registration report (#14); the factory-wrapped bundle shipped in later releases.
-- [@PerryLink](https://github.com/PerryLink) — creator and maintainer: the GitHub tool surface, approval gate, background review jobs, CI composite action, review bot, status-check gate, and the five-language docs.
-- [@AraragiEro](https://github.com/AraragiEro) — the GitHub token settings card in the Plugins settings page (#6).
-- [@alexchenzl](https://github.com/alexchenzl) — invited the plugin onto the DSH Directory (#5).
-
-## PerryLink DSH Plugin Family
-
-This project is part of the DeepSeek Harness plugin family from [PerryLink](https://github.com/PerryLink). The roster stays collapsed below so every README keeps a short first screen; expand it to see every row and its status.
+- [@JosephTian876](https://github.com/JosephTian876) —— 报告 `lib/client.js` 未打进包（#11）。
+- [@womeimingzi11](https://github.com/womeimingzi11) —— 报告浏览器半的模块加载器注册问题（#14）；后续版本改为工厂包装的 bundle。
+- [@PerryLink](https://github.com/PerryLink) —— 创建者与维护者：GitHub 工具面、审批门、后台审查 job、CI 复合动作、审查机器人、状态检查门禁，以及五语文档。
+- [@AraragiEro](https://github.com/AraragiEro) —— 插件设置页的 GitHub token 设置卡片（#6）。
+- [@alexchenzl](https://github.com/alexchenzl) —— 邀请本插件收录到 DSH Directory（#5）。
 
 <details>
-<summary>Expand all plugins</summary>
+<summary>展开全部插件</summary>
 
-| Plugin | Status |
+| 插件 | 状态 |
 |---|---|
 | **[dsh-aqua-input-check](https://github.com/PerryLink/dsh-aqua-input-check)** |  |
 | **[dsh-archive-check](https://github.com/PerryLink/dsh-archive-check)** |  |
 | **[dsh-auto-review](https://github.com/PerryLink/dsh-auto-review)** |  |
-| **[dsh-autotier](https://github.com/PerryLink/dsh-autotier)** | 🧊 FROZEN — see the repo README |
+| **[dsh-autotier](https://github.com/PerryLink/dsh-autotier)** | 🧊 已冻结 — 见仓库 README |
 | **[dsh-bid-ca-precheck](https://github.com/PerryLink/dsh-bid-ca-precheck)** |  |
 | **[dsh-bid-qual-check](https://github.com/PerryLink/dsh-bid-qual-check)** |  |
-| **[dsh-cert-mcp](https://github.com/PerryLink/dsh-cert-mcp)** | 🧊 FROZEN — see the repo README |
+| **[dsh-cert-mcp](https://github.com/PerryLink/dsh-cert-mcp)** | 🧊 已冻结 — 见仓库 README |
 | **[dsh-checkpoint-rewind](https://github.com/PerryLink/dsh-checkpoint-rewind)** |  |
 | **[dsh-click](https://github.com/PerryLink/dsh-click)** |  |
 | **[dsh-composer-history](https://github.com/PerryLink/dsh-composer-history)** |  |
 | **[dsh-contract-stance](https://github.com/PerryLink/dsh-contract-stance)** |  |
 | **[dsh-customs-doc-check](https://github.com/PerryLink/dsh-customs-doc-check)** |  |
-| **[dsh-data-quality](https://github.com/PerryLink/dsh-data-quality)** |  |
+| **[dsh-data-quality](https://github.com/PerryLink/dsh-data-quality)** | 🧊 已冻结 — 见仓库 README |
 | **[dsh-demurrage-ledger](https://github.com/PerryLink/dsh-demurrage-ledger)** |  |
 | **[dsh-doublecheck](https://github.com/PerryLink/dsh-doublecheck)** |  |
 | **[dsh-drill-script-check](https://github.com/PerryLink/dsh-drill-script-check)** |  |
@@ -374,7 +430,7 @@ This project is part of the DeepSeek Harness plugin family from [PerryLink](http
 | **[dsh-mask](https://github.com/PerryLink/dsh-mask)** |  |
 | **[dsh-mcp-panel](https://github.com/PerryLink/dsh-mcp-panel)** |  |
 | **[dsh-medrec-qc](https://github.com/PerryLink/dsh-medrec-qc)** |  |
-| **[dsh-memento](https://github.com/PerryLink/dsh-memento)** |  |
+| **[dsh-memento](https://github.com/PerryLink/dsh-memento)** | 🧊 已冻结 — 见仓库 README |
 | **[dsh-nsfc-form-check](https://github.com/PerryLink/dsh-nsfc-form-check)** |  |
 | **[dsh-nurse-record-check](https://github.com/PerryLink/dsh-nurse-record-check)** |  |
 | **[dsh-observe](https://github.com/PerryLink/dsh-observe)** |  |
@@ -386,10 +442,10 @@ This project is part of the DeepSeek Harness plugin family from [PerryLink](http
 | **[dsh-permit-report-check](https://github.com/PerryLink/dsh-permit-report-check)** |  |
 | **[dsh-pipeline-check](https://github.com/PerryLink/dsh-pipeline-check)** |  |
 | **[dsh-pleading-draft](https://github.com/PerryLink/dsh-pleading-draft)** |  |
-| **[dsh-plugin-doctor](https://github.com/PerryLink/dsh-plugin-doctor)** |  |
+| **[dsh-plugin-doctor](https://github.com/PerryLink/dsh-plugin-doctor)** | 🚫 已退役（仓库已归档） |
 | **[dsh-plugin-guide](https://github.com/PerryLink/dsh-plugin-guide)** |  |
-| **[dsh-plugin-kit](https://github.com/PerryLink/dsh-plugin-kit)** |  |
-| **[dsh-plugin-upgrade](https://github.com/PerryLink/dsh-plugin-upgrade)** |  |
+| **[dsh-plugin-kit](https://github.com/PerryLink/dsh-plugin-kit)** | 🚫 已退役（仓库已归档） |
+| **[dsh-plugin-upgrade](https://github.com/PerryLink/dsh-plugin-upgrade)** | 🚫 已退役（仓库已归档） |
 | **[dsh-policy-brief-draft](https://github.com/PerryLink/dsh-policy-brief-draft)** |  |
 | **[dsh-power-loss-split](https://github.com/PerryLink/dsh-power-loss-split)** |  |
 | **[dsh-power-ticket-check](https://github.com/PerryLink/dsh-power-ticket-check)** |  |
@@ -401,7 +457,7 @@ This project is part of the DeepSeek Harness plugin family from [PerryLink](http
 | **[dsh-review-reply-check](https://github.com/PerryLink/dsh-review-reply-check)** |  |
 | **[dsh-rulefile-check](https://github.com/PerryLink/dsh-rulefile-check)** |  |
 | **[dsh-safety-brief-check](https://github.com/PerryLink/dsh-safety-brief-check)** |  |
-| **[dsh-score](https://github.com/PerryLink/dsh-score)** |  |
+| **[dsh-score](https://github.com/PerryLink/dsh-score)** | 🧊 已冻结 — 见仓库 README |
 | **[dsh-session-sync](https://github.com/PerryLink/dsh-session-sync)** |  |
 | **[dsh-site-log-check](https://github.com/PerryLink/dsh-site-log-check)** |  |
 | **[dsh-skill-pack-security](https://github.com/PerryLink/dsh-skill-pack-security)** |  |
@@ -413,20 +469,22 @@ This project is part of the DeepSeek Harness plugin family from [PerryLink](http
 | **[dsh-tender-extract](https://github.com/PerryLink/dsh-tender-extract)** |  |
 | **[dsh-tender-matrix](https://github.com/PerryLink/dsh-tender-matrix)** |  |
 | **[dsh-test-drive](https://github.com/PerryLink/dsh-test-drive)** |  |
-| **[dsh-ticktick](https://github.com/PerryLink/dsh-ticktick)** |  |
+| **[dsh-ticktick](https://github.com/PerryLink/dsh-ticktick)** | 🚫 已退役（仓库已归档） |
 | **[dsh-translate](https://github.com/PerryLink/dsh-translate)** |  |
 | **[dsh-warranty-calc](https://github.com/PerryLink/dsh-warranty-calc)** |  |
-| **[dsh-budget](https://github.com/PerryLink/dsh-budget)** | 🧊 FROZEN — see the repo README |
-| **[dsh-claude-move](https://github.com/PerryLink/dsh-claude-move)** | 🧊 FROZEN — see the repo README |
-| **[dsh-defend](https://github.com/PerryLink/dsh-defend)** | 🧊 FROZEN — see the repo README |
-| **[dsh-draw](https://github.com/PerryLink/dsh-draw)** | 🧊 FROZEN — see the repo README |
-| **[dsh-reach](https://github.com/PerryLink/dsh-reach)** | 🧊 FROZEN — see the repo README |
-| **[dsh-background-agents](https://github.com/PerryLink/dsh-background-agents)** | 🚫 RETIRED — see the repo README |
-| **[dsh-session-pin](https://github.com/PerryLink/dsh-session-pin)** | 🚫 RETIRED — see the repo README |
-| **[dsh-team-rooms](https://github.com/PerryLink/dsh-team-rooms)** | 🚫 RETIRED — see the repo README |
+| **[dsh-budget](https://github.com/PerryLink/dsh-budget)** | 🧊 已冻结 — 见仓库 README |
+| **[dsh-claude-move](https://github.com/PerryLink/dsh-claude-move)** | 🧊 已冻结 — 见仓库 README |
+| **[dsh-defend](https://github.com/PerryLink/dsh-defend)** | 🧊 已冻结 — 见仓库 README |
+| **[dsh-draw](https://github.com/PerryLink/dsh-draw)** | 🧊 已冻结 — 见仓库 README |
+| **[dsh-reach](https://github.com/PerryLink/dsh-reach)** | 🧊 已冻结 — 见仓库 README |
+| **[dsh-background-agents](https://github.com/PerryLink/dsh-background-agents)** | 🚫 已退役（仓库已归档） |
+| **[dsh-session-pin](https://github.com/PerryLink/dsh-session-pin)** | 🚫 已退役（仓库已归档） |
+| **[dsh-team-rooms](https://github.com/PerryLink/dsh-team-rooms)** | 🚫 已退役（仓库已归档） |
 
 </details>
 
 ## License
 
-[Apache License 2.0](LICENSE) © 2026 dsh-github contributors
+[LICENSE](LICENSE)（Apache License 2.0）© 2026 dsh-github contributors
+
+<p align="center"><sub>Apache-2.0 · 社区插件，与 DeepSeek 无关。</sub></p>
