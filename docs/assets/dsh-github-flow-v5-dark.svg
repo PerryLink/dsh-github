@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="660" viewBox="0 0 1100 660" role="img" aria-labelledby="fig-title fig-desc">
+<title id="fig-title">dsh-github structure: a grade-separated checkpoint</title>
+<desc id="fig-desc">Seven read tools ride an overpass labelled next() over one approval gate. Eight write tools stop at tools/pre-execute, allowedActions and ctx.approval, then both tracks merge into api.github.com. The /review background job and the CI status-check gate feed back into the same gate.</desc>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#131a2a"/><stop offset="1" stop-color="#0c1016"/></linearGradient><pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1.4" cy="1.4" r="1.4" fill="#1e2636"/></pattern><filter id="soft" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="9" stdDeviation="12" flood-color="#120f24" flood-opacity="0.55"/></filter><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8496f5"/></marker><marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3fb950"/></marker><marker id="arrMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a8b1c4"/></marker></defs>
+<rect width="1100" height="660" fill="url(#bg)"/>
+<rect width="1100" height="660" fill="url(#dots)" opacity=".45"/>
+<text x="44" y="54" fill="#f0f3f9" text-anchor="start" font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif" font-size="30" font-weight="700">dsh-github</text>
+<text x="44" y="80" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">writes ask a human · reads call next() · one token per operation</text>
+<circle cx="700" cy="76" r="4.5" fill="#3fb950"/>
+<text x="712" y="80" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">read · next()</text>
+<circle cx="824" cy="76" r="4.5" fill="#8496f5"/>
+<text x="836" y="80" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">write · ask</text>
+<line x1="936" y1="76" x2="962" y2="76" stroke="#d29922" stroke-width="2" stroke-dasharray="4 4"/>
+<text x="970" y="80" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">audit pair</text>
+<line x1="44" y1="94" x2="1056" y2="94" stroke="#2e374b"/>
+<text x="44" y="118" fill="#a8b1c4" text-anchor="start" font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12" font-weight="700">AGENT TURN</text>
+<text x="44" y="134" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">commands  /pr · /review · /issue · /ci</text>
+<g filter="url(#soft)">
+<rect x="44" y="146" width="296" height="176" rx="18" fill="#1b2231" stroke="#3fb950" stroke-width="1.5"/>
+</g>
+<text x="60" y="170" fill="#3fb950" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700">READ ×7</text>
+<text x="324" y="170" fill="#3fb950" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">no approval</text>
+<rect x="60" y="180" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="199.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_review</text>
+<rect x="196" y="180" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="199.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_issue</text>
+<rect x="60" y="214" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="233.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_search</text>
+<rect x="196" y="214" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="233.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_repo</text>
+<rect x="60" y="248" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="267.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_file</text>
+<rect x="196" y="248" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="267.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_repo_search</text>
+<rect x="60" y="282" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="301.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">gh_checks</text>
+<rect x="196" y="282" width="130" height="28" rx="9" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4 4"/>
+<text x="261" y="301" fill="#3fb950" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="700">next()</text>
+<g filter="url(#soft)">
+<rect x="44" y="338" width="296" height="178" rx="18" fill="#1b2231" stroke="#8496f5" stroke-width="1.5"/>
+</g>
+<text x="60" y="362" fill="#8496f5" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700">WRITE ×8</text>
+<text x="324" y="362" fill="#8496f5" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">one gate</text>
+<rect x="60" y="374" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="393.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">pr_create</text>
+<rect x="196" y="374" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="393.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">pr_merge</text>
+<rect x="60" y="408" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="427.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">pr_update</text>
+<rect x="196" y="408" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="427.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">review_post</text>
+<rect x="60" y="442" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="461.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">issue_open</text>
+<rect x="196" y="442" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="461.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">issue_comment</text>
+<rect x="60" y="476" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="125.0" y="495.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">issue_close</text>
+<rect x="196" y="476" width="130" height="28" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="261.0" y="495.04" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">ci_run</text>
+<path d="M340 220 H348 V132 Q348 118 362 118 H706 Q720 118 720 132 V300" fill="none" stroke="#3fb950" stroke-width="3" stroke-linecap="round"/>
+<circle cx="348" cy="220" r="4" fill="#3fb950"/>
+<circle cx="720" cy="300" r="4" fill="#3fb950"/>
+<text x="534" y="108" fill="#3fb950" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="700">READ · next() · no approval</text>
+<path d="M340 400 H356 V268 H388" fill="none" stroke="#8496f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<circle cx="340" cy="400" r="4" fill="#8496f5"/>
+<g filter="url(#soft)">
+<rect x="368" y="150" width="332" height="350" rx="20" fill="#171e2c" stroke="#8496f5" stroke-width="1.5"/>
+</g>
+<text x="388" y="176" fill="#8496f5" text-anchor="start" font-family="ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif" font-size="12" font-weight="700">APPROVAL GATE</text>
+<text x="680" y="176" fill="#737b8d" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">writes only</text>
+<rect x="388" y="188" width="292" height="44" rx="9" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+<text x="534.0" y="207" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">tools/pre-execute</text>
+<text x="534.0" y="225" fill="#737b8d" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">waterfall · every tool call</text>
+<path d="M534 232 V246" fill="none" stroke="#8496f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<rect x="388" y="246" width="292" height="44" rx="9" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+<text x="534.0" y="265" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="400">allowedActions</text>
+<text x="534.0" y="283" fill="#737b8d" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">off-list → deny</text>
+<path d="M534 290 V304" fill="none" stroke="#8496f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<rect x="388" y="304" width="292" height="92" rx="14" fill="#242d42" stroke="#8496f5" stroke-width="1.8"/>
+<line x1="426" y1="350" x2="426.0" y2="370.0" stroke="#8496f5" stroke-width="3.4"/><circle cx="426.0" cy="370.0" r="2.4" fill="#8496f5"/><line x1="426" y1="350" x2="408.7" y2="340.0" stroke="#8496f5" stroke-width="3.4"/><circle cx="408.7" cy="340.0" r="2.4" fill="#8496f5"/><line x1="426" y1="350" x2="443.3" y2="340.0" stroke="#8496f5" stroke-width="3.4"/><circle cx="443.3" cy="340.0" r="2.4" fill="#8496f5"/><circle cx="426" cy="350" r="6" fill="#8496f5"/><circle cx="426" cy="350" r="2.4" fill="#242d42"/>
+<text x="556" y="330" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" font-weight="700">ctx.approval</text>
+<text x="556" y="352" fill="#a8b1c4" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">ask · human decision</text>
+<text x="556" y="376" fill="#737b8d" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">fail-closed without answerer</text>
+<rect x="388" y="412" width="292" height="36" rx="10" fill="#2a2113" stroke="#d29922" stroke-width="1.2"/>
+<circle cx="402" cy="430" r="2.4" fill="#d29922"/>
+<text x="414" y="434" fill="#d29922" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="700">AUDIT</text>
+<text x="460" y="434" fill="#f0f3f9" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">approval/asked → approval/decided</text>
+<text x="388" y="476" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">deny → structured error · no API call</text>
+<g filter="url(#soft)">
+<rect x="760" y="180" width="296" height="188" rx="18" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+</g>
+<text x="780" y="210" fill="#f0f3f9" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" font-weight="700">api.github.com</text>
+<text x="780" y="230" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">REST + GraphQL · one transport</text>
+<text x="780" y="258" fill="#8496f5" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">Authorization: Bearer</text>
+<text x="780" y="284" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">429 → Retry-After</text>
+<text x="780" y="310" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">requestTimeoutMs · maxRetries</text>
+<line x1="780" y1="324" x2="1036" y2="324" stroke="#2e374b"/>
+<text x="780" y="342" fill="#f0f3f9" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="700">tokenSource: auto</text>
+<text x="780" y="358" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">config → credentials → env → gh</text>
+<path d="M680 350 H736 V300" fill="none" stroke="#8496f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<path d="M720 300 H744" fill="none" stroke="#3fb950" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrGreen)"/>
+<circle cx="744" cy="300" r="4.5" fill="#8496f5"/>
+<path d="M744 300 H760" fill="none" stroke="#8496f5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<g filter="url(#soft)">
+<rect x="760" y="388" width="296" height="112" rx="18" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+</g>
+<text x="780" y="414" fill="#f0f3f9" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="14" font-weight="700">canonical JSON</text>
+<text x="780" y="438" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">tool/result → agent</text>
+<text x="780" y="462" fill="#a8b1c4" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="400">rate limit visible</text>
+<text x="780" y="486" fill="#3fb950" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" font-weight="700">token never logged</text>
+<path d="M908 368 V388" fill="none" stroke="#8496f5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arr)"/>
+<g filter="url(#soft)">
+<rect x="44" y="532" width="496" height="100" rx="18" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+</g>
+<text x="60" y="556" fill="#8496f5" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="700">/review · ctx.jobs</text>
+<text x="206" y="556" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">background job</text>
+<rect x="60" y="566" width="72" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="96.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">/review</text>
+<rect x="144" y="566" width="122" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="205.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">github-review</text>
+<rect x="278" y="566" width="112" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="334.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">src/review.ts</text>
+<rect x="402" y="566" width="100" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="452.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">job_output</text>
+<path d="M132 581 H144" fill="none" stroke="#a8b1c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrMuted)"/>
+<path d="M266 581 H278" fill="none" stroke="#a8b1c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrMuted)"/>
+<path d="M390 581 H402" fill="none" stroke="#a8b1c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrMuted)"/>
+<path d="M502 581 H520 V504" fill="none" stroke="#8496f5" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" marker-end="url(#arr)"/>
+<text x="510" y="524" fill="#8496f5" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="700">review_post · ask</text>
+<text x="60" y="620" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">job_output → model → review_post (same gate)</text>
+<g filter="url(#soft)">
+<rect x="570" y="532" width="486" height="100" rx="18" fill="#1b2231" stroke="#2e374b" stroke-width="1.5"/>
+</g>
+<text x="586" y="556" fill="#8496f5" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="700">CI · ci.enabled</text>
+<rect x="586" y="566" width="96" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="634.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">action.yml</text>
+<rect x="698" y="566" width="92" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="744.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">ci_run</text>
+<rect x="806" y="566" width="94" height="30" rx="9" fill="#202838" stroke="#2e374b" stroke-width="1.5"/>
+<text x="853.0" y="585.68" fill="#f0f3f9" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="400">check run</text>
+<path d="M682 581 H698" fill="none" stroke="#a8b1c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrMuted)"/>
+<path d="M790 581 H806" fill="none" stroke="#a8b1c4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrMuted)"/>
+<path d="M900 581 H910 V562 H916" fill="none" stroke="#a8b1c4" stroke-width="1.8" marker-end="url(#arrMuted)"/>
+<path d="M900 581 H910 V594 H916" fill="none" stroke="#a8b1c4" stroke-width="1.8" marker-end="url(#arrMuted)"/>
+<rect x="916" y="550" width="120" height="24" rx="8" fill="#16241c" stroke="#3fb950" stroke-width="1.5"/>
+<text x="976" y="566" fill="#3fb950" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="700">success</text>
+<rect x="916" y="582" width="120" height="24" rx="8" fill="#2a2113" stroke="#d29922" stroke-width="1.5"/>
+<text x="976" y="598" fill="#d29922" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" font-weight="700">needs-changes</text>
+<path d="M744 566 V524 H660 V504" fill="none" stroke="#8496f5" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 5" marker-end="url(#arr)"/>
+<text x="700" y="518" fill="#8496f5" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="700">ask</text>
+<text x="586" y="620" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">polling bot · idempotent inline comments</text>
+<line x1="44" y1="639" x2="1056" y2="639" stroke="#2e374b"/>
+<text x="44" y="652" fill="#737b8d" text-anchor="start" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">tokenSource: auto · allowedActions whitelist · 429 backoff · fail-closed</text>
+<text x="1056" y="652" fill="#737b8d" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" font-weight="400">Apache-2.0</text>
+</svg>

@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-dark.svg">
-  <img src="docs/assets/dsh-github-flow-light.svg" width="100%" alt="dsh-github डेटा फ़्लो: pr_create → tools/pre-execute → ctx.approval → api.github.com → review_post; /review बैकग्राउंड job और ci_run गेट समानांतर चलते हैं">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-hero-en-dark.webp">
+  <img src="docs/assets/dsh-github-hero-en-light.webp" width="100%" alt="dsh-github: एजेंट से GitHub पर लिखें; हर write मानवीय approval gate से गुज़रता है, reads उसे bypass करते हैं और token हर call पर resolve होता है">
 </picture>
 
 # dsh-github
@@ -37,6 +37,11 @@ dsh plugin --profile <name> add @perrylink/dsh-github
 ## यह क्या है
 
 `dsh-github` GitHub को एजेंट के turn में लाता है और हर write को approval से बाँधता है: `pr_create`, `pr_merge`, `review_post`, `issue_close` जैसे टूल `ctx.approval` से स्पष्ट हाँ मिलने के बाद ही GitHub तक पहुँचते हैं। पढ़ने वाली सतहें — PR metadata, सीमित diff, फ़ाइलें, खोज और status checks — बिना पूछे लौटती हैं। `/review` `ctx.jobs` पर deterministic multi-file analyzer को background job के रूप में चलाता है; CI पक्ष में composite action, polling review bot और status-check gate हैं। token हर operation पर credentials seam, environment या `gh` CLI से resolve होता है, केवल `Authorization` header में जाता है, और logs, events, cards, command output या errors में कभी नहीं दिखता।
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-github-flow-v5-light.svg" width="100%" alt="dsh-github संरचना: सात read टूल next() overpass से जाते हैं, आठ write टूल tools/pre-execute → allowedActions → ctx.approval पर रुकते हैं, और दोनों tracks एक ही api.github.com trunk में मिलते हैं; नीचे /review job और CI status gate उसी gate पर लौटते हैं">
+</picture>
 
 ## तीन चरणों में शुरुआत
 
@@ -344,7 +349,7 @@ pnpm run typecheck:ci    # प्रकाशित लाइन का typechec
 pnpm run check:readmes   # पाँचों README में tools और config keys की जाँच
 ```
 
-`lib/` रेपो में commit किया गया प्रकाशित artifact है; `pnpm run build` उसे फिर बनाता है। README की तस्वीरें [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) (Python + Pillow) से प्रोग्रामेटिक रूप से बनती हैं और दोबारा चलाई जा सकती हैं; वे `docs/assets/dsh-github-flow-{light,dark}.svg` लिखती हैं।
+`lib/` रेपो में commit किया गया प्रकाशित artifact है; `pnpm run build` उसे फिर बनाता है। README की तस्वीरें [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) (Python + Pillow) से प्रोग्रामेटिक रूप से बनती हैं और दोबारा चलाई जा सकती हैं; वे `docs/assets/dsh-github-hero-{zh,en}-{light,dark}.webp` और `docs/assets/dsh-github-flow-v5-{light,dark}.svg` लिखती हैं।
 
 Topics: `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
 

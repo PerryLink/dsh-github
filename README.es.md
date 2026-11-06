@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-dark.svg">
-  <img src="docs/assets/dsh-github-flow-light.svg" width="100%" alt="Flujo de datos de dsh-github: pr_create → tools/pre-execute → ctx.approval → api.github.com → review_post; el job /review y la puerta ci_run corren en paralelo">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-hero-en-dark.webp">
+  <img src="docs/assets/dsh-github-hero-en-light.webp" width="100%" alt="dsh-github: escribe en GitHub desde el agente; cada escritura pasa por una puerta de aprobación humana, las lecturas la evitan y el token se resuelve por operación">
 </picture>
 
 # dsh-github
@@ -37,6 +37,11 @@ dsh plugin --profile <name> add @perrylink/dsh-github
 ## Qué es
 
 `dsh-github` mete GitHub en el turno del agente y, a la vez, ata cada escritura a una aprobación: herramientas como `pr_create`, `pr_merge`, `review_post` o `issue_close` solo llegan a GitHub después de que `ctx.approval` devuelva un sí explícito. Las superficies de lectura —metadatos de PR, diff truncado, archivos, búsqueda y checks— responden sin preguntar. `/review` ejecuta un analizador determinista de varios archivos como job en segundo plano sobre `ctx.jobs`, y el lado CI trae una acción compuesta, un bot de revisión por sondeo y una puerta de status-check. El token se resuelve por operación desde la capa de credenciales, el entorno o la CLI `gh`, se envía solo en la cabecera `Authorization` y nunca aparece en registros, eventos, tarjetas, salidas de comandos ni errores.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-github-flow-v5-light.svg" width="100%" alt="Estructura de dsh-github: siete herramientas de lectura pasan por un paso elevado next(), ocho de escritura se detienen en tools/pre-execute → allowedActions → ctx.approval y ambas vías confluyen en un único tronco api.github.com; abajo, el job /review y la puerta de CI vuelven a la misma puerta">
+</picture>
 
 ## Instalación en tres pasos
 
@@ -344,7 +349,7 @@ pnpm run typecheck:ci    # typecheck de la línea publicada
 pnpm run check:readmes   # cruza herramientas y claves de configuración en los 5 README
 ```
 
-`lib/` es el artefacto publicado que se commitea; `pnpm run build` lo regenera. Las imágenes del README las genera [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) (Python + Pillow) y se pueden volver a ejecutar; escriben `docs/assets/dsh-github-flow-{light,dark}.svg`.
+`lib/` es el artefacto publicado que se commitea; `pnpm run build` lo regenera. Las imágenes del README las genera [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) (Python + Pillow) y se pueden volver a ejecutar; escriben `docs/assets/dsh-github-hero-{zh,en}-{light,dark}.webp` y `docs/assets/dsh-github-flow-v5-{light,dark}.svg`.
 
 Temas: `dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
 

@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-dark.svg">
-  <img src="docs/assets/dsh-github-flow-light.svg" width="100%" alt="dsh-github 数据流：pr_create → tools/pre-execute → ctx.approval → api.github.com → review_post；/review 后台任务与 ci_run 状态门并列">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-hero-zh-dark.webp">
+  <img src="docs/assets/dsh-github-hero-zh-light.webp" width="100%" alt="dsh-github：在 agent 里写 GitHub，每个写操作先过人类审批——读工具旁路、审批闸门与逐次现取的 token">
 </picture>
 
 # dsh-github
@@ -37,6 +37,11 @@ dsh plugin --profile <name> add @perrylink/dsh-github
 ## 它是什么
 
 `dsh-github` 把 GitHub 的 PR、审查、issue 与 CI 接进 agent 的回合，同时给每个写操作套上审批笼子：`pr_create`、`pr_merge`、`review_post`、`issue_close` 这类工具只有在 `ctx.approval` 得到明确同意后才会落到 GitHub。读侧（PR 元数据、截断 diff、文件、搜索、状态检查）不设审批，直接返回。后台 `/review` 在 `ctx.jobs` 上跑确定性多文件分析器，CI 侧另有一套复合动作、轮询审查机器人与状态检查门禁。token 逐操作从 credentials seam、环境变量或 `gh` CLI 解析，只进 `Authorization` 头，日志、事件、卡片、命令输出与错误消息里都看不到它。
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/dsh-github-flow-v5-dark.svg">
+  <img src="docs/assets/dsh-github-flow-v5-light.svg" width="100%" alt="dsh-github 结构图：7 个读工具经 next() 高架旁路，8 个写工具穿过 tools/pre-execute → allowedActions → ctx.approval 闸门，两条轨道汇入同一条 api.github.com 干线；下方 /review 后台 job 与 CI 状态门禁回注同一闸门">
+</picture>
 
 ## 三步上手
 
@@ -344,7 +349,7 @@ pnpm run typecheck:ci    # 已发布线类型检查
 pnpm run check:readmes   # 五语 README 的工具与配置键覆盖
 ```
 
-`lib/` 是提交进仓库的发布产物，`pnpm run build` 会重新生成它。配图由 [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) 程序化生成（Python + Pillow），可重复执行，输出 `docs/assets/dsh-github-flow-{light,dark}.svg`。
+`lib/` 是提交进仓库的发布产物，`pnpm run build` 会重新生成它。配图由 [`scripts/gen-readme-assets.py`](scripts/gen-readme-assets.py) 程序化生成（Python + Pillow），可重复执行，输出 `docs/assets/dsh-github-hero-{zh,en}-{light,dark}.webp` 与 `docs/assets/dsh-github-flow-v5-{light,dark}.svg`。
 
 Topics：`dsh` · `dsh-plugin` · `deepseek-harness` · `github` · `pull-request` · `code-review` · `issue-tracker`
 
