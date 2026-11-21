@@ -43,6 +43,11 @@ dsh plugin --profile <name> add @perrylink/dsh-github
   <img src="docs/assets/dsh-github-flow-v5-light.svg" width="100%" alt="dsh-github संरचना: सात read टूल next() overpass से जाते हैं, आठ write टूल tools/pre-execute → allowedActions → ctx.approval पर रुकते हैं, और दोनों tracks एक ही api.github.com trunk में मिलते हैं; नीचे /review job और CI status gate उसी gate पर लौटते हैं">
 </picture>
 
+![dsh-github का असली टर्मिनल रन](docs/assets/dsh-github-demo.gif)
+
+*इस रिपॉज़िटरी में दर्ज असली रन का एनिमेटेड रीप्ले।*
+
+
 ## तीन चरणों में शुरुआत
 
 1. **इंस्टॉल करें** (कोई एक channel चुनें):

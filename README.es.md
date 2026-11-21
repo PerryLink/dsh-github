@@ -43,6 +43,11 @@ dsh plugin --profile <name> add @perrylink/dsh-github
   <img src="docs/assets/dsh-github-flow-v5-light.svg" width="100%" alt="Estructura de dsh-github: siete herramientas de lectura pasan por un paso elevado next(), ocho de escritura se detienen en tools/pre-execute → allowedActions → ctx.approval y ambas vías confluyen en un único tronco api.github.com; abajo, el job /review y la puerta de CI vuelven a la misma puerta">
 </picture>
 
+![dsh-github: ejecución real de terminal](docs/assets/dsh-github-demo.gif)
+
+*Repetición animada de una ejecución real registrada en este repositorio.*
+
+
 ## Instalación en tres pasos
 
 1. **Instala** (elige un canal):
