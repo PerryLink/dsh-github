@@ -1,6 +1,6 @@
 {
   "name": "@perrylink/dsh-github",
-  "version": "0.7.36",
+  "version": "0.7.37",
   "description": "Official-grade GitHub CI for DeepSeek Harness: composite action (review PRs / fix CI / report), polling PR review bot with idempotent inline comments, a status-check gate, and approval-gated PR/issue/repo/file tools",
   "type": "module",
   "main": "lib/index.js",
@@ -14,7 +14,8 @@
       "types": "./lib/types/client.d.ts",
       "default": "./lib/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "lib",
@@ -29,7 +30,8 @@
     "LICENSE",
     "PRIVACY.md",
     "docs/assets/*",
-    "icon.svg"
+    "icon.svg",
+    "locale/*.json"
   ],
   "scripts": {
     "build": "tsc --noEmitOnError && node scripts/fix-dts.mjs && node scripts/bundle-client.mjs",
@@ -186,5 +188,9 @@
     "type": "individual",
     "url": "https://github.com/sponsors/PerryLink"
   },
-  "icon": "icon.svg"
+  "icon": "icon.svg",
+  "author": {
+    "name": "PerryLink",
+    "url": "https://github.com/PerryLink"
+  }
 }

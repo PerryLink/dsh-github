@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Github",
+    "description": "在 agent 里安全地写 GitHub——每个写操作先经人类审批，token 永不落日志。"
+  }
+}
