@@ -11,6 +11,8 @@
 
 Un plugin de host para DeepSeek Harness que conecta PRs, revisiones, issues y CI: 15 herramientas, 4 familias de comandos, jobs de revisión en segundo plano, una acción compuesta de CI y una puerta de status-check.
 
+Última verificación: DeepSeek Harness `dsh-v0.2.3-alpha.1` (2026-11-22).
+
 [Instalación](#instalación-en-tres-pasos) · [Configuración](#configuración) · [FAQ](#faq) · [简体中文](README.md) · [English](README.en.md) · [Español](README.es.md) · [Português](README.pt.md) · [हिन्दी](README.hi.md)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-3366CC?style=flat-square&labelColor=2B3245)](LICENSE)
@@ -46,7 +48,6 @@ dsh plugin --profile <name> add @perrylink/dsh-github
 ![dsh-github: ejecución real de terminal](docs/assets/dsh-github-demo.gif)
 
 *Repetición animada de una ejecución real registrada en este repositorio.*
-
 
 ## Instalación en tres pasos
 
